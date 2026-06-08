@@ -16,22 +16,29 @@ export const AddGuest = ({ onSuccess, onCancel }: AddGuestProps) => {
       throw new Error('Not authenticated');
     }
 
-    // Check for duplicate phone
     const hasDuplicate = await guestService.checkDuplicatePhone(
       data.phone,
       auth.user.id
     );
+
     if (hasDuplicate) {
       throw new Error('A guest with this phone number already exists');
     }
 
     try {
       await guestService.create({
-        ...data,
+        full_name: data.fullName,
+        phone: data.phone,
+        companions: data.companions,
+        category: data.category,
+        rsvp_status: data.rsvpStatus,
+        notes: data.notes,
         user_id: auth.user.id,
       });
+
       onSuccess();
     } catch (error) {
+      console.error('Add guest error:', error);
       throw error;
     }
   };
@@ -40,7 +47,9 @@ export const AddGuest = ({ onSuccess, onCancel }: AddGuestProps) => {
     <div className="max-w-2xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-charcoal-900">Add New Guest</h1>
-        <p className="text-charcoal-600 mt-2">Fill in the details below to add a new guest</p>
+        <p className="text-charcoal-600 mt-2">
+          Fill in the details below to add a new guest
+        </p>
       </div>
 
       <div className="bg-white rounded-2xl p-8 border border-charcoal-100">
