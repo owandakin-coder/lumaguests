@@ -1,107 +1,139 @@
 -- ============================================================
 -- RSVP Magic Link Migration — Luma Guests
--- Run this in Supabase SQL Editor (Dashboard → SQL Editor)
+-- Run this in Supabase SQL Editor
 -- ============================================================
 
--- 1. Add new columns to guests table
-ALTER TABLE guests
-  ADD COLUMN IF NOT EXISTS rsvp_token       TEXT UNIQUE,
-  ADD COLUMN IF NOT EXISTS rsvp_responded_at TIMESTAMP WITH TIME ZONE,
-  ADD COLUMN IF NOT EXISTS rsvp_public_note  TEXT,
-  ADD COLUMN IF NOT EXISTS rsvp_via_link     BOOLEAN DEFAULT FALSE;
+create extension if not exists pgcrypto;
 
--- 2. Generate unique tokens for all existing guests
-UPDATE guests
-SET rsvp_token = gen_random_uuid()::text
-WHERE rsvp_token IS NULL;
+-- 1. Add RSVP columns to guests table
+alter table public.guests
+  add column if not exists rsvp_token text unique,
+  add column if not exists rsvp_responded_at timestamptz,
+  add column if not exists rsvp_public_note text,
+  add column if not exists rsvp_via_link boolean default false;
 
--- 3. Add index on rsvp_token for fast lookup
-CREATE INDEX IF NOT EXISTS guests_rsvp_token_idx ON guests(rsvp_token);
+-- 2. Generate unique tokens for existing guests
+update public.guests
+set rsvp_token = gen_random_uuid()::text
+where rsvp_token is null;
+
+-- 3. Index for fast token lookup
+create index if not exists guests_rsvp_token_idx
+on public.guests(rsvp_token);
 
 -- ============================================================
--- 4. RPC: Get guest info by token (PUBLIC — no auth needed)
---    Returns only safe, minimal data. Never exposes phone,
---    user_id, or private notes.
+-- 4. RPC: Get public guest info by token
 -- ============================================================
-CREATE OR REPLACE FUNCTION get_guest_by_token(p_token TEXT)
-RETURNS JSON
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_result JSON;
-BEGIN
-  SELECT json_build_object(
-    'id',               id,
-    'full_name',        full_name,
-    'rsvp_status',      rsvp_status,
-    'companions',       companions,
-    'rsvp_via_link',    rsvp_via_link,
-    'rsvp_responded_at',rsvp_responded_at
+
+create or replace function public.get_guest_by_token(p_token text)
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_result json;
+begin
+  select json_build_object(
+    'id', id,
+    'full_name', full_name,
+    'rsvp_status', rsvp_status,
+    'companions', companions,
+    'rsvp_via_link', rsvp_via_link,
+    'rsvp_responded_at', rsvp_responded_at
   )
-  INTO v_result
-  FROM guests
-  WHERE rsvp_token = p_token
-  LIMIT 1;
+  into v_result
+  from public.guests
+  where rsvp_token = p_token
+  limit 1;
 
-  RETURN v_result;
-END;
+  if v_result is null then
+    return json_build_object(
+      'success', false,
+      'error', 'קישור לא תקין'
+    );
+  end if;
+
+  return json_build_object(
+    'success', true,
+    'guest', v_result
+  );
+end;
 $$;
 
 -- ============================================================
--- 5. RPC: Guest responds to RSVP (PUBLIC — no auth needed)
---    Token validates identity. Only updates safe fields.
+-- 5. RPC: Submit RSVP response by token
 -- ============================================================
-CREATE OR REPLACE FUNCTION respond_to_rsvp(
-  p_token      TEXT,
-  p_status     TEXT,
-  p_companions INTEGER DEFAULT NULL,
-  p_note       TEXT    DEFAULT NULL
+
+create or replace function public.respond_to_rsvp(
+  p_token text,
+  p_status text,
+  p_companions integer default null,
+  p_note text default null
 )
-RETURNS JSON
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_id   UUID;
-  v_name TEXT;
-BEGIN
-  -- Validate token exists
-  SELECT id, full_name INTO v_id, v_name
-  FROM guests
-  WHERE rsvp_token = p_token
-  LIMIT 1;
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_id uuid;
+  v_name text;
+begin
+  select id, full_name
+  into v_id, v_name
+  from public.guests
+  where rsvp_token = p_token
+  limit 1;
 
-  IF v_id IS NULL THEN
-    RETURN json_build_object('success', false, 'error', 'קישור לא תקין');
-  END IF;
+  if v_id is null then
+    return json_build_object(
+      'success', false,
+      'error', 'קישור לא תקין'
+    );
+  end if;
 
-  -- Validate status value
-  IF p_status NOT IN ('CONFIRMED', 'PENDING', 'DECLINED') THEN
-    RETURN json_build_object('success', false, 'error', 'סטטוס לא תקין');
-  END IF;
+  if p_status not in ('CONFIRMED', 'PENDING', 'DECLINED') then
+    return json_build_object(
+      'success', false,
+      'error', 'סטטוס לא תקין'
+    );
+  end if;
 
-  -- Update RSVP safely
-  UPDATE guests
-  SET
-    rsvp_status      = p_status,
-    rsvp_responded_at = NOW(),
-    rsvp_via_link    = TRUE,
-    companions       = COALESCE(p_companions, companions),
-    rsvp_public_note = CASE WHEN p_note IS NOT NULL THEN p_note ELSE rsvp_public_note END,
-    updated_at       = NOW()
-  WHERE id = v_id;
+  update public.guests
+  set
+    rsvp_status = p_status,
+    rsvp_responded_at = now(),
+    rsvp_via_link = true,
+    companions = case
+      when p_companions is not null and p_companions >= 0
+      then p_companions
+      else companions
+    end,
+    rsvp_public_note = case
+      when p_note is not null
+      then p_note
+      else rsvp_public_note
+    end,
+    updated_at = now()
+  where id = v_id;
 
-  RETURN json_build_object('success', true, 'name', v_name, 'status', p_status);
-END;
+  return json_build_object(
+    'success', true,
+    'name', v_name,
+    'status', p_status
+  );
+end;
 $$;
 
 -- ============================================================
--- 6. Grant execute to anon role (public access)
+-- 6. Permissions for public RSVP page
 -- ============================================================
-GRANT EXECUTE ON FUNCTION get_guest_by_token(TEXT) TO anon;
-GRANT EXECUTE ON FUNCTION respond_to_rsvp(TEXT, TEXT, INTEGER, TEXT) TO anon;
 
--- Done ✅
+grant execute on function public.get_guest_by_token(text) to anon;
+grant execute on function public.respond_to_rsvp(text, text, integer, text) to anon;
+
+grant execute on function public.get_guest_by_token(text) to authenticated;
+grant execute on function public.respond_to_rsvp(text, text, integer, text) to authenticated;
+
+-- Done
