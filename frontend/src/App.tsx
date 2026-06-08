@@ -220,7 +220,7 @@ function App() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-ivory-100">
-      <main className="max-w-[430px] mx-auto px-5 pt-6 pb-32">
+      <main className="max-w-[430px] mx-auto px-5 pb-32" style={{paddingTop:"calc(env(safe-area-inset-top) + 16px)"}}>
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPage}
