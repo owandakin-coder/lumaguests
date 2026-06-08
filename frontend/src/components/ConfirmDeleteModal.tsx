@@ -56,6 +56,4 @@ export const ConfirmDeleteModal = ({
           </button>
         </div>
       </motion.div>
-    </motion.div>
-  );
-};
+    </m
