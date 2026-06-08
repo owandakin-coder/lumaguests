@@ -7,10 +7,10 @@ interface MobileBottomNavProps {
 }
 
 const tabs = [
-  { id: 'settings', label: 'הגדרות', icon: SettingsIcon },
-  { id: 'messages', label: 'הודעות', icon: MessageCircle },
-  { id: 'guests',   label: 'מוזמנים', icon: Users       },
-  { id: 'dashboard', label: 'דוח',   icon: BarChart2    },
+  { id: 'dashboard', label: 'דוח',      icon: BarChart2    },
+  { id: 'guests',    label: 'מוזמנים',  icon: Users        },
+  { id: 'messages',  label: 'הודעות',   icon: MessageCircle },
+  { id: 'settings',  label: 'הגדרות',   icon: SettingsIcon  },
 ];
 
 export const MobileBottomNav = ({ currentPage, onNavChange }: MobileBottomNavProps) => (
