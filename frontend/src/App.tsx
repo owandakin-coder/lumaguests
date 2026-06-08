@@ -303,15 +303,4 @@ function App() {
       <ConfirmDeleteModal
         guest={deletingGuest}
         isOpen={!!deletingGuest}
-        isLoading={isDeleteLoading}
-        onConfirm={handleConfirmDelete}
-        onCancel={() => setDeletingGuest(null)}
-      />
-
-      {/* Toast Container */}
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
-    </div>
-  );
-}
-
-export default App;
+        isLoading={isDel

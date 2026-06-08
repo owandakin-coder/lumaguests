@@ -57,7 +57,7 @@ select {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-charcoal-300 rounded-full hover:bg-charcoal-400;
+  @apply bg-charcoal-200 rounded-full hover:bg-charcoal-400;
 }
 
 /* Selection */
