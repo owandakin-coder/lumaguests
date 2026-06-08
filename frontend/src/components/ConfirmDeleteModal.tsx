@@ -1,61 +1,71 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trash2 } from 'lucide-react';
 import { Guest } from '../types';
 
 interface ConfirmDeleteModalProps {
   guest: Guest | null;
   isOpen: boolean;
-  isLoading?: boolean;
-  onConfirm: () => Promise<void>;
+  isLoading: boolean;
+  onConfirm: () => void;
   onCancel: () => void;
 }
 
-export const ConfirmDeleteModal = ({
-  guest,
-  isOpen,
-  isLoading = false,
-  onConfirm,
-  onCancel,
-}: ConfirmDeleteModalProps) => {
-  if (!isOpen || !guest) return null;
+export const ConfirmDeleteModal = ({ guest, isOpen, isLoading, onConfirm, onCancel }: ConfirmDeleteModalProps) => {
+  const name = guest ? (guest.fullName || guest.full_name) : '';
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onCancel}
-    >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl"
-      >
-        <h2 className="text-2xl font-bold text-charcoal-900 mb-2">Delete Guest?</h2>
-        <p className="text-charcoal-600 mb-6">
-          Are you sure you want to delete <span className="font-semibold">{guest.fullName || guest.full_name}</span>? This action
-          cannot be undone.
-        </p>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-end justify-center"
+          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+          onClick={onCancel}
+        >
+          <motion.div
+            initial={{ y: 60, opacity: 0 }}
+            animate={{ y: 0,  opacity: 1 }}
+            exit={{ y: 60,  opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            onClick={e => e.stopPropagation()}
+            className="bg-white w-full max-w-[430px] rounded-t-3xl p-6 pb-10"
+          >
+            {/* Handle */}
+            <div className="w-10 h-1 bg-charcoal-200 rounded-full mx-auto mb-6" />
 
-        <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 px-4 py-3 rounded-lg border border-charcoal-200 text-charcoal-900 font-semibold hover:bg-charcoal-50 transition disabled:opacity-50"
-            disabled={isLoading}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isLoading}
-            className="flex-1 px-4 py-3 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition disabled:opacity-50"
-          >
-            {isLoading ? 'Deleting...' : 'Delete'}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
+            {/* Icon */}
+            <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-7 h-7 text-red-500" />
+            </div>
+
+            <h3 className="text-[20px] font-bold text-charcoal-900 text-center mb-2">מחיקת מוזמן</h3>
+            <p className="text-[14px] text-charcoal-500 text-center leading-relaxed mb-6">
+              האם למחוק את <span className="font-bold text-charcoal-800">{name}</span> מרשימת המוזמנים?
+              <br />לא ניתן לשחזר פעולה זו.
+            </p>
+
+            <div className="space-y-2.5">
+              <button
+                onClick={onConfirm}
+                disabled={isLoading}
+                className="w-full py-4 rounded-2xl bg-red-500 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+                style={{ boxShadow: '0 4px 16px rgba(239,68,68,0.3)' }}
+              >
+                {isLoading ? 'מוחק...' : 'כן, מחק'}
+              </button>
+              <button
+                onClick={onCancel}
+                disabled={isLoading}
+                className="w-full py-4 rounded-2xl bg-charcoal-100 text-charcoal-700 text-[15px] font-bold active:scale-[0.98] transition-transform"
+              >
+                ביטול
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
