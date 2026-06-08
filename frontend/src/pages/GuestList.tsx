@@ -14,118 +14,119 @@ interface GuestListProps {
 }
 
 const filters: { label: string; value: RsvpStatus | 'ALL' }[] = [
-  { label: 'הכל',        value: 'ALL'       },
-  { label: 'אישרו',      value: 'CONFIRMED' },
-  { label: 'ממתינים',    value: 'PENDING'   },
+  { label: 'הכל',       value: 'ALL'       },
+  { label: 'אישרו',     value: 'CONFIRMED' },
+  { label: 'ממתינים',   value: 'PENDING'   },
   { label: 'לא מגיעים', value: 'DECLINED'  },
 ];
 
 export const GuestList = ({ guests, loading, onAddGuest, onEditGuest, onDeleteGuest, onViewGuest }: GuestListProps) => {
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<RsvpStatus | 'ALL'>('ALL');
+  const [search, setSearch]           = useState('');
+  const [status, setStatus]           = useState<RsvpStatus | 'ALL'>('ALL');
 
-  const filtered = useMemo(() => {
-    return guests.filter((g) => {
+  const filtered = useMemo(() =>
+    guests.filter(g => {
       const name = g.fullName || g.full_name;
       const rsvp = g.rsvpStatus || g.rsvp_status;
-      const matchSearch = name.toLowerCase().includes(search.toLowerCase()) || g.phone.includes(search);
-      const matchStatus = statusFilter === 'ALL' || rsvp === statusFilter;
-      return matchSearch && matchStatus;
-    });
-  }, [guests, search, statusFilter]);
+      return (
+        (name.toLowerCase().includes(search.toLowerCase()) || g.phone.includes(search)) &&
+        (status === 'ALL' || rsvp === status)
+      );
+    }), [guests, search, status]);
 
   return (
     <div className="space-y-4">
+
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-end justify-between pt-1">
         <div>
-          <h1 className="text-[28px] font-bold text-charcoal-900">מוזמנים</h1>
-          <p className="text-xs text-charcoal-400 mt-0.5">{filtered.length} מתוך {guests.length}</p>
+          <h1 className="text-[28px] font-bold text-charcoal-900 leading-tight">מוזמנים</h1>
+          <p className="text-[12px] text-charcoal-400 mt-0.5">
+            {filtered.length} מתוך {guests.length} · {guests.reduce((s,g)=>s+1+(g.companions||0),0)} אנשים
+          </p>
         </div>
         <button
           onClick={onAddGuest}
-          className="w-10 h-10 rounded-2xl bg-charcoal-900 flex items-center justify-center active:scale-90 transition-transform"
+          className="w-10 h-10 rounded-2xl bg-charcoal-900 flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
         >
-          <Plus className="w-5 h-5 text-white" strokeWidth={2.5} />
+          <Plus className="w-5 h-5 text-white" strokeWidth={2.5}/>
         </button>
       </div>
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
+        <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400 pointer-events-none"/>
         <input
-          type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={e => setSearch(e.target.value)}
           placeholder="חיפוש לפי שם או טלפון..."
-          className="w-full pr-10 pl-4 py-3 rounded-2xl bg-white text-sm text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-gold-300 transition"
-          style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}
+          className="w-full pr-10 pl-4 py-3 rounded-2xl bg-white text-[14px] text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-charcoal-200 transition"
+          style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}
         />
       </div>
 
-      {/* Filter chips */}
-      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-        {filters.map(({ label, value }) => (
+      {/* iOS-style segmented filter */}
+      <div
+        className="flex rounded-2xl p-1 gap-0.5"
+        style={{ background: 'rgba(0,0,0,0.06)' }}
+      >
+        {filters.map(f => (
           <button
-            key={value}
-            onClick={() => setStatusFilter(value)}
-            className={`flex-shrink-0 px-4 py-2 rounded-2xl text-xs font-semibold transition-all ${
-              statusFilter === value
-                ? 'bg-charcoal-900 text-white'
-                : 'bg-white text-charcoal-600'
+            key={f.value}
+            onClick={() => setStatus(f.value)}
+            className={`flex-1 py-2 rounded-xl text-[12px] font-semibold transition-all duration-200 ${
+              status === f.value
+                ? 'bg-white text-charcoal-900 shadow-sm'
+                : 'text-charcoal-500'
             }`}
-            style={statusFilter !== value ? { boxShadow: '0 2px 8px rgba(0,0,0,0.05)' } : {}}
           >
-            {label}
+            {f.label}
           </button>
         ))}
       </div>
 
       {/* List */}
       {loading ? (
-        <div className="space-y-3">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-16 bg-white rounded-2xl animate-pulse" />
+        <div className="space-y-2.5">
+          {[...Array(5)].map((_,i) => (
+            <div key={i} className="h-[70px] bg-white rounded-2xl animate-pulse"/>
           ))}
         </div>
       ) : filtered.length === 0 ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex flex-col items-center justify-center py-16 text-center"
+          className="flex flex-col items-center py-16 text-center"
         >
           <div className="w-20 h-20 rounded-3xl bg-charcoal-100 flex items-center justify-center mb-4">
-            <Users className="w-9 h-9 text-charcoal-300" strokeWidth={1.5} />
+            <Users className="w-9 h-9 text-charcoal-300" strokeWidth={1.3}/>
           </div>
-          <p className="text-base font-semibold text-charcoal-700 mb-1">
-            {search || statusFilter !== 'ALL' ? 'לא נמצאו תוצאות' : 'אין מוזמנים עדיין'}
+          <p className="text-[15px] font-bold text-charcoal-800 mb-1">
+            {search || status !== 'ALL' ? 'לא נמצאו תוצאות' : 'אין מוזמנים עדיין'}
           </p>
-          <p className="text-sm text-charcoal-400 mb-6">
-            {search || statusFilter !== 'ALL' ? 'נסה לשנות את הסינון' : 'הוסף את המוזמן הראשון שלך'}
+          <p className="text-[13px] text-charcoal-400 mb-6">
+            {search || status !== 'ALL' ? 'נסה לשנות את הסינון' : 'הוסף את המוזמן הראשון שלך'}
           </p>
-          {!search && statusFilter === 'ALL' && (
+          {!search && status === 'ALL' && (
             <button
               onClick={onAddGuest}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-charcoal-900 text-white text-sm font-semibold active:scale-95 transition-transform"
-            >
-              <Plus className="w-4 h-4" />
-              הוסף מוזמן
-            </button>
+              className="px-5 py-2.5 rounded-2xl bg-charcoal-900 text-white text-[13px] font-bold active:scale-95 transition-transform"
+            >הוסף מוזמן</button>
           )}
         </motion.div>
       ) : (
         <AnimatePresence>
-          <div className="space-y-2.5">
-            {filtered.map((guest, idx) => (
+          <div className="space-y-2">
+            {filtered.map((g, i) => (
               <motion.div
-                key={guest.id}
-                initial={{ opacity: 0, y: 8 }}
+                key={g.id}
+                initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ delay: idx * 0.04 }}
+                exit={{ opacity: 0 }}
+                transition={{ delay: Math.min(i * 0.03, 0.15) }}
               >
                 <GuestCard
-                  guest={guest}
+                  guest={g}
                   onEdit={onEditGuest}
                   onDelete={onDeleteGuest}
                   onView={onViewGuest}
