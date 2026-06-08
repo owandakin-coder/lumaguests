@@ -35,7 +35,7 @@ export const ConfirmDeleteModal = ({
       >
         <h2 className="text-2xl font-bold text-charcoal-900 mb-2">Delete Guest?</h2>
         <p className="text-charcoal-600 mb-6">
-          Are you sure you want to delete <span className="font-semibold">{guest.fullName}</span>? This action
+          Are you sure you want to delete <span className="font-semibold">{guest.fullName || guest.full_name}</span>? This action
           cannot be undone.
         </p>
 

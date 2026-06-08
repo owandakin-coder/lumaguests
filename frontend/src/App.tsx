@@ -109,12 +109,12 @@ function App() {
   };
 
   const handleLoginSuccess = () => {
-    addToast(`Welcome!`, 'success');
+    addToast('Welcome!', 'success');
     setCurrentPage('dashboard');
   };
 
   const handleRegisterSuccess = () => {
-    addToast(`Account created! Welcome!`, 'success');
+    addToast('Account created! Welcome!', 'success');
     setCurrentPage('dashboard');
   };
 
@@ -303,4 +303,15 @@ function App() {
       <ConfirmDeleteModal
         guest={deletingGuest}
         isOpen={!!deletingGuest}
-        isLoading={isDel
+        isLoading={isDeleteLoading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeletingGuest(null)}
+      />
+
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+    </div>
+  );
+}
+
+export default App;
