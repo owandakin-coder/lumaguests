@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { GuestForm } from '../components/GuestForm';
-import { Guest, UpdateGuestInput } from '../types';
+import { Guest, CreateGuestInput } from '../types';
 import { guestService } from '../services/supabase';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
@@ -23,6 +23,7 @@ export const EditGuest = ({ guestId, onSuccess, onCancel }: EditGuestProps) => {
 
   const loadGuest = async () => {
     if (!auth.user) return;
+
     try {
       setLoading(true);
       const data = await guestService.getById(guestId, auth.user.id);
@@ -34,27 +35,40 @@ export const EditGuest = ({ guestId, onSuccess, onCancel }: EditGuestProps) => {
     }
   };
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: CreateGuestInput) => {
     if (!auth.user) {
       throw new Error('Not authenticated');
     }
 
-    // Check for duplicate phone if phone changed
     if (guest && data.phone !== guest.phone) {
       const hasDuplicate = await guestService.checkDuplicatePhone(
         data.phone,
         auth.user.id,
         guestId
       );
+
       if (hasDuplicate) {
         throw new Error('A guest with this phone number already exists');
       }
     }
 
     try {
-      await guestService.update(guestId, data as UpdateGuestInput, auth.user.id);
+      await guestService.update(
+        guestId,
+        {
+          full_name: data.fullName,
+          phone: data.phone,
+          companions: data.companions,
+          category: data.category,
+          rsvp_status: data.rsvpStatus,
+          notes: data.notes,
+        },
+        auth.user.id
+      );
+
       onSuccess();
     } catch (error) {
+      console.error('Edit guest error:', error);
       throw error;
     }
   };
@@ -71,18 +85,25 @@ export const EditGuest = ({ guestId, onSuccess, onCancel }: EditGuestProps) => {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
         <h2 className="text-2xl font-bold text-charcoal-900">Guest not found</h2>
-        <button onClick={onCancel} className="mt-4 px-4 py-2 text-gold-600 hover:text-gold-700">
+        <button
+          onClick={onCancel}
+          className="mt-4 px-4 py-2 text-gold-600 hover:text-gold-700"
+        >
           Go back
         </button>
       </div>
     );
   }
 
+  const guestName = guest.fullName || guest.full_name || 'Guest';
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-charcoal-900">Edit Guest</h1>
-        <p className="text-charcoal-600 mt-2">Update {guest.fullName}'s information</p>
+        <p className="text-charcoal-600 mt-2">
+          Update {guestName}'s information
+        </p>
       </div>
 
       <div className="bg-white rounded-2xl p-8 border border-charcoal-100">
