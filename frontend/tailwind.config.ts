@@ -50,7 +50,7 @@ export default {
         '4xl': ['36px', { lineHeight: '40px' }],
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Rubik', 'Segoe UI', 'system-ui', 'sans-serif'],
       },
       spacing: {
         '2': '4px',
@@ -71,6 +71,7 @@ export default {
         'lg': '16px',
         'xl': '20px',
         '2xl': '24px',
+        '3xl': '32px',
       },
       boxShadow: {
         'xs': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',

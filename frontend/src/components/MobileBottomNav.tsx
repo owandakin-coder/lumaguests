@@ -1,58 +1,59 @@
-import { Home, Users, Settings as SettingsIcon, LogOut } from 'lucide-react';
-import { HE } from '../constants/he';
+import { BarChart2, Users, MessageCircle, Settings as SettingsIcon } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface MobileBottomNavProps {
   currentPage: string;
   onNavChange: (page: string) => void;
-  userEmail?: string;
-  onLogout?: () => void;
 }
 
-export const MobileBottomNav = ({
-  currentPage,
-  onNavChange,
-  onLogout,
-}: MobileBottomNavProps) => {
-  const navItems = [
-    { id: 'dashboard', label: HE.nav.dashboard, icon: Home },
-    { id: 'guests', label: HE.nav.guests, icon: Users },
-    { id: 'settings', label: HE.nav.settings, icon: SettingsIcon },
-  ];
+const navItems = [
+  { id: 'settings', label: 'הגדרות', icon: SettingsIcon },
+  { id: 'messages', label: 'הודעות', icon: MessageCircle },
+  { id: 'guests', label: 'מוזמנים', icon: Users },
+  { id: 'dashboard', label: 'דוח', icon: BarChart2 },
+];
 
+export const MobileBottomNav = ({ currentPage, onNavChange }: MobileBottomNavProps) => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-charcoal-100 safe-area-inset-bottom z-40">
-      <div className="flex items-center justify-between h-20 px-4">
-        {/* Nav items */}
-        <div className="flex flex-1 justify-around">
-          {navItems.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => onNavChange(id)}
-              className={`flex flex-col items-center justify-center w-16 h-20 rounded-lg transition ${
-                currentPage === id
-                  ? 'text-gold-500'
-                  : 'text-charcoal-400 hover:text-charcoal-600'
-              }`}
-              title={label}
-            >
-              <Icon className="w-6 h-6 mb-1" />
-              <span className="text-xs font-medium">{label}</span>
-            </button>
-          ))}
+    <div
+      className="fixed bottom-0 left-0 right-0 z-50"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <nav className="glass-nav mx-3 mb-3 rounded-3xl shadow-lg border border-white/60">
+        <div className="flex items-center justify-around h-16 px-2">
+          {navItems.map(({ id, label, icon: Icon }) => {
+            const isActive = currentPage === id;
+            return (
+              <button
+                key={id}
+                onClick={() => onNavChange(id)}
+                className="flex flex-col items-center justify-center flex-1 h-full gap-0.5 relative"
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-pill"
+                    className="absolute inset-x-1 inset-y-1.5 rounded-2xl bg-gold-100"
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <Icon
+                  className={`w-5 h-5 relative z-10 transition-colors duration-200 ${
+                    isActive ? 'text-gold-600' : 'text-charcoal-400'
+                  }`}
+                  strokeWidth={isActive ? 2.2 : 1.8}
+                />
+                <span
+                  className={`text-[10px] font-medium relative z-10 transition-colors duration-200 ${
+                    isActive ? 'text-gold-600' : 'text-charcoal-400'
+                  }`}
+                >
+                  {label}
+                </span>
+              </button>
+            );
+          })}
         </div>
-
-        {/* Logout button */}
-        {onLogout && (
-          <button
-            onClick={onLogout}
-            className="p-2 text-charcoal-400 hover:text-red-500 transition rounded-lg"
-            title={HE.nav.logout}
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
-        )}
-      </div>
-    </nav>
+      </nav>
+    </div>
   );
 };
-

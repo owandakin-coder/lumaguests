@@ -12,49 +12,29 @@ export const AddGuest = ({ onSuccess, onCancel }: AddGuestProps) => {
   const auth = useSupabaseAuth();
 
   const handleSubmit = async (data: CreateGuestInput) => {
-    if (!auth.user) {
-      throw new Error('Not authenticated');
-    }
+    if (!auth.user) throw new Error('לא מחובר');
 
-    const hasDuplicate = await guestService.checkDuplicatePhone(
-      data.phone,
-      auth.user.id
-    );
+    const hasDuplicate = await guestService.checkDuplicatePhone(data.phone, auth.user.id);
+    if (hasDuplicate) throw new Error('מוזמן עם מספר טלפון זה כבר קיים');
 
-    if (hasDuplicate) {
-      throw new Error('A guest with this phone number already exists');
-    }
+    await guestService.create({
+      full_name: data.fullName,
+      phone: data.phone,
+      companions: data.companions,
+      category: data.category,
+      rsvp_status: data.rsvpStatus,
+      notes: data.notes,
+      user_id: auth.user.id,
+    });
 
-    try {
-      await guestService.create({
-        full_name: data.fullName,
-        phone: data.phone,
-        companions: data.companions,
-        category: data.category,
-        rsvp_status: data.rsvpStatus,
-        notes: data.notes,
-        user_id: auth.user.id,
-      });
-
-      onSuccess();
-    } catch (error) {
-      console.error('Add guest error:', error);
-      throw error;
-    }
+    onSuccess();
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-charcoal-900">Add New Guest</h1>
-        <p className="text-charcoal-600 mt-2">
-          Fill in the details below to add a new guest
-        </p>
-      </div>
-
-      <div className="bg-white rounded-2xl p-8 border border-charcoal-100">
-        <GuestForm onSubmit={handleSubmit} onCancel={onCancel} />
-      </div>
-    </div>
+    <GuestForm
+      onSubmit={handleSubmit}
+      onCancel={onCancel}
+      title="הוספת מוזמן"
+    />
   );
 };

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Phone, MessageCircle, Edit2, Trash2, ChevronRight } from 'lucide-react';
+import { Phone, MessageCircle, ChevronLeft } from 'lucide-react';
 import { Guest, RsvpStatus } from '../types';
 
 interface GuestCardProps {
@@ -9,31 +9,47 @@ interface GuestCardProps {
   onView: (guest: Guest) => void;
 }
 
-const rsvpColors: Record<RsvpStatus, { badge: string; text: string }> = {
-  CONFIRMED: { badge: 'bg-green-100 text-green-700', text: 'text-green-600' },
-  PENDING: { badge: 'bg-amber-100 text-amber-700', text: 'text-amber-600' },
-  DECLINED: { badge: 'bg-gray-100 text-gray-700', text: 'text-gray-600' },
+const rsvpBadge: Record<RsvpStatus, { label: string; cls: string }> = {
+  CONFIRMED: { label: 'אישר',      cls: 'bg-emerald-100 text-emerald-700' },
+  PENDING:   { label: 'ממתין',     cls: 'bg-amber-100 text-amber-700'     },
+  DECLINED:  { label: 'לא מגיע',  cls: 'bg-red-50 text-red-500'          },
 };
 
-const categoryColors: Record<string, string> = {
-  GROOM: 'bg-gold-100 text-gold-700',
-  BRIDE: 'bg-pink-100 text-pink-700',
-  FAMILY: 'bg-blue-100 text-blue-700',
-  FRIENDS: 'bg-purple-100 text-purple-700',
-  WORK: 'bg-slate-100 text-slate-700',
-  OTHER: 'bg-gray-100 text-gray-700',
+const categoryLabels: Record<string, string> = {
+  GROOM: 'חתן', BRIDE: 'כלה', FAMILY: 'משפחה',
+  FRIENDS: 'חברים', WORK: 'עבודה', OTHER: 'אחר',
 };
 
-export const GuestCard = ({ guest, onEdit, onDelete, onView }: GuestCardProps) => {
+const avatarColors = [
+  'bg-gold-200 text-gold-800',
+  'bg-blue-100 text-blue-700',
+  'bg-purple-100 text-purple-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-pink-100 text-pink-700',
+];
+
+function getInitials(name: string) {
+  return name.trim().split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+}
+
+function avatarColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return avatarColors[Math.abs(hash) % avatarColors.length];
+}
+
+export const GuestCard = ({ guest, onView }: GuestCardProps) => {
   const fullName = guest.fullName || guest.full_name;
   const rsvpStatus = guest.rsvpStatus || guest.rsvp_status;
+  const badge = rsvpBadge[rsvpStatus];
+  const initials = getInitials(fullName);
+  const ac = avatarColor(fullName);
 
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const message = `Hello ${fullName}! I wanted to reach out regarding the event.`;
-    const encodedMessage = encodeURIComponent(message);
+    const msg = encodeURIComponent(`שלום ${fullName}! רצינו ליצור איתך קשר לגבי האירוע.`);
     const phone = guest.phone.replace(/\D/g, '');
-    window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
+    window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
   };
 
   const handleCall = (e: React.MouseEvent) => {
@@ -41,88 +57,52 @@ export const GuestCard = ({ guest, onEdit, onDelete, onView }: GuestCardProps) =
     window.location.href = `tel:${guest.phone}`;
   };
 
-  const rsvpColor = rsvpColors[rsvpStatus];
-
   return (
     <motion.div
-      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.99 }}
       onClick={() => onView(guest)}
-      className="bg-white border border-charcoal-200 rounded-2xl p-6 hover:shadow-lg transition-all cursor-pointer group"
+      className="bg-white rounded-2xl px-4 py-3.5 cursor-pointer active:bg-charcoal-50 transition-colors"
+      style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-charcoal-900">{fullName}</h3>
-          <p className="text-sm text-charcoal-600 mt-1">{guest.phone}</p>
+      <div className="flex items-center gap-3">
+        {/* Avatar */}
+        <div className={`w-11 h-11 rounded-2xl ${ac} flex items-center justify-center text-sm font-bold flex-shrink-0`}>
+          {initials}
         </div>
-        <ChevronRight className="w-5 h-5 text-charcoal-400 group-hover:text-gold-500 transition" />
-      </div>
 
-      {/* Badges */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
-        <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full ${categoryColors[guest.category]}`}>
-          {guest.category}
-        </span>
-        <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full ${rsvpColor.badge}`}>
-          {rsvpStatus}
-        </span>
-      </div>
-
-      {/* Details */}
-      <div className="grid grid-cols-2 gap-3 mb-4 pb-4 border-b border-charcoal-100">
-        <div>
-          <p className="text-xs text-charcoal-500 font-medium">Companions</p>
-          <p className="text-sm font-semibold text-charcoal-900 mt-1">{guest.companions}</p>
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <p className="text-sm font-semibold text-charcoal-900 truncate">{fullName}</p>
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${badge.cls}`}>
+              {badge.label}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-charcoal-400" dir="ltr">{guest.phone}</span>
+            <span className="text-charcoal-200">·</span>
+            <span className="text-xs text-charcoal-400">{categoryLabels[guest.category]}</span>
+            <span className="text-charcoal-200">·</span>
+            <span className="text-xs text-charcoal-400">{1 + guest.companions} איש</span>
+          </div>
         </div>
-        <div>
-          <p className="text-xs text-charcoal-500 font-medium">Total People</p>
-          <p className="text-sm font-semibold text-charcoal-900 mt-1">{1 + guest.companions}</p>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <button
+            onClick={handleWhatsApp}
+            className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center active:scale-90 transition-transform"
+          >
+            <MessageCircle className="w-4 h-4 text-emerald-600" strokeWidth={2} />
+          </button>
+          <button
+            onClick={handleCall}
+            className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center active:scale-90 transition-transform"
+          >
+            <Phone className="w-4 h-4 text-blue-600" strokeWidth={2} />
+          </button>
+          <ChevronLeft className="w-4 h-4 text-charcoal-300" />
         </div>
-      </div>
-
-      {/* Notes */}
-      {guest.notes && (
-        <p className="text-sm text-charcoal-600 mb-4 line-clamp-2 italic">"{guest.notes}"</p>
-      )}
-
-      {/* Actions */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={handleCall}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-charcoal-900 text-white hover:bg-charcoal-800 transition text-sm font-medium"
-          title="Call"
-        >
-          <Phone className="w-4 h-4" />
-          <span className="hidden sm:inline">Call</span>
-        </button>
-        <button
-          onClick={handleWhatsApp}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition text-sm font-medium"
-          title="WhatsApp"
-        >
-          <MessageCircle className="w-4 h-4" />
-          <span className="hidden sm:inline">WhatsApp</span>
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit(guest);
-          }}
-          className="p-2 rounded-lg hover:bg-gold-100 transition text-gold-600"
-          title="Edit"
-        >
-          <Edit2 className="w-4 h-4" />
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(guest);
-          }}
-          className="p-2 rounded-lg hover:bg-red-100 transition text-red-600"
-          title="Delete"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
       </div>
     </motion.div>
   );

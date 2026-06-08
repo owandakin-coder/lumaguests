@@ -1,66 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
+
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
 * {
-  @apply border-charcoal-200;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
-  @apply scroll-smooth;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  @apply bg-ivory-50 text-charcoal-900 font-sans;
-  font-feature-settings: 'rlig' 1, 'calt' 1;
+  @apply bg-ivory-100 text-charcoal-900;
+  font-family: 'Rubik', 'Segoe UI', system-ui, sans-serif;
+  direction: rtl;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
 }
 
 button {
   @apply transition-all duration-200;
+  cursor: pointer;
 }
 
-input,
-textarea,
-select {
+input, textarea, select {
   @apply transition-colors duration-200;
+  font-family: inherit;
 }
+
+/* Phone fields should be LTR */
+input[type="tel"] {
+  direction: ltr;
+  text-align: right;
+}
+
+/* Safe area support */
+.safe-top    { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
 /* Animations */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
-
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+.animate-fade-in  { animation: fadeIn  0.25s ease-out both; }
+.animate-slide-up { animation: slideUp 0.3s  ease-out both; }
+.animate-scale-in { animation: scaleIn 0.25s ease-out both; }
 
-::-webkit-scrollbar-track {
-  @apply bg-ivory-50;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-charcoal-200 rounded-full hover:bg-charcoal-400;
-}
+/* Scrollbar */
+::-webkit-scrollbar       { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply bg-charcoal-200 rounded-full; }
 
 /* Selection */
-::selection {
-  @apply bg-gold-200 text-charcoal-900;
+::selection { @apply bg-gold-200 text-charcoal-900; }
+
+/* Glass nav */
+.glass-nav {
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
