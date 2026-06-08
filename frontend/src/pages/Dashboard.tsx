@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Users, CheckCircle, Clock, XCircle, MessageCircle, Upload } from 'lucide-react';
+import { Plus, Users, CheckCircle, Clock, XCircle, ChevronLeft } from 'lucide-react';
 import { Guest, RsvpStatus } from '../types';
 
 interface DashboardProps {
@@ -11,166 +11,185 @@ interface DashboardProps {
   onViewGuest: (guest: Guest) => void;
 }
 
-const rsvpBadge: Record<RsvpStatus, { label: string; cls: string }> = {
-  CONFIRMED: { label: 'אישר',     cls: 'bg-emerald-100 text-emerald-700' },
-  PENDING:   { label: 'ממתין',    cls: 'bg-amber-100 text-amber-700'     },
-  DECLINED:  { label: 'לא מגיע', cls: 'bg-red-50 text-red-500'          },
+const rsvpBadge: Record<RsvpStatus, { label: string; dot: string }> = {
+  CONFIRMED: { label: 'אישר',     dot: 'bg-emerald-500' },
+  PENDING:   { label: 'ממתין',    dot: 'bg-amber-400'   },
+  DECLINED:  { label: 'לא מגיע', dot: 'bg-red-400'     },
 };
 
-const avatarColors = [
-  'bg-gold-200 text-gold-800', 'bg-blue-100 text-blue-700',
-  'bg-purple-100 text-purple-700', 'bg-emerald-100 text-emerald-700',
-  'bg-pink-100 text-pink-700', 'bg-orange-100 text-orange-700',
+const avatarPalette = [
+  ['#FDE68A','#92400E'], ['#BFDBFE','#1E40AF'],
+  ['#DDD6FE','#5B21B6'], ['#A7F3D0','#065F46'],
+  ['#FBCFE8','#9D174D'], ['#FED7AA','#9A3412'],
 ];
 
-function getInitials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0][0]?.toUpperCase() || '?';
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+function initials(name: string) {
+  const p = name.trim().split(/\s+/).filter(Boolean);
+  if (!p.length) return '?';
+  return p.length === 1 ? p[0][0].toUpperCase() : (p[0][0] + p[p.length-1][0]).toUpperCase();
+}
+function palette(name: string) {
+  let h = 0; for (const c of name) h = c.charCodeAt(0) + ((h << 5) - h);
+  return avatarPalette[Math.abs(h) % avatarPalette.length];
 }
 
-function avatarColor(name: string) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return avatarColors[Math.abs(hash) % avatarColors.length];
+/* Circular SVG ring */
+function Ring({ pct, total }: { pct: number; total: number }) {
+  const r = 54, circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
+  return (
+    <div className="relative flex items-center justify-center" style={{ width: 148, height: 148 }}>
+      <svg width="148" height="148" className="-rotate-90" viewBox="0 0 148 148">
+        <circle cx="74" cy="74" r={r} fill="none" stroke="#F0EDE8" strokeWidth="10" />
+        <motion.circle
+          cx="74" cy="74" r={r} fill="none"
+          stroke="#1A1916" strokeWidth="10"
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          initial={{ strokeDashoffset: circ }}
+          animate={{ strokeDashoffset: circ - dash }}
+          transition={{ duration: 1.2, ease: 'easeOut', delay: 0.4 }}
+        />
+      </svg>
+      <div className="absolute flex flex-col items-center">
+        <span className="text-[38px] font-bold text-charcoal-900 leading-none">{total}</span>
+        <span className="text-[11px] text-charcoal-400 font-medium mt-0.5">מוזמנים</span>
+      </div>
+    </div>
+  );
 }
 
-const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
-const item    = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.25 } } };
+const fade = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { duration: 0.22 } } };
+const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
 
 export const Dashboard = ({ guests, loading, onAddGuest, onViewGuests, onViewGuest }: DashboardProps) => {
-  const stats = useMemo(() => {
-    const confirmed  = guests.filter((g) => (g.rsvpStatus || g.rsvp_status) === 'CONFIRMED').length;
-    const pending    = guests.filter((g) => (g.rsvpStatus || g.rsvp_status) === 'PENDING').length;
-    const declined   = guests.filter((g) => (g.rsvpStatus || g.rsvp_status) === 'DECLINED').length;
+  const s = useMemo(() => {
+    const confirmed  = guests.filter(g => (g.rsvpStatus||g.rsvp_status) === 'CONFIRMED').length;
+    const pending    = guests.filter(g => (g.rsvpStatus||g.rsvp_status) === 'PENDING').length;
+    const declined   = guests.filter(g => (g.rsvpStatus||g.rsvp_status) === 'DECLINED').length;
     const total      = guests.length;
-    const totalPeople = guests.reduce((s, g) => s + 1 + (g.companions || 0), 0);
-    const pct = total > 0 ? Math.round((confirmed / total) * 100) : 0;
-    return { confirmed, pending, declined, total, totalPeople, pct };
+    const people     = guests.reduce((s,g) => s + 1 + (g.companions||0), 0);
+    const pct        = total > 0 ? Math.round((confirmed/total)*100) : 0;
+    return { confirmed, pending, declined, total, people, pct };
   }, [guests]);
 
-  const recentGuests = useMemo(() =>
-    [...guests]
-      .sort((a, b) => new Date(b.createdAt || b.created_at || 0).getTime() - new Date(a.createdAt || a.created_at || 0).getTime())
-      .slice(0, 3),
-    [guests]
+  const recent = useMemo(() =>
+    [...guests].sort((a,b) =>
+      new Date(b.createdAt||b.created_at||0).getTime() - new Date(a.createdAt||a.created_at||0).getTime()
+    ).slice(0,3), [guests]);
+
+  const dow = new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  if (loading) return (
+    <div className="space-y-4 pt-2 animate-pulse">
+      <div className="h-5 w-40 bg-charcoal-100 rounded-full" />
+      <div className="h-64 bg-white rounded-3xl" />
+      <div className="grid grid-cols-3 gap-2.5">
+        {[1,2,3].map(i => <div key={i} className="h-20 bg-white rounded-2xl" />)}
+      </div>
+    </div>
   );
 
-  const today = new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
-
   return (
-    <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
+    <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5 pt-1">
 
-      {/* Greeting */}
-      <motion.div variants={item} className="pt-1">
-        <p className="text-xs text-charcoal-400 font-medium mb-1">{today}</p>
-        <h1 className="text-3xl font-bold text-charcoal-900 leading-tight">שלום 👋</h1>
-        <p className="text-sm text-charcoal-400 mt-0.5">האירוע שלך מתקדם יפה</p>
+      {/* Header */}
+      <motion.div variants={fade} className="flex items-start justify-between">
+        <div>
+          <p className="text-[12px] text-charcoal-400 font-medium">{dow}</p>
+          <h1 className="text-[26px] font-bold text-charcoal-900 leading-tight mt-0.5">האירוע שלך</h1>
+        </div>
+        <button
+          onClick={onAddGuest}
+          className="flex items-center gap-1.5 bg-charcoal-900 text-white text-[13px] font-semibold px-4 py-2.5 rounded-2xl active:scale-95 transition-transform"
+        >
+          <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+          הוסף
+        </button>
       </motion.div>
 
-      {/* Hero card */}
-      <motion.div variants={item} className="bg-white rounded-3xl p-5" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
-        {loading ? (
-          <div className="space-y-3 animate-pulse">
-            <div className="h-4 w-28 bg-charcoal-100 rounded-full" />
-            <div className="h-10 w-14 bg-charcoal-100 rounded-full" />
-            <div className="h-2 bg-charcoal-100 rounded-full" />
-            <div className="h-12 bg-charcoal-100 rounded-2xl" />
-          </div>
-        ) : (
-          <>
-            <div className="flex items-end justify-between mb-3">
-              <div>
-                <p className="text-xs text-charcoal-400 font-medium mb-0.5">סך הכל מוזמנים</p>
-                <p className="text-4xl font-bold text-charcoal-900 leading-none">{stats.total}</p>
-              </div>
-              <div className="text-left pb-1">
-                <p className="text-xs text-charcoal-400 font-medium mb-0.5 text-left">אישרו הגעה</p>
-                <p className="text-2xl font-bold text-emerald-600 leading-none">{stats.pct}%</p>
-              </div>
-            </div>
+      {/* Hero — ring + stats side by side */}
+      <motion.div
+        variants={fade}
+        className="bg-white rounded-3xl p-5"
+        style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}
+      >
+        <div className="flex items-center gap-5">
+          <Ring pct={s.pct} total={s.total} />
 
-            {/* Progress bar */}
-            <div className="h-1.5 bg-charcoal-100 rounded-full overflow-hidden mb-4">
-              <motion.div
-                className="h-full rounded-full bg-emerald-500"
-                initial={{ width: 0 }}
-                animate={{ width: `${stats.pct}%` }}
-                transition={{ duration: 0.9, ease: 'easeOut', delay: 0.3 }}
-              />
-            </div>
-
-            <button
-              onClick={onAddGuest}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-charcoal-900 text-white text-[15px] font-semibold active:scale-[0.98] transition-transform"
-            >
-              <Plus className="w-4 h-4" strokeWidth={2.5} />
-              הוסף מוזמן
-            </button>
-          </>
-        )}
-      </motion.div>
-
-      {/* Stats grid — 2×2 compact */}
-      <motion.div variants={item} className="grid grid-cols-2 gap-3">
-        {[
-          { label: 'אישרו הגעה', value: stats.confirmed,   icon: CheckCircle, iconCls: 'text-emerald-600', bgCls: 'bg-emerald-50' },
-          { label: 'ממתינים',    value: stats.pending,     icon: Clock,       iconCls: 'text-amber-600',   bgCls: 'bg-amber-50'   },
-          { label: 'לא מגיעים', value: stats.declined,    icon: XCircle,     iconCls: 'text-red-500',     bgCls: 'bg-red-50'     },
-          { label: 'סך אנשים',  value: stats.totalPeople, icon: Users,       iconCls: 'text-blue-600',    bgCls: 'bg-blue-50'    },
-        ].map(({ label, value, icon: Icon, iconCls, bgCls }) => (
-          <div key={label} className="bg-white rounded-2xl p-4" style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.05)' }}>
-            {loading ? (
-              <div className="animate-pulse space-y-2">
-                <div className="h-7 w-7 bg-charcoal-100 rounded-xl" />
-                <div className="h-6 w-8 bg-charcoal-100 rounded-full" />
-                <div className="h-3 w-14 bg-charcoal-100 rounded-full" />
-              </div>
-            ) : (
-              <>
-                <div className={`w-7 h-7 rounded-xl ${bgCls} flex items-center justify-center mb-2.5`}>
-                  <Icon className={`w-3.5 h-3.5 ${iconCls}`} strokeWidth={2.2} />
+          <div className="flex-1 space-y-3">
+            {[
+              { icon: CheckCircle, label: 'אישרו', value: s.confirmed, color: '#10B981' },
+              { icon: Clock,       label: 'ממתינים', value: s.pending,  color: '#F59E0B' },
+              { icon: XCircle,     label: 'לא מגיעים', value: s.declined, color: '#F87171' },
+              { icon: Users,       label: 'סך אנשים', value: s.people,  color: '#60A5FA' },
+            ].map(({ icon: Icon, label, value, color }) => (
+              <div key={label} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Icon style={{ color }} className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.2} />
+                  <span className="text-[12px] text-charcoal-500 font-medium">{label}</span>
                 </div>
-                <p className="text-[22px] font-bold text-charcoal-900 leading-none mb-1">{value}</p>
-                <p className="text-[11px] text-charcoal-400 font-medium">{label}</p>
-              </>
-            )}
+                <span className="text-[15px] font-bold text-charcoal-900">{value}</span>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {/* Progress bar with label */}
+        <div className="mt-4 pt-4 border-t border-charcoal-100/60">
+          <div className="flex justify-between mb-1.5">
+            <span className="text-[11px] text-charcoal-400">אחוז אישורים</span>
+            <span className="text-[11px] font-bold text-charcoal-700">{s.pct}%</span>
+          </div>
+          <div className="h-1.5 bg-charcoal-100 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-charcoal-900 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${s.pct}%` }}
+              transition={{ duration: 1, ease: 'easeOut', delay: 0.5 }}
+            />
+          </div>
+        </div>
       </motion.div>
 
       {/* Recent guests */}
-      {!loading && recentGuests.length > 0 && (
-        <motion.div variants={item}>
-          <div className="flex items-center justify-between mb-2.5">
-            <h2 className="text-[13px] font-semibold text-charcoal-500 uppercase tracking-wide">מוזמנים אחרונים</h2>
-            <button onClick={onViewGuests} className="text-[13px] text-gold-600 font-medium">הכל ›</button>
+      {recent.length > 0 && (
+        <motion.div variants={fade}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[12px] font-semibold text-charcoal-400 uppercase tracking-widest">אחרונים</span>
+            <button onClick={onViewGuests} className="flex items-center gap-0.5 text-[12px] text-gold-600 font-semibold">
+              כולם <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.05)' }}>
-            {recentGuests.map((guest, idx) => {
-              const name   = guest.fullName || guest.full_name;
-              const rsvp   = guest.rsvpStatus || guest.rsvp_status;
-              const badge  = rsvpBadge[rsvp];
-              const ac     = avatarColor(name);
+
+          <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            {recent.map((g, i) => {
+              const name  = g.fullName || g.full_name;
+              const rsvp  = g.rsvpStatus || g.rsvp_status;
+              const badge = rsvpBadge[rsvp];
+              const [bg, fg] = palette(name);
               return (
                 <button
-                  key={guest.id}
-                  onClick={() => onViewGuest(guest)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-right active:bg-charcoal-50/50 transition-colors ${
-                    idx < recentGuests.length - 1 ? 'border-b border-charcoal-100/60' : ''
+                  key={g.id}
+                  onClick={() => onViewGuest(g)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 active:bg-charcoal-50/40 transition-colors text-right ${
+                    i < recent.length-1 ? 'border-b border-charcoal-100/50' : ''
                   }`}
                 >
-                  <div className={`w-9 h-9 rounded-xl ${ac} flex items-center justify-center text-xs font-bold flex-shrink-0`}>
-                    {getInitials(name)}
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-[12px] font-bold flex-shrink-0"
+                    style={{ background: bg, color: fg }}
+                  >
+                    {initials(name)}
                   </div>
-                  <div className="flex-1 min-w-0 text-right">
+                  <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-semibold text-charcoal-900 truncate">{name}</p>
-                    <p className="text-[11px] text-charcoal-400" dir="ltr">{guest.phone}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                      <span className="text-[11px] text-charcoal-400">{badge.label}</span>
+                    </div>
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${badge.cls}`}>
-                    {badge.label}
-                  </span>
+                  <span className="text-[11px] text-charcoal-400" dir="ltr">{g.phone}</span>
                 </button>
               );
             })}
@@ -178,29 +197,22 @@ export const Dashboard = ({ guests, loading, onAddGuest, onViewGuests, onViewGue
         </motion.div>
       )}
 
-      {/* Quick actions */}
-      <motion.div variants={item}>
-        <h2 className="text-[13px] font-semibold text-charcoal-500 uppercase tracking-wide mb-2.5">פעולות מהירות</h2>
-        <div className="grid grid-cols-3 gap-2.5">
-          {[
-            { label: 'הוסף מוזמן',   icon: Plus,           action: onAddGuest },
-            { label: 'שלח הודעה',    icon: MessageCircle,  action: () => {} },
-            { label: 'ייבא רשימה',   icon: Upload,         action: () => {} },
-          ].map(({ label, icon: Icon, action }) => (
-            <button
-              key={label}
-              onClick={action}
-              className="bg-white rounded-2xl p-3.5 flex flex-col items-center gap-2 active:scale-95 transition-transform"
-              style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.05)' }}
-            >
-              <div className="w-9 h-9 rounded-2xl bg-charcoal-50 flex items-center justify-center">
-                <Icon className="w-4.5 h-4.5 text-charcoal-600" strokeWidth={1.8} />
-              </div>
-              <span className="text-[11px] font-semibold text-charcoal-600 text-center leading-tight">{label}</span>
-            </button>
-          ))}
-        </div>
-      </motion.div>
+      {/* Empty state CTA */}
+      {!loading && guests.length === 0 && (
+        <motion.div variants={fade} className="flex flex-col items-center py-10 text-center">
+          <div className="w-16 h-16 rounded-3xl bg-charcoal-100 flex items-center justify-center mb-4">
+            <Users className="w-7 h-7 text-charcoal-300" strokeWidth={1.5} />
+          </div>
+          <p className="text-[16px] font-semibold text-charcoal-700 mb-1">אין מוזמנים עדיין</p>
+          <p className="text-[13px] text-charcoal-400 mb-5">הוסף את המוזמן הראשון שלך</p>
+          <button
+            onClick={onAddGuest}
+            className="px-6 py-3 rounded-2xl bg-charcoal-900 text-white text-[14px] font-semibold active:scale-95 transition-transform"
+          >
+            הוסף מוזמן
+          </button>
+        </motion.div>
+      )}
 
     </motion.div>
   );
