@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique @db.VarChar(255)
+  password  String     @db.Text
+  name      String?    @db.VarChar(255)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  guests    Guest[]
+
+  @@index([email])
+}
+
+model Guest {
+  id        String     @id @default(uuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName  String     @db.VarChar(255)
+  phone     String     @db.VarChar(20)
+  companions Int        @default(0)
+  category  Category   @default(OTHER)
+  rsvpStatus RsvpStatus @default(PENDING)
+  notes     String?    @db.Text
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([userId, phone])
+  @@index([phone])
+  @@index([category])
+  @@index([rsvpStatus])
+  @@index([userId])
+}
+
+enum Category {
+  GROOM
+  BRIDE
+  FAMILY
+  FRIENDS
+  WORK
+  OTHER
+}
+
+enum RsvpStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+}
