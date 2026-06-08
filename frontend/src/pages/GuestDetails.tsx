@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Phone, MessageCircle, Edit2, Trash2, Calendar } from 'lucide-react';
+import { ArrowLeft, Phone, MessageCircle, Edit2, Trash2 } from 'lucide-react';
 import { Guest } from '../types';
 import { guestService } from '../services/supabase';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
@@ -154,13 +154,13 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
           <div>
             <p className="text-xs text-charcoal-500 font-medium uppercase tracking-wide">Added</p>
             <p className="text-sm font-semibold text-charcoal-900 mt-2">
-              {new Date(guest.createdAt || guest.created_at).toLocaleDateString()}
+              {new Date(guest.createdAt || guest.created_at || new Date()).toLocaleDateString()}
             </p>
           </div>
           <div>
             <p className="text-xs text-charcoal-500 font-medium uppercase tracking-wide">Updated</p>
             <p className="text-sm font-semibold text-charcoal-900 mt-2">
-              {new Date(guest.updatedAt || guest.updated_at).toLocaleDateString()}
+              {new Date(guest.updatedAt || guest.updated_at || new Date()).toLocaleDateString()}
             </p>
           </div>
         </div>

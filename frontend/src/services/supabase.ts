@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = (import.meta.env as any).VITE_SUPABASE_URL;
+const supabaseAnonKey = (import.meta.env as any).VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
@@ -46,7 +46,7 @@ export const authService = {
   onAuthStateChange: (callback: (user: any) => void) => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       callback(session?.user || null);
     });
     return subscription;
@@ -143,3 +143,4 @@ export const guestService = {
     return stats;
   },
 };
+

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase, authService } from '../services/supabase';
+import { authService } from '../services/supabase';
 
 interface User {
   id: string;

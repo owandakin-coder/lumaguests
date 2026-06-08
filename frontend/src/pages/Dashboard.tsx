@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { StatsCard } from '../components/StatsCard';
-import { Guest, Stats } from '../types';
+import { Stats } from '../types';
 import { guestService } from '../services/supabase';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
