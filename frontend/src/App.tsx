@@ -69,7 +69,6 @@ function App() {
 
   const handleConfirmDelete = async () => {
     if (!deletingGuest || !auth.user) return;
-
     try {
       setIsDeleteLoading(true);
       await guestService.delete(deletingGuest.id, auth.user.id);
@@ -180,7 +179,6 @@ function App() {
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
 
-  // Show loading state
   if (auth.isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-ivory-50 to-warmWhite-100 flex items-center justify-center">
@@ -191,7 +189,6 @@ function App() {
     );
   }
 
-  // Show auth page if not authenticated
   if (!auth.isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-ivory-50 to-warmWhite-100 flex items-center justify-center p-4">
@@ -200,7 +197,6 @@ function App() {
             <h1 className="text-5xl font-bold text-charcoal-900 mb-2">Luma Guests</h1>
             <p className="text-charcoal-600">Premium guest-list management</p>
           </div>
-
           {authPage === 'login' ? (
             <Login
               onSuccess={handleLoginSuccess}
@@ -214,7 +210,6 @@ function App() {
               onRegister={auth.register}
             />
           )}
-
           <div className="mt-8 p-4 bg-gold-50 rounded-lg border border-gold-200">
             <p className="text-xs text-charcoal-600 text-center">
               <strong>Demo Credentials:</strong>
@@ -229,10 +224,8 @@ function App() {
     );
   }
 
-  // Show main app when authenticated
   return (
     <div className="min-h-screen bg-gradient-to-br from-ivory-50 to-warmWhite-100">
-      {/* Header */}
       <header className="sticky top-0 z-40 bg-white bg-opacity-95 backdrop-blur border-b border-charcoal-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-charcoal-900">Luma Guests</h1>
@@ -247,8 +240,6 @@ function App() {
               <LogOut className="w-5 h-5" />
               <span className="hidden sm:inline text-sm">Logout</span>
             </button>
-
-            {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden p-2 text-charcoal-600 hover:text-charcoal-900"
@@ -258,9 +249,7 @@ function App() {
           </div>
         </div>
       </header>
-
       <div className="flex flex-col lg:flex-row min-h-[calc(100vh-80px)]">
-        {/* Sidebar Navigation */}
         <nav
           className={`lg:w-64 bg-white border-r border-charcoal-100 p-4 space-y-2 transition-all duration-300 ${
             mobileMenuOpen ? 'block' : 'hidden lg:block'
@@ -284,8 +273,6 @@ function App() {
             </button>
           ))}
         </nav>
-
-        {/* Main Content */}
         <main className="flex-1 p-4 sm:p-6 overflow-auto max-w-7xl w-full mx-auto">
           <motion.div
             key={currentPage}
@@ -298,8 +285,6 @@ function App() {
           </motion.div>
         </main>
       </div>
-
-      {/* Delete Confirmation Modal */}
       <ConfirmDeleteModal
         guest={deletingGuest}
         isOpen={!!deletingGuest}
@@ -307,8 +292,6 @@ function App() {
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeletingGuest(null)}
       />
-
-      {/* Toast Container */}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
