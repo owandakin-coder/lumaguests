@@ -37,6 +37,16 @@ export const authService = {
     if (error) throw error;
   },
 
+  updateEmail: async (email: string) => {
+    const { error } = await supabase.auth.updateUser({ email });
+    if (error) throw error;
+  },
+
+  updatePassword: async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+  },
+
   getCurrentUser: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error) throw error;
