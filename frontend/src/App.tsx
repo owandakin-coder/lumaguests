@@ -1,33 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { Dashboard } from './pages/Dashboard';
-import { GuestList } from './pages/GuestList';
-import { AddGuest } from './pages/AddGuest';
-import { EditGuest } from './pages/EditGuest';
-import { GuestDetails } from './pages/GuestDetails';
-import { Settings } from './pages/Settings';
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
-import { MobileBottomNav } from './components/MobileBottomNav';
+import { Dashboard }          from './pages/Dashboard';
+import { GuestList }          from './pages/GuestList';
+import { AddGuest }           from './pages/AddGuest';
+import { EditGuest }          from './pages/EditGuest';
+import { GuestDetails }       from './pages/GuestDetails';
+import { Settings }           from './pages/Settings';
+import { Messages }           from './pages/Messages';
+import { Login }              from './pages/Login';
+import { Register }           from './pages/Register';
+import { MobileBottomNav }    from './components/MobileBottomNav';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
-import { ToastContainer } from './components/Toast';
-import { useToast } from './hooks/useToast';
-import { useSupabaseAuth } from './hooks/useSupabaseAuth';
-import { Guest } from './types';
+import { ToastContainer }     from './components/Toast';
+import { useToast }           from './hooks/useToast';
+import { useSupabaseAuth }    from './hooks/useSupabaseAuth';
+import { Guest }              from './types';
 import { guestService, authService } from './services/supabase';
 
-type Page = 'dashboard' | 'guests' | 'add' | 'edit' | 'details' | 'settings' | 'messages';
+type Page     = 'dashboard' | 'guests' | 'add' | 'edit' | 'details' | 'settings' | 'messages';
 type AuthPage = 'login' | 'register';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
-  const [authPage, setAuthPage] = useState<AuthPage>('login');
-  const [guests, setGuests] = useState<Guest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [currentPage,  setCurrentPage]  = useState<Page>('dashboard');
+  const [authPage,     setAuthPage]     = useState<AuthPage>('login');
+  const [guests,       setGuests]       = useState<Guest[]>([]);
+  const [loading,      setLoading]      = useState(true);
   const [editingGuest, setEditingGuest] = useState<Guest | null>(null);
   const [viewingGuest, setViewingGuest] = useState<Guest | null>(null);
-  const [deletingGuest, setDeletingGuest] = useState<Guest | null>(null);
+  const [deletingGuest,setDeletingGuest]= useState<Guest | null>(null);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
   const auth = useSupabaseAuth();
@@ -51,17 +52,22 @@ function App() {
     }
   };
 
-  const handleAddGuest = () => setCurrentPage('add');
-  const handleEditGuest = (guest: Guest) => { setEditingGuest(guest); setCurrentPage('edit'); };
+  const pendingCount = useMemo(
+    () => guests.filter(g => (g.rsvpStatus || g.rsvp_status) === 'PENDING').length,
+    [guests]
+  );
+
+  const handleAddGuest    = () => setCurrentPage('add');
+  const handleEditGuest   = (guest: Guest) => { setEditingGuest(guest); setCurrentPage('edit'); };
   const handleDeleteGuest = (guest: Guest) => setDeletingGuest(guest);
-  const handleViewGuest = (guest: Guest) => { setViewingGuest(guest); setCurrentPage('details'); };
+  const handleViewGuest   = (guest: Guest) => { setViewingGuest(guest); setCurrentPage('details'); };
 
   const handleConfirmDelete = async () => {
     if (!deletingGuest || !auth.user) return;
     try {
       setIsDeleteLoading(true);
       await guestService.delete(deletingGuest.id, auth.user.id);
-      setGuests((prev) => prev.filter((g) => g.id !== deletingGuest.id));
+      setGuests(prev => prev.filter(g => g.id !== deletingGuest.id));
       const name = deletingGuest.fullName || deletingGuest.full_name;
       addToast(`${name} נמחק בהצלחה`, 'success');
       setDeletingGuest(null);
@@ -131,6 +137,8 @@ function App() {
             onViewGuest={handleViewGuest}
           />
         );
+      case 'messages':
+        return <Messages guests={guests} />;
       case 'add':
         return <AddGuest onSuccess={handleAddSuccess} onCancel={handleBackToGuests} />;
       case 'edit':
@@ -152,16 +160,6 @@ function App() {
         ) : null;
       case 'settings':
         return <Settings onLogout={handleLogout} userEmail={auth.user?.email} />;
-      case 'messages':
-        return (
-          <div className="flex flex-col items-center justify-center h-64 text-charcoal-400 gap-3 mt-16">
-            <div className="w-16 h-16 rounded-3xl bg-charcoal-100 flex items-center justify-center">
-              <span className="text-3xl">💬</span>
-            </div>
-            <p className="text-base font-semibold text-charcoal-700">הודעות — בקרוב</p>
-            <p className="text-sm text-charcoal-400 text-center">אפשרות שליחת הודעות תתווסף בגרסה הבאה</p>
-          </div>
-        );
       default:
         return null;
     }
@@ -200,15 +198,12 @@ function App() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="min-h-screen bg-ivory-100 flex items-center justify-center p-5"
             >
-              <div className="w-full max-w-sm">
-                <Register
-                  onSuccess={handleRegisterSuccess}
-                  onSwitchToLogin={() => setAuthPage('login')}
-                  onRegister={auth.register}
-                />
-              </div>
+              <Register
+                onSuccess={handleRegisterSuccess}
+                onSwitchToLogin={() => setAuthPage('login')}
+                onRegister={auth.register}
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -221,7 +216,10 @@ function App() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-ivory-100">
-      <main className="max-w-[430px] mx-auto px-5 pb-32" style={{paddingTop:"calc(env(safe-area-inset-top) + 16px)"}}>
+      <main
+        className="max-w-[430px] mx-auto px-5 pb-32"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 16px)' }}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPage}
@@ -238,7 +236,9 @@ function App() {
       {!isSubPage && (
         <MobileBottomNav
           currentPage={currentPage}
-          onNavChange={(page) => setCurrentPage(page as Page)}
+          onNavChange={page => setCurrentPage(page as Page)}
+          pendingCount={pendingCount}
+          messageCount={pendingCount}
         />
       )}
 

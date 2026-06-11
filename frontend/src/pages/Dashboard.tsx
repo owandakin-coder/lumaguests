@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Users, CheckCircle, Clock, XCircle, ChevronLeft } from 'lucide-react';
-import { Guest, RsvpStatus } from '../types';
+import { Guest, RsvpStatus, Category } from '../types';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
 interface DashboardProps {
@@ -12,8 +12,19 @@ interface DashboardProps {
   onViewGuest: (guest: Guest) => void;
 }
 
-const rsvpDot: Record<RsvpStatus,string> = { CONFIRMED:'#10B981', PENDING:'#F59E0B', DECLINED:'#F87171' };
-const rsvpLabel: Record<RsvpStatus,string> = { CONFIRMED:'אישר', PENDING:'ממתין', DECLINED:'לא מגיע' };
+const EVENT_KEY = 'luma_event_name';
+
+const rsvpDot: Record<RsvpStatus, string>   = { CONFIRMED:'#10B981', PENDING:'#F59E0B', DECLINED:'#F87171' };
+const rsvpLabel: Record<RsvpStatus, string> = { CONFIRMED:'אישר', PENDING:'ממתין', DECLINED:'לא מגיע' };
+
+const catConfig: { id: Category; label: string; color: string }[] = [
+  { id: 'GROOM',   label: 'חתן',   color: '#C9A84C' },
+  { id: 'BRIDE',   label: 'כלה',   color: '#F9A8D4' },
+  { id: 'FAMILY',  label: 'משפחה', color: '#93C5FD' },
+  { id: 'FRIENDS', label: 'חברים', color: '#C4B5FD' },
+  { id: 'WORK',    label: 'עבודה', color: '#94A3B8' },
+  { id: 'OTHER',   label: 'אחר',   color: '#D1D5DB' },
+];
 
 const avPalette = [
   ['#FDE68A','#92400E'],['#BFDBFE','#1E40AF'],
@@ -23,7 +34,6 @@ const avPalette = [
 function initials(n:string){ const p=n.trim().split(/\s+/).filter(Boolean); return !p.length?'?':p.length===1?p[0][0].toUpperCase():(p[0][0]+p[p.length-1][0]).toUpperCase(); }
 function pal(n:string){ let h=0;for(const c of n)h=c.charCodeAt(0)+((h<<5)-h);return avPalette[Math.abs(h)%avPalette.length]; }
 
-/* Compact ring — 136px */
 function Ring({pct,total,loading}:{pct:number;total:number;loading:boolean}){
   const r=54,circ=2*Math.PI*r;
   if(loading) return <div className="w-[136px] h-[136px] rounded-full bg-charcoal-100 animate-pulse mx-auto"/>;
@@ -51,6 +61,11 @@ const stagger={hidden:{},show:{transition:{staggerChildren:0.055}}};
 
 export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:DashboardProps)=>{
   const auth=useSupabaseAuth();
+  const [eventName, setEventName] = useState('');
+
+  useEffect(() => {
+    setEventName(localStorage.getItem(EVENT_KEY) || '');
+  }, []);
 
   const s=useMemo(()=>{
     const confirmed=guests.filter(g=>(g.rsvpStatus||g.rsvp_status)==='CONFIRMED').length;
@@ -62,23 +77,34 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:Das
     return{confirmed,pending,declined,total,people,pct};
   },[guests]);
 
+  const categoryBreakdown = useMemo(() => {
+    return catConfig
+      .map(c => ({
+        ...c,
+        count: guests.filter(g => g.category === c.id).length,
+      }))
+      .filter(c => c.count > 0);
+  }, [guests]);
+
   const recent=useMemo(()=>
     [...guests].sort((a,b)=>new Date(b.createdAt||b.created_at||0).getTime()-new Date(a.createdAt||a.created_at||0).getTime()).slice(0,3)
   ,[guests]);
 
-  const firstName=auth.user?.email?.split('@')[0]||'';
+  const displayName = auth.user?.email?.split('@')[0] || '';
 
   return(
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
 
-      {/* Greeting — compact, no overlap */}
+      {/* Greeting */}
       <motion.div variants={fade} className="flex items-center justify-between">
         <div>
           <h1 className="text-[26px] font-bold text-charcoal-900 leading-tight">
-            {firstName?`שלום, ${firstName}`:'שלום 👋'}
+            {displayName ? `שלום, ${displayName}` : 'שלום 👋'}
           </h1>
           <p className="text-[12px] text-charcoal-400">
-            {new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'})}
+            {eventName
+              ? `✦ ${eventName}`
+              : new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'})}
           </p>
         </div>
         <button onClick={onAddGuest}
@@ -87,15 +113,12 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:Das
         </button>
       </motion.div>
 
-      {/* Hero card — ring + progress + stats all together */}
+      {/* Hero card — ring + progress + stats */}
       <motion.div variants={fade} className="bg-white rounded-3xl p-4" style={{boxShadow:'0 2px 16px rgba(0,0,0,0.07)'}}>
-
-        {/* Ring */}
         <div className="py-2">
           <Ring pct={s.pct} total={s.total} loading={loading}/>
         </div>
 
-        {/* Progress bar */}
         {!loading&&(
           <div className="mt-3 mb-4">
             <div className="flex justify-between mb-1">
@@ -110,7 +133,7 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:Das
           </div>
         )}
 
-        {/* 2×2 compact stats */}
+        {/* 2×2 stats */}
         <div className="grid grid-cols-2 gap-2">
           {[
             {icon:CheckCircle,label:'אישרו',     value:s.confirmed,color:'#10B981',bg:'#ECFDF5'},
@@ -120,7 +143,11 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:Das
           ].map(({icon:Icon,label,value,color,bg})=>(
             <div key={label} className="rounded-2xl p-3" style={{background:bg}}>
               {loading?(
-                <div className="animate-pulse space-y-1"><div className="h-3.5 w-3.5 rounded bg-charcoal-200"/><div className="h-5 w-7 rounded bg-charcoal-200"/><div className="h-2.5 w-12 rounded bg-charcoal-200"/></div>
+                <div className="animate-pulse space-y-1">
+                  <div className="h-3.5 w-3.5 rounded bg-charcoal-200"/>
+                  <div className="h-5 w-7 rounded bg-charcoal-200"/>
+                  <div className="h-2.5 w-12 rounded bg-charcoal-200"/>
+                </div>
               ):(
                 <>
                   <Icon className="w-3.5 h-3.5 mb-1.5" style={{color}} strokeWidth={2.2}/>
@@ -132,6 +159,34 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:Das
           ))}
         </div>
       </motion.div>
+
+      {/* Category breakdown */}
+      {!loading && categoryBreakdown.length > 0 && (
+        <motion.div variants={fade} className="bg-white rounded-2xl p-4" style={{boxShadow:'0 1px 8px rgba(0,0,0,0.05)'}}>
+          <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-widest mb-3">לפי קטגוריה</p>
+          <div className="space-y-2.5">
+            {categoryBreakdown.map(cat => {
+              const pct = s.total > 0 ? (cat.count / s.total) * 100 : 0;
+              return (
+                <div key={cat.id} className="flex items-center gap-3">
+                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: cat.color }} />
+                  <span className="text-[12px] font-semibold text-charcoal-600 w-14 flex-shrink-0">{cat.label}</span>
+                  <div className="flex-1 h-2 bg-charcoal-100 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full"
+                      style={{ background: cat.color }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.9, ease: 'easeOut', delay: 0.4 }}
+                    />
+                  </div>
+                  <span className="text-[12px] font-bold text-charcoal-700 w-5 text-center flex-shrink-0">{cat.count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
 
       {/* Recent guests */}
       {!loading&&recent.length>0&&(

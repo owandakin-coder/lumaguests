@@ -2,28 +2,46 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Plus, Users } from 'lucide-react';
 import { GuestCard } from '../components/GuestCard';
-import { Guest, RsvpStatus } from '../types';
+import { Guest, RsvpStatus, Category } from '../types';
 
 interface GuestListProps {
   guests:Guest[];loading:boolean;onAddGuest:()=>void;
   onEditGuest:(g:Guest)=>void;onDeleteGuest:(g:Guest)=>void;onViewGuest:(g:Guest)=>void;
 }
 
-const filters:{label:string;value:RsvpStatus|'ALL'}[]=[
+const statusFilters:{label:string;value:RsvpStatus|'ALL'}[]=[
   {label:'הכל',value:'ALL'},{label:'אישרו',value:'CONFIRMED'},
   {label:'ממתינים',value:'PENDING'},{label:'לא מגיעים',value:'DECLINED'},
+];
+
+const categoryFilters:{label:string;value:Category|'ALL';color:string}[]=[
+  {label:'הכל',value:'ALL',color:'#1A1916'},
+  {label:'חתן',value:'GROOM',color:'#C9A84C'},
+  {label:'כלה',value:'BRIDE',color:'#F9A8D4'},
+  {label:'משפחה',value:'FAMILY',color:'#93C5FD'},
+  {label:'חברים',value:'FRIENDS',color:'#C4B5FD'},
+  {label:'עבודה',value:'WORK',color:'#94A3B8'},
+  {label:'אחר',value:'OTHER',color:'#D1D5DB'},
 ];
 
 export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onViewGuest}:GuestListProps)=>{
   const [search,setSearch]=useState('');
   const [status,setStatus]=useState<RsvpStatus|'ALL'>('ALL');
+  const [category,setCategory]=useState<Category|'ALL'>('ALL');
+
+  const usedCategories = useMemo(() => {
+    const used = new Set(guests.map(g => g.category));
+    return categoryFilters.filter(f => f.value === 'ALL' || used.has(f.value as Category));
+  }, [guests]);
 
   const filtered=useMemo(()=>guests.filter(g=>{
     const name=g.fullName||g.full_name;
     const rsvp=g.rsvpStatus||g.rsvp_status;
-    return (name.toLowerCase().includes(search.toLowerCase())||g.phone.includes(search))
-      &&(status==='ALL'||rsvp===status);
-  }),[guests,search,status]);
+    const matchSearch=name.toLowerCase().includes(search.toLowerCase())||g.phone.includes(search);
+    const matchStatus=status==='ALL'||rsvp===status;
+    const matchCat=category==='ALL'||g.category===category;
+    return matchSearch&&matchStatus&&matchCat;
+  }),[guests,search,status,category]);
 
   return (
     <div className="space-y-4 pt-1">
@@ -42,9 +60,9 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
         </button>
       </div>
 
-      {/* Search — 52px pill */}
+      {/* Search */}
       <div className="relative">
-        <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-charcoal-400 pointer-events-none"/>
+        <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400 pointer-events-none"/>
         <input
           value={search}
           onChange={e=>setSearch(e.target.value)}
@@ -54,9 +72,9 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
         />
       </div>
 
-      {/* iOS Segmented control */}
+      {/* Status segmented control */}
       <div className="flex rounded-2xl p-1" style={{background:'rgba(0,0,0,0.06)'}}>
-        {filters.map(f=>(
+        {statusFilters.map(f=>(
           <button key={f.value} onClick={()=>setStatus(f.value)}
             className={`flex-1 py-2 rounded-xl text-[12px] font-semibold transition-all duration-200 ${
               status===f.value ? 'bg-white text-charcoal-900 shadow-sm' : 'text-charcoal-500'
@@ -65,6 +83,33 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
           </button>
         ))}
       </div>
+
+      {/* Category filter — horizontal scroll */}
+      {!loading && usedCategories.length > 2 && (
+        <div className="flex gap-2 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
+          {usedCategories.map(f=>{
+            const active = category === f.value;
+            return (
+              <button
+                key={f.value}
+                onClick={() => setCategory(f.value as Category | 'ALL')}
+                className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-[14px] text-[12px] font-bold transition-all active:scale-95"
+                style={{
+                  background: active ? f.color : 'rgba(0,0,0,0.05)',
+                  color: active ? (f.value === 'ALL' ? 'white' : 'white') : '#6E6862',
+                  boxShadow: active ? `0 2px 8px ${f.color}50` : 'none',
+                }}
+              >
+                {f.value !== 'ALL' && (
+                  <div className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: active ? 'rgba(255,255,255,0.7)' : f.color }} />
+                )}
+                {f.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* List */}
       {loading ? (
@@ -78,12 +123,12 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
             <Users className="w-9 h-9 text-charcoal-300" strokeWidth={1.3}/>
           </div>
           <p className="text-[15px] font-bold text-charcoal-800 mb-1">
-            {search||status!=='ALL' ? 'לא נמצאו תוצאות' : 'אין מוזמנים עדיין'}
+            {search||status!=='ALL'||category!=='ALL' ? 'לא נמצאו תוצאות' : 'אין מוזמנים עדיין'}
           </p>
           <p className="text-[13px] text-charcoal-400 mb-6">
-            {search||status!=='ALL' ? 'נסה לשנות את הסינון' : 'הוסף את המוזמן הראשון שלך'}
+            {search||status!=='ALL'||category!=='ALL' ? 'נסה לשנות את הסינון' : 'הוסף את המוזמן הראשון שלך'}
           </p>
-          {!search&&status==='ALL'&&(
+          {!search&&status==='ALL'&&category==='ALL'&&(
             <button onClick={onAddGuest}
               className="px-5 py-2.5 rounded-2xl bg-charcoal-900 text-white text-[13px] font-bold active:scale-95 transition-transform">
               הוסף מוזמן
