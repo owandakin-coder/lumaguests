@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  User, Shield, Palette, HelpCircle, FileText,
-  LogOut, ChevronLeft, Trash2, Info, Bell, Globe, Star
+  Shield, Palette, HelpCircle, FileText,
+  LogOut, ChevronLeft, Trash2, Info, Bell, Globe, Star,
+  X, Eye, EyeOff, Mail, Lock, MessageCircle, Check,
 } from 'lucide-react';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { guestService, authService } from '../services/supabase';
@@ -12,11 +13,118 @@ interface SettingsProps {
   userEmail?: string;
 }
 
+type ModalType =
+  | 'email' | 'password' | 'notifications' | 'theme' | 'language'
+  | 'eventName' | 'help' | 'contact' | 'terms' | 'privacy' | null;
+
+const EVENT_KEY = 'luma_event_name';
+
+// ── Bottom Sheet wrapper ──────────────────────────────────────
+const Sheet = ({ open, onClose, title, children }: {
+  open: boolean; onClose: () => void; title: string; children: React.ReactNode;
+}) => (
+  <AnimatePresence>
+    {open && (
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
+        style={{ backdropFilter: 'blur(4px)' }}
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 80, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+          onClick={e => e.stopPropagation()}
+          className="bg-white w-full max-w-[430px] rounded-t-3xl p-6 pb-10"
+        >
+          <div className="w-10 h-1 bg-charcoal-200 rounded-full mx-auto mb-5" />
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-[18px] font-bold text-charcoal-900">{title}</h3>
+            <button onClick={onClose} className="w-8 h-8 rounded-xl bg-charcoal-100 flex items-center justify-center active:scale-90 transition-transform">
+              <X className="w-4 h-4 text-charcoal-600" />
+            </button>
+          </div>
+          {children}
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
+// ── Field ──────────────────────────────────────────────────────
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="space-y-1.5">
+    <p className="text-[12px] font-bold text-charcoal-400 uppercase tracking-wide">{label}</p>
+    {children}
+  </div>
+);
+
+const inputCls = 'w-full px-4 py-3.5 rounded-2xl bg-charcoal-50 text-[14px] text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-charcoal-200 transition';
+
+// ── Main component ─────────────────────────────────────────────
 export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
   const auth = useSupabaseAuth();
+
+  const [activeModal, setActiveModal]     = useState<ModalType>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteLoading, setDeleteLoading]         = useState(false);
-  const [showComingSoon, setShowComingSoon]        = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [eventName, setEventName]         = useState(() => localStorage.getItem(EVENT_KEY) || 'האירוע שלי');
+  const [notifPerm, setNotifPerm]         = useState<NotificationPermission>('default');
+
+  const [f, setF]           = useState({ email: '', password: '', confirm: '', event: '' });
+  const [showPass, setShowPass] = useState(false);
+  const [busy, setBusy]     = useState(false);
+  const [err, setErr]       = useState('');
+  const [ok, setOk]         = useState('');
+
+  useEffect(() => {
+    if ('Notification' in window) setNotifPerm(Notification.permission);
+  }, []);
+
+  const open = (m: ModalType) => {
+    setF({ email: '', password: '', confirm: '', event: eventName });
+    setErr(''); setOk(''); setShowPass(false); setActiveModal(m);
+  };
+  const close = () => setActiveModal(null);
+
+  // ── Handlers ───────────────────────────────────────────────
+  const changeEmail = async () => {
+    if (!f.email.includes('@')) { setErr('כתובת אימייל לא תקינה'); return; }
+    try {
+      setBusy(true); setErr('');
+      await authService.updateEmail(f.email);
+      setOk('נשלח אימייל אימות לכתובת החדשה — יש לאשר אותו');
+    } catch (e: any) { setErr(e?.message || 'שגיאה בשינוי האימייל'); }
+    finally { setBusy(false); }
+  };
+
+  const changePassword = async () => {
+    if (f.password.length < 6) { setErr('הסיסמה חייבת להכיל לפחות 6 תווים'); return; }
+    if (f.password !== f.confirm) { setErr('הסיסמאות אינן תואמות'); return; }
+    try {
+      setBusy(true); setErr('');
+      await authService.updatePassword(f.password);
+      setOk('הסיסמה שונתה בהצלחה');
+    } catch (e: any) { setErr(e?.message || 'שגיאה בשינוי הסיסמה'); }
+    finally { setBusy(false); }
+  };
+
+  const saveEventName = () => {
+    const name = f.event.trim() || 'האירוע שלי';
+    localStorage.setItem(EVENT_KEY, name);
+    setEventName(name);
+    setOk('שם האירוע עודכן');
+    setTimeout(close, 900);
+  };
+
+  const requestNotifications = async () => {
+    if (!('Notification' in window)) { setErr('הדפדפן לא תומך בהתראות'); return; }
+    const perm = await Notification.requestPermission();
+    setNotifPerm(perm);
+    if (perm === 'granted') setOk('התראות הופעלו בהצלחה');
+    else if (perm === 'denied') setErr('ההתראות נחסמו — ניתן לשנות בהגדרות הדפדפן');
+  };
 
   const handleDeleteAccount = async () => {
     if (!auth.user) return;
@@ -27,74 +135,99 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
       onLogout();
     } catch {
       setShowDeleteConfirm(false);
-      setShowComingSoon('שגיאה במחיקה — נסה שוב');
-    } finally {
-      setDeleteLoading(false);
-    }
+      setActiveModal(null);
+    } finally { setDeleteLoading(false); }
   };
 
-  const email    = userEmail || auth.user?.email || '';
-  const initial  = email ? email[0].toUpperCase() : 'U';
+  const email   = userEmail || auth.user?.email || '';
+  const initial = email ? email[0].toUpperCase() : 'U';
 
-  const toast = (label: string) => {
-    setShowComingSoon(label);
-    setTimeout(() => setShowComingSoon(''), 2000);
-  };
+  const notifLabel =
+    notifPerm === 'granted' ? 'פעיל' :
+    notifPerm === 'denied'  ? 'חסום' : 'כבוי';
 
   const sections = [
     {
       title: 'חשבון',
       rows: [
-        { icon: User,       label: 'אימייל',      value: email,     action: () => toast('עריכת אימייל') },
-        { icon: Shield,     label: 'סיסמה',        value: '••••••••', action: () => toast('שינוי סיסמה') },
-        { icon: Bell,       label: 'התראות',       value: 'פעיל',    action: () => toast('הגדרות התראות') },
-      ],
-    },
-    {
-      title: 'מראה',
-      rows: [
-        { icon: Palette,    label: 'ערכת צבעים',  value: 'בהיר',    action: () => toast('ערכת צבעים') },
-        { icon: Globe,      label: 'שפה',          value: 'עברית',   action: () => toast('שינוי שפה') },
+        { icon: Mail,    label: 'שינוי אימייל',  value: email,          action: () => open('email') },
+        { icon: Lock,    label: 'שינוי סיסמה',   value: '••••••••',      action: () => open('password') },
+        { icon: Bell,    label: 'התראות',         value: notifLabel,     action: () => open('notifications') },
       ],
     },
     {
       title: 'אירוע',
       rows: [
-        { icon: Star,       label: 'שם האירוע',   value: 'האירוע שלי', action: () => toast('שם האירוע') },
-        { icon: Info,       label: 'גרסה',         value: '1.0.0',    action: null },
+        { icon: Star,    label: 'שם האירוע',      value: eventName,       action: () => open('eventName') },
+        { icon: Info,    label: 'גרסה',            value: '1.0.0',         action: null },
+      ],
+    },
+    {
+      title: 'מראה',
+      rows: [
+        { icon: Palette, label: 'ערכת צבעים',     value: 'בהיר',          action: () => open('theme') },
+        { icon: Globe,   label: 'שפה',             value: 'עברית',         action: () => open('language') },
       ],
     },
     {
       title: 'תמיכה',
       rows: [
-        { icon: HelpCircle, label: 'מרכז עזרה',   value: null, action: () => toast('מרכז עזרה') },
-        { icon: FileText,   label: 'צור קשר',      value: null, action: () => toast('צור קשר') },
+        { icon: HelpCircle, label: 'שאלות נפוצות', value: null,           action: () => open('help') },
+        { icon: MessageCircle, label: 'צור קשר',   value: null,           action: () => open('contact') },
       ],
     },
     {
       title: 'משפטי',
       rows: [
-        { icon: FileText,   label: 'תנאי שימוש',         value: null, action: () => toast('תנאי שימוש') },
-        { icon: Shield,     label: 'מדיניות פרטיות',     value: null, action: () => toast('מדיניות פרטיות') },
+        { icon: FileText, label: 'תנאי שימוש',    value: null,            action: () => open('terms') },
+        { icon: Shield,   label: 'מדיניות פרטיות', value: null,           action: () => open('privacy') },
       ],
     },
   ];
 
+  // ── Submit button ───────────────────────────────────────────
+  const Btn = ({ onPress, label }: { onPress: () => void; label: string }) => (
+    <button
+      onClick={onPress}
+      disabled={busy}
+      className="w-full py-4 rounded-2xl bg-charcoal-900 text-white text-[14px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform mt-1"
+    >
+      {busy ? 'שומר...' : label}
+    </button>
+  );
+
+  // ── Status ──────────────────────────────────────────────────
+  const Status = () => (
+    <>
+      {err && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className="bg-red-50 text-red-600 text-[13px] px-4 py-3 rounded-2xl font-medium">
+          {err}
+        </motion.div>
+      )}
+      {ok && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className="bg-green-50 text-green-700 text-[13px] px-4 py-3 rounded-2xl font-medium flex items-center gap-2">
+          <Check className="w-4 h-4 flex-shrink-0" />{ok}
+        </motion.div>
+      )}
+    </>
+  );
+
+  // ── Render ──────────────────────────────────────────────────
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5 pb-4">
       <h1 className="text-[28px] font-bold text-charcoal-900 pt-1">הגדרות</h1>
 
       {/* Profile card */}
-      <div
-        className="bg-white rounded-3xl p-4 flex items-center gap-4"
-        style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}
-      >
+      <div className="bg-white rounded-3xl p-4 flex items-center gap-4"
+        style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
         <div className="w-14 h-14 rounded-2xl bg-charcoal-900 flex items-center justify-center text-xl font-bold text-gold-400 flex-shrink-0">
           {initial}
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[15px] font-bold text-charcoal-900 truncate">{email}</p>
-          <p className="text-[12px] text-charcoal-400 mt-0.5">חשבון פרמיום ✦</p>
+          <p className="text-[12px] text-charcoal-400 mt-0.5">{eventName} ✦</p>
         </div>
       </div>
 
@@ -109,7 +242,8 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
               <button
                 key={row.label}
                 onClick={() => row.action?.()}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 text-right transition-colors active:bg-charcoal-50/50 ${
+                disabled={!row.action}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 text-right transition-colors active:bg-charcoal-50/50 disabled:cursor-default ${
                   idx < section.rows.length - 1 ? 'border-b border-charcoal-100/60' : ''
                 }`}
               >
@@ -118,7 +252,7 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
                 </div>
                 <span className="flex-1 text-[14px] font-semibold text-charcoal-900">{row.label}</span>
                 {row.value && (
-                  <span className="text-[12px] text-charcoal-400 truncate max-w-[120px]">{row.value}</span>
+                  <span className="text-[12px] text-charcoal-400 truncate max-w-[130px]">{row.value}</span>
                 )}
                 {row.action && <ChevronLeft className="w-4 h-4 text-charcoal-300 flex-shrink-0" />}
               </button>
@@ -137,7 +271,7 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
         התנתקות
       </button>
 
-      {/* Danger zone */}
+      {/* Danger */}
       <div>
         <p className="text-[11px] font-bold text-red-400 uppercase tracking-widest mb-2 mr-1">מסוכן</p>
         <button
@@ -149,61 +283,278 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
         </button>
       </div>
 
+      {/* ── Modals ─────────────────────────────────────────────── */}
+
+      {/* Email */}
+      <Sheet open={activeModal === 'email'} onClose={close} title="שינוי אימייל">
+        <div className="space-y-4">
+          <p className="text-[13px] text-charcoal-500">אימייל נוכחי: <span className="font-semibold text-charcoal-800">{email}</span></p>
+          <Field label="אימייל חדש">
+            <div className="relative">
+              <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
+              <input type="email" value={f.email} onChange={e => { setF(p => ({ ...p, email: e.target.value })); setErr(''); }}
+                placeholder="new@example.com" dir="ltr"
+                className={`${inputCls} pr-10 text-right`} />
+            </div>
+          </Field>
+          <Status />
+          <Btn onPress={changeEmail} label="שמור אימייל" />
+        </div>
+      </Sheet>
+
+      {/* Password */}
+      <Sheet open={activeModal === 'password'} onClose={close} title="שינוי סיסמה">
+        <div className="space-y-4">
+          <Field label="סיסמה חדשה">
+            <div className="relative">
+              <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
+              <input type={showPass ? 'text' : 'password'} value={f.password}
+                onChange={e => { setF(p => ({ ...p, password: e.target.value })); setErr(''); }}
+                placeholder="לפחות 6 תווים" dir="ltr"
+                className={`${inputCls} pr-10 pl-10 text-right`} />
+              <button type="button" onClick={() => setShowPass(!showPass)}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-charcoal-400">
+                {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </Field>
+          <Field label="אימות סיסמה">
+            <input type={showPass ? 'text' : 'password'} value={f.confirm}
+              onChange={e => { setF(p => ({ ...p, confirm: e.target.value })); setErr(''); }}
+              placeholder="הזן שוב" dir="ltr"
+              className={`${inputCls} text-right`} />
+          </Field>
+          <Status />
+          <Btn onPress={changePassword} label="שמור סיסמה" />
+        </div>
+      </Sheet>
+
+      {/* Notifications */}
+      <Sheet open={activeModal === 'notifications'} onClose={close} title="התראות">
+        <div className="space-y-4">
+          <div className="bg-charcoal-50 rounded-2xl p-4 flex items-center justify-between">
+            <span className="text-[14px] font-semibold text-charcoal-900">סטטוס</span>
+            <span className={`text-[13px] font-bold px-3 py-1 rounded-full ${
+              notifPerm === 'granted' ? 'bg-green-100 text-green-700' :
+              notifPerm === 'denied'  ? 'bg-red-100 text-red-600' :
+              'bg-charcoal-200 text-charcoal-600'
+            }`}>{notifLabel}</span>
+          </div>
+          {notifPerm === 'denied' && (
+            <p className="text-[13px] text-charcoal-500 leading-relaxed">
+              ההתראות נחסמו בהגדרות הדפדפן. ניתן לשנות בהגדרות ← פרטיות ← התראות.
+            </p>
+          )}
+          {notifPerm !== 'granted' && notifPerm !== 'denied' && (
+            <>
+              <p className="text-[13px] text-charcoal-500 leading-relaxed">
+                אפשר התראות כדי לקבל עדכונים על אישורי הגעה חדשים.
+              </p>
+              <Status />
+              <Btn onPress={requestNotifications} label="הפעל התראות" />
+            </>
+          )}
+          {notifPerm === 'granted' && (
+            <p className="text-[13px] text-green-700 bg-green-50 rounded-2xl px-4 py-3">
+              ✓ התראות מופעלות — תקבל עדכון על כל אישור הגעה חדש.
+            </p>
+          )}
+        </div>
+      </Sheet>
+
+      {/* Theme */}
+      <Sheet open={activeModal === 'theme'} onClose={close} title="ערכת צבעים">
+        <div className="space-y-3">
+          {[
+            { id: 'light', label: 'בהיר', desc: 'רקע לבן-שמנת עם טיפוגרפיה כהה', active: true },
+            { id: 'dark',  label: 'כהה',  desc: 'מצב לילה — יגיע בקרוב',         active: false },
+          ].map(t => (
+            <div key={t.id}
+              className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${
+                t.active ? 'border-charcoal-900 bg-charcoal-50' : 'border-charcoal-100 opacity-50'
+              }`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${t.active ? 'bg-charcoal-900' : 'bg-charcoal-200'}`}>
+                <Palette className={`w-5 h-5 ${t.active ? 'text-white' : 'text-charcoal-500'}`} />
+              </div>
+              <div className="flex-1">
+                <p className="text-[14px] font-bold text-charcoal-900">{t.label}</p>
+                <p className="text-[12px] text-charcoal-400">{t.desc}</p>
+              </div>
+              {t.active && <Check className="w-5 h-5 text-charcoal-900" />}
+            </div>
+          ))}
+        </div>
+      </Sheet>
+
+      {/* Language */}
+      <Sheet open={activeModal === 'language'} onClose={close} title="שפה">
+        <div className="space-y-3">
+          {[
+            { code: 'he', label: 'עברית', active: true },
+            { code: 'en', label: 'English', active: false, soon: true },
+            { code: 'ar', label: 'العربية', active: false, soon: true },
+          ].map(l => (
+            <div key={l.code}
+              className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${
+                l.active ? 'border-charcoal-900 bg-charcoal-50' : 'border-charcoal-100 opacity-50'
+              }`}>
+              <div className="flex-1">
+                <p className="text-[14px] font-bold text-charcoal-900">{l.label}</p>
+                {l.soon && <p className="text-[11px] text-charcoal-400">בקרוב</p>}
+              </div>
+              {l.active && <Check className="w-5 h-5 text-charcoal-900" />}
+            </div>
+          ))}
+        </div>
+      </Sheet>
+
+      {/* Event name */}
+      <Sheet open={activeModal === 'eventName'} onClose={close} title="שם האירוע">
+        <div className="space-y-4">
+          <Field label="שם האירוע">
+            <input value={f.event} onChange={e => { setF(p => ({ ...p, event: e.target.value })); setErr(''); }}
+              placeholder="לדוגמה: חתונת שרה ודוד"
+              className={inputCls} />
+          </Field>
+          <p className="text-[12px] text-charcoal-400">שם זה מוצג בכרטיסיית ההגדרות ובקישורי RSVP.</p>
+          <Status />
+          <Btn onPress={saveEventName} label="שמור שם" />
+        </div>
+      </Sheet>
+
+      {/* Help */}
+      <Sheet open={activeModal === 'help'} onClose={close} title="שאלות נפוצות">
+        <div className="space-y-3 max-h-72 overflow-y-auto">
+          {[
+            { q: 'איך מוסיפים מוזמן?', a: 'לחצ/י על כפתור + בכל מסך, מלא/י את הפרטים ולחצ/י "שמור מוזמן".' },
+            { q: 'מה זה קישור RSVP?', a: 'קישור אישי לכל מוזמן שמאפשר לו לאשר הגעה בלחיצה אחת, ללא צורך בהתחברות.' },
+            { q: 'איך שולחים קישור RSVP?', a: 'פתח/י את פרטי המוזמן → לחצ/י על "וואטסאפ" — ישלח הודעה עם הקישור האישי. אפשר גם להעתיק קישור ולשלוח ידנית.' },
+            { q: 'האם ניתן לשנות סטטוס מוזמן?', a: 'כן — לחצ/י על המוזמן → "עריכה" ושנה/י את סטטוס ההגעה.' },
+            { q: 'מה ההבדל בין "מלווים" לבין "סך אנשים"?', a: 'מלווים הם אנשים נוספים שבאים יחד עם המוזמן. "סך אנשים" כולל את המוזמן עצמו + המלווים.' },
+            { q: 'האם אפשר לייצא את רשימת המוזמנים?', a: 'פיצ\'ר ייצוא לאקסל יתווסף בגרסה הבאה.' },
+          ].map(({ q, a }) => (
+            <div key={q} className="bg-charcoal-50 rounded-2xl p-4">
+              <p className="text-[13px] font-bold text-charcoal-900 mb-1">{q}</p>
+              <p className="text-[12px] text-charcoal-500 leading-relaxed">{a}</p>
+            </div>
+          ))}
+        </div>
+      </Sheet>
+
+      {/* Contact */}
+      <Sheet open={activeModal === 'contact'} onClose={close} title="צור קשר">
+        <div className="space-y-3">
+          <p className="text-[13px] text-charcoal-500 leading-relaxed">
+            נשמח לעזור! ניתן לפנות אלינו בכל אחת מהדרכים הבאות:
+          </p>
+          <button
+            onClick={() => window.open('https://wa.me/?text=שלום%2C%20אני%20צריך%20עזרה%20עם%20Luma%20Guests', '_blank')}
+            className="w-full flex items-center gap-3 p-4 rounded-2xl active:scale-[0.98] transition-transform"
+            style={{ background: 'rgba(16,185,129,0.1)' }}
+          >
+            <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center flex-shrink-0">
+              <MessageCircle className="w-5 h-5 text-white" />
+            </div>
+            <div className="text-right">
+              <p className="text-[14px] font-bold text-charcoal-900">WhatsApp</p>
+              <p className="text-[12px] text-charcoal-500">תגובה תוך שעה</p>
+            </div>
+          </button>
+          <button
+            onClick={() => window.location.href = 'mailto:support@lumaguests.app?subject=תמיכה - Luma Guests'}
+            className="w-full flex items-center gap-3 p-4 rounded-2xl active:scale-[0.98] transition-transform"
+            style={{ background: 'rgba(96,165,250,0.1)' }}
+          >
+            <div className="w-10 h-10 rounded-xl bg-blue-400 flex items-center justify-center flex-shrink-0">
+              <Mail className="w-5 h-5 text-white" />
+            </div>
+            <div className="text-right">
+              <p className="text-[14px] font-bold text-charcoal-900">אימייל</p>
+              <p className="text-[12px] text-charcoal-500">support@lumaguests.app</p>
+            </div>
+          </button>
+        </div>
+      </Sheet>
+
+      {/* Terms */}
+      <Sheet open={activeModal === 'terms'} onClose={close} title="תנאי שימוש">
+        <div className="space-y-3 max-h-72 overflow-y-auto text-[13px] text-charcoal-600 leading-relaxed">
+          <p className="font-bold text-charcoal-900">1. קבלת התנאים</p>
+          <p>השימוש ב-Luma Guests מהווה הסכמה לתנאים אלה. אם אינך מסכים, אנא הפסק את השימוש.</p>
+          <p className="font-bold text-charcoal-900">2. השירות</p>
+          <p>Luma Guests מספקת פלטפורמה לניהול רשימות מוזמנים לאירועים. אנו שומרים על הזכות לשנות, להשעות או להפסיק את השירות בכל עת.</p>
+          <p className="font-bold text-charcoal-900">3. חשבון משתמש</p>
+          <p>אחריות לשמירת פרטי ההתחברות חלה עליך. אנא הודע לנו מיידית על כל שימוש בלתי מורשה.</p>
+          <p className="font-bold text-charcoal-900">4. תוכן</p>
+          <p>אתה אחראי לכל התוכן שאתה מזין לאפליקציה. אסור להכניס מידע מטעה, פוגעני או בלתי חוקי.</p>
+          <p className="font-bold text-charcoal-900">5. פרטיות</p>
+          <p>אנו מתייחסים לפרטיות שלך ברצינות. ראה מדיניות הפרטיות לפרטים מלאים.</p>
+          <p className="font-bold text-charcoal-900">6. הגבלת אחריות</p>
+          <p>השירות ניתן "כפי שהוא". אנו לא נישא באחריות לנזקים ישירים או עקיפים הנובעים מהשימוש.</p>
+          <p className="text-charcoal-400 text-[11px] pt-2">עודכן לאחרונה: יוני 2026</p>
+        </div>
+      </Sheet>
+
+      {/* Privacy */}
+      <Sheet open={activeModal === 'privacy'} onClose={close} title="מדיניות פרטיות">
+        <div className="space-y-3 max-h-72 overflow-y-auto text-[13px] text-charcoal-600 leading-relaxed">
+          <p className="font-bold text-charcoal-900">מה אנו אוספים</p>
+          <p>אנו אוספים: כתובת אימייל, נתוני מוזמנים שהוכנסו על ידך (שם, טלפון, סטטוס RSVP).</p>
+          <p className="font-bold text-charcoal-900">איך אנו משתמשים במידע</p>
+          <p>המידע משמש אך ורק למתן השירות — הצגת נתוני האירוע שלך. אנו לא מוכרים מידע לצדדים שלישיים.</p>
+          <p className="font-bold text-charcoal-900">אחסון מידע</p>
+          <p>הנתונים מאוחסנים בשרתי Supabase (AWS) באיחוד האירופי, עם הצפנה מלאה בעת מנוחה ובעת העברה.</p>
+          <p className="font-bold text-charcoal-900">זכויות שלך</p>
+          <p>יש לך זכות לגשת לנתוניך, לתקן אותם, ולמחוק אותם בכל עת דרך הגדרות החשבון.</p>
+          <p className="font-bold text-charcoal-900">עוגיות</p>
+          <p>אנו משתמשים בעוגיות הכרחיות בלבד לצורכי אימות.</p>
+          <p className="font-bold text-charcoal-900">יצירת קשר</p>
+          <p>לשאלות בנוגע לפרטיות: support@lumaguests.app</p>
+          <p className="text-charcoal-400 text-[11px] pt-2">עודכן לאחרונה: יוני 2026</p>
+        </div>
+      </Sheet>
+
       {/* Delete confirm modal */}
       <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4"
+            style={{ backdropFilter: 'blur(4px)' }}
             onClick={() => setShowDeleteConfirm(false)}
           >
             <motion.div
-              initial={{ y: 40, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
+              initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
               exit={{ y: 40, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
               onClick={e => e.stopPropagation()}
-              className="bg-white rounded-3xl p-6 w-full max-w-sm"
+              className="bg-white w-full max-w-[430px] rounded-t-3xl p-6 pb-10"
             >
-              <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
-                <Trash2 className="w-6 h-6 text-red-500" />
+              <div className="w-10 h-1 bg-charcoal-200 rounded-full mx-auto mb-5" />
+              <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-7 h-7 text-red-500" />
               </div>
-              <h3 className="text-[18px] font-bold text-charcoal-900 text-center mb-2">מחיקת חשבון</h3>
-              <p className="text-[13px] text-charcoal-500 text-center mb-6 leading-relaxed">
-                פעולה זו תמחק את החשבון ואת כל נתוני המוזמנים לצמיתות. לא ניתן לשחזר.
+              <h3 className="text-[20px] font-bold text-charcoal-900 text-center mb-2">מחיקת חשבון</h3>
+              <p className="text-[14px] text-charcoal-500 text-center leading-relaxed mb-6">
+                פעולה זו תמחק את <strong>כל נתוני המוזמנים</strong> לצמיתות ותנתק אותך. לא ניתן לשחזר.
               </p>
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <button
                   onClick={handleDeleteAccount}
                   disabled={deleteLoading}
-                  className="w-full py-3.5 rounded-2xl bg-red-500 text-white font-bold text-[14px] active:scale-[0.98] transition-transform disabled:opacity-50"
+                  className="w-full py-4 rounded-2xl bg-red-500 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
                 >
-                  {deleteLoading ? 'מוחק...' : 'כן, מחק את החשבון'}
+                  {deleteLoading ? 'מוחק...' : 'כן, מחק הכל'}
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
                   disabled={deleteLoading}
-                  className="w-full py-3.5 rounded-2xl bg-charcoal-100 text-charcoal-700 font-bold text-[14px] active:scale-[0.98] transition-transform"
+                  className="w-full py-4 rounded-2xl bg-charcoal-100 text-charcoal-700 text-[15px] font-bold active:scale-[0.98] transition-transform"
                 >
                   ביטול
                 </button>
               </div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Coming soon toast */}
-      <AnimatePresence>
-        {showComingSoon && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-28 left-1/2 -translate-x-1/2 bg-charcoal-900 text-white text-[13px] font-semibold px-5 py-3 rounded-2xl z-50 whitespace-nowrap"
-          >
-            {showComingSoon} — בקרוב ✦
           </motion.div>
         )}
       </AnimatePresence>
