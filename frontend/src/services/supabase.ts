@@ -107,6 +107,14 @@ export const guestService = {
     if (error) throw error;
   },
 
+  deleteAll: async (userId: string) => {
+    const { error } = await supabase
+      .from('guests')
+      .delete()
+      .eq('user_id', userId);
+    if (error) throw error;
+  },
+
   checkDuplicatePhone: async (phone: string, userId: string, excludeId?: string) => {
     let query = supabase
       .from('guests')
@@ -141,6 +149,43 @@ export const guestService = {
     };
 
     return stats;
+  },
+};
+
+// ── RSVP Magic Link Service ───────────────────────────────────
+export const rsvpService = {
+  generateToken: (): string => crypto.randomUUID(),
+
+  getByToken: async (token: string) => {
+    const { data, error } = await supabase.rpc('get_guest_by_token', { p_token: token });
+    if (error) throw error;
+    if (!data?.success) return null;
+    return data.guest as import('../types').RsvpPublicGuest;
+  },
+
+  respond: async (
+    token: string,
+    status: 'CONFIRMED' | 'DECLINED',
+    companions?: number,
+    note?: string
+  ) => {
+    const { data, error } = await supabase.rpc('respond_to_rsvp', {
+      p_token:      token,
+      p_status:     status,
+      p_companions: companions ?? null,
+      p_note:       note ?? null,
+    });
+    if (error) throw error;
+    return data as import('../types').RsvpResponse;
+  },
+
+  buildLink: (token: string): string =>
+    `${window.location.origin}/rsvp/${token}`,
+
+  buildWhatsAppUrl: (phone: string, guestName: string, token: string): string => {
+    const link = rsvpService.buildLink(token);
+    const msg  = `שלום ${guestName}! 🎉\nנשמח לאישור הגעה לאירוע:\n👉 ${link}`;
+    return `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
   },
 };
 

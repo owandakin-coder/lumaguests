@@ -1,6 +1,6 @@
 import { GuestForm } from '../components/GuestForm';
 import { CreateGuestInput } from '../types';
-import { guestService } from '../services/supabase';
+import { guestService, rsvpService } from '../services/supabase';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
 interface AddGuestProps {
@@ -18,13 +18,14 @@ export const AddGuest = ({ onSuccess, onCancel }: AddGuestProps) => {
     if (hasDuplicate) throw new Error('מוזמן עם מספר טלפון זה כבר קיים');
 
     await guestService.create({
-      full_name: data.fullName,
-      phone: data.phone,
-      companions: data.companions,
-      category: data.category,
+      full_name:   data.fullName,
+      phone:       data.phone,
+      companions:  data.companions,
+      category:    data.category,
       rsvp_status: data.rsvpStatus,
-      notes: data.notes,
-      user_id: auth.user.id,
+      notes:       data.notes,
+      user_id:     auth.user.id,
+      rsvp_token:  rsvpService.generateToken(),
     });
 
     onSuccess();

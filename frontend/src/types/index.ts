@@ -12,6 +12,10 @@ export interface Guest {
   rsvpStatus?: RsvpStatus;
   rsvp_status: RsvpStatus;
   notes?: string;
+  rsvp_token?: string;
+  rsvp_via_link?: boolean;
+  rsvp_responded_at?: string;
+  rsvp_public_note?: string;
   createdAt?: string;
   created_at?: string;
   updatedAt?: string;
@@ -55,4 +59,20 @@ export interface Toast {
   id: string;
   type: 'success' | 'error' | 'info';
   message: string;
+}
+
+export interface RsvpPublicGuest {
+  id: string;
+  full_name: string;
+  rsvp_status: RsvpStatus;
+  companions: number;
+  rsvp_via_link: boolean;
+  rsvp_responded_at: string | null;
+}
+
+export interface RsvpResponse {
+  success: boolean;
+  name?: string;
+  status?: string;
+  error?: string;
 }

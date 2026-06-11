@@ -177,40 +177,41 @@ function App() {
 
   if (!auth.isAuthenticated) {
     return (
-      <div dir="rtl" className="min-h-screen bg-ivory-100 flex items-center justify-center p-5">
-        <div className="w-full max-w-sm">
-          <AnimatePresence mode="wait">
-            {authPage === 'login' ? (
-              <motion.div
-                key="login"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Login
-                  onSuccess={handleLoginSuccess}
-                  onSwitchToRegister={() => setAuthPage('register')}
-                  onLogin={auth.login}
-                />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="register"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.2 }}
-              >
+      <div dir="rtl">
+        <AnimatePresence mode="wait">
+          {authPage === 'login' ? (
+            <motion.div
+              key="login"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Login
+                onSuccess={handleLoginSuccess}
+                onSwitchToRegister={() => setAuthPage('register')}
+                onLogin={auth.login}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="register"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="min-h-screen bg-ivory-100 flex items-center justify-center p-5"
+            >
+              <div className="w-full max-w-sm">
                 <Register
                   onSuccess={handleRegisterSuccess}
                   onSwitchToLogin={() => setAuthPage('login')}
                   onRegister={auth.register}
                 />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <ToastContainer toasts={toasts} onRemove={removeToast} />
       </div>
     );

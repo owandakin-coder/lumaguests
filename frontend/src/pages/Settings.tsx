@@ -5,6 +5,7 @@ import {
   LogOut, ChevronLeft, Trash2, Info, Bell, Globe, Star
 } from 'lucide-react';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { guestService, authService } from '../services/supabase';
 
 interface SettingsProps {
   onLogout: () => void;
@@ -14,7 +15,23 @@ interface SettingsProps {
 export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
   const auth = useSupabaseAuth();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showComingSoon, setShowComingSoon] = useState('');
+  const [deleteLoading, setDeleteLoading]         = useState(false);
+  const [showComingSoon, setShowComingSoon]        = useState('');
+
+  const handleDeleteAccount = async () => {
+    if (!auth.user) return;
+    try {
+      setDeleteLoading(true);
+      await guestService.deleteAll(auth.user.id);
+      await authService.signOut();
+      onLogout();
+    } catch {
+      setShowDeleteConfirm(false);
+      setShowComingSoon('שגיאה במחיקה — נסה שוב');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   const email    = userEmail || auth.user?.email || '';
   const initial  = email ? email[0].toUpperCase() : 'U';
@@ -158,13 +175,15 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
               </p>
               <div className="space-y-2">
                 <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="w-full py-3.5 rounded-2xl bg-red-500 text-white font-bold text-[14px] active:scale-[0.98] transition-transform"
+                  onClick={handleDeleteAccount}
+                  disabled={deleteLoading}
+                  className="w-full py-3.5 rounded-2xl bg-red-500 text-white font-bold text-[14px] active:scale-[0.98] transition-transform disabled:opacity-50"
                 >
-                  כן, מחק את החשבון
+                  {deleteLoading ? 'מוחק...' : 'כן, מחק את החשבון'}
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleteLoading}
                   className="w-full py-3.5 rounded-2xl bg-charcoal-100 text-charcoal-700 font-bold text-[14px] active:scale-[0.98] transition-transform"
                 >
                   ביטול

@@ -8,15 +8,15 @@ interface MobileBottomNavProps {
 
 /*
   RTL visual order (right → left):
-  הגדרות | הודעות | מוזמנים | דוח
+  דוח | מוזמנים | הודעות | הגדרות
   In RTL flex, first item = rightmost. So array order:
-  [הגדרות, הודעות, מוזמנים, דוח]
+  [דוח, מוזמנים, הודעות, הגדרות]
 */
 const tabs = [
-  { id: 'settings',  label: 'הגדרות',  icon: SettingsIcon   },
-  { id: 'messages',  label: 'הודעות',  icon: MessageCircle  },
-  { id: 'guests',    label: 'מוזמנים', icon: Users          },
   { id: 'dashboard', label: 'דוח',     icon: BarChart2      },
+  { id: 'guests',    label: 'מוזמנים', icon: Users          },
+  { id: 'messages',  label: 'הודעות',  icon: MessageCircle  },
+  { id: 'settings',  label: 'הגדרות',  icon: SettingsIcon   },
 ];
 
 export const MobileBottomNav = ({ currentPage, onNavChange }: MobileBottomNavProps) => (

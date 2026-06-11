@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Phone, MessageCircle, Edit2, Trash2, ChevronRight, Users, Tag, StickyNote, Calendar } from 'lucide-react';
+import { Phone, MessageCircle, Edit2, Trash2, ChevronRight, Users, Tag, StickyNote, Calendar, Link } from 'lucide-react';
 import { Guest, RsvpStatus } from '../types';
-import { guestService } from '../services/supabase';
+import { guestService, rsvpService } from '../services/supabase';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
 interface GuestDetailsProps {
@@ -44,6 +44,7 @@ function avatarBg(name: string) {
 export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetailsProps) => {
   const [guest, setGuest]   = useState<Guest | null>(null);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied]   = useState(false);
   const auth = useSupabaseAuth();
 
   useEffect(() => { if (auth.user) load(); }, [guestId, auth.user]);
@@ -78,10 +79,21 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
     year: 'numeric', month: 'long', day: 'numeric',
   });
 
-  const handleCall      = () => { window.location.href = `tel:${guest.phone}`; };
-  const handleWhatsApp  = () => {
-    const msg = encodeURIComponent(`שלום ${name}! רצינו ליצור איתך קשר לגבי האירוע.`);
-    window.open(`https://wa.me/${guest.phone.replace(/\D/g,'')}?text=${msg}`, '_blank');
+  const handleCall     = () => { window.location.href = `tel:${guest.phone}`; };
+  const handleWhatsApp = () => {
+    const token = guest.rsvp_token;
+    const url = token
+      ? rsvpService.buildWhatsAppUrl(guest.phone, name, token)
+      : `https://wa.me/${guest.phone.replace(/\D/g,'')}?text=${encodeURIComponent(`שלום ${name}! רצינו ליצור איתך קשר לגבי האירוע.`)}`;
+    window.open(url, '_blank');
+  };
+  const handleCopyLink = async () => {
+    if (!guest.rsvp_token) return;
+    try {
+      await navigator.clipboard.writeText(rsvpService.buildLink(guest.rsvp_token));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard blocked */ }
   };
 
   return (
@@ -123,7 +135,7 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
           </div>
 
           {/* Quick actions */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <button
               onClick={handleWhatsApp}
               className="flex flex-col items-center gap-1.5 py-3 rounded-2xl active:scale-95 transition-transform"
@@ -139,6 +151,17 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
             >
               <Phone className="w-5 h-5" style={{ color: '#60A5FA' }} strokeWidth={2} />
               <span className="text-[10px] font-bold" style={{ color: '#60A5FA' }}>שיחה</span>
+            </button>
+            <button
+              onClick={handleCopyLink}
+              disabled={!guest.rsvp_token}
+              className="flex flex-col items-center gap-1.5 py-3 rounded-2xl active:scale-95 transition-transform disabled:opacity-40"
+              style={{ background: copied ? 'rgba(16,185,129,0.15)' : 'rgba(168,85,247,0.12)' }}
+            >
+              <Link className="w-5 h-5" style={{ color: copied ? '#10B981' : '#A855F7' }} strokeWidth={2} />
+              <span className="text-[10px] font-bold" style={{ color: copied ? '#10B981' : '#A855F7' }}>
+                {copied ? 'הועתק!' : 'קישור'}
+              </span>
             </button>
             <button
               onClick={() => onEdit(guest)}
