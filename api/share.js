@@ -20,8 +20,8 @@ export default function handler(req, res) {
   const host  = req.headers.host || 'lumaguests.vercel.app';
   const origin = `https://${host}`;
 
-  const coverImage = ci  || `${origin}/logo.png`;
-  const title      = en  || 'הזמנה לאירוע';
+  const coverImage = ci || null;   // no fallback — show no image if user hasn't uploaded one
+  const title      = en || 'הזמנה לאירוע';
 
   let desc = 'לאישור הגעה — לחץ כאן';
   if (ed) {
@@ -50,14 +50,14 @@ export default function handler(req, res) {
   <meta property="og:site_name"    content="Luma Guests" />
   <meta property="og:title"        content="${esc(title)}" />
   <meta property="og:description"  content="${esc(desc)}" />
-  <meta property="og:image"        content="${esc(coverImage)}" />
+  ${coverImage ? `<meta property="og:image"        content="${esc(coverImage)}" />
   <meta property="og:image:width"  content="1200" />
-  <meta property="og:image:height" content="630" />
+  <meta property="og:image:height" content="630" />` : ''}
   <meta property="og:url"          content="${esc(origin + '/share/' + token)}" />
-  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:card"        content="${coverImage ? 'summary_large_image' : 'summary'}" />
   <meta name="twitter:title"       content="${esc(title)}" />
   <meta name="twitter:description" content="${esc(desc)}" />
-  <meta name="twitter:image"       content="${esc(coverImage)}" />
+  ${coverImage ? `<meta name="twitter:image" content="${esc(coverImage)}" />` : ''}
   <script>window.location.replace(${JSON.stringify(rsvpUrl)});</script>
   <noscript><meta http-equiv="refresh" content="0;url=${esc(rsvpUrl)}"></noscript>
   <style>
