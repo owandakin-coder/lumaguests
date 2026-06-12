@@ -173,12 +173,12 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
       }
 
       // Use /share/ link so WhatsApp preview shows the cover image via Vercel OG function
-      const shareLink = rsvpService.buildShareLink(token, event);
-      if (!shareLink) {
+      const personalLink = rsvpService.buildPersonalRsvpLink({ rsvp_token: token });
+      if (!personalLink) {
         window.alert('לא הצלחנו ליצור קישור RSVP אישי למוזמן הזה. נסה שוב.');
         return;
       }
-      const msg = buildGuestRsvpMessage(name, event, shareLink);
+      const msg = buildGuestRsvpMessage(name, event, personalLink);
       openWhatsAppUrl(buildGuestRsvpWhatsAppUrl(g.phone, msg));
       setSentIds(prev => new Set(prev).add(g.id));
       return;
@@ -196,7 +196,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
       }
     }
 
-    const link  = token ? rsvpService.buildShareLink(token, event) : null;
+    const link  = token ? rsvpService.buildPersonalRsvpLink({ rsvp_token: token }) : null;
     const side  = sideLabel[g.category] ?? undefined;
     const msg   = activeTpl.build(name, link, side);
     openWhatsAppUrl(`https://wa.me/${toWaPhone(g.phone)}?text=${encodeURIComponent(msg)}`);
