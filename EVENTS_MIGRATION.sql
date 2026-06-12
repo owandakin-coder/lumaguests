@@ -54,15 +54,21 @@ ALTER TABLE public.guests
   ADD COLUMN IF NOT EXISTS rsvp_public_note  TEXT;
 
 -- 6. RPC: Get public event by slug (anon-safe, security definer)
+--    Returns distinct errors: 'not_found' vs 'not_public'
 CREATE OR REPLACE FUNCTION public.get_public_event(p_slug TEXT)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE v RECORD;
 BEGIN
-  SELECT * INTO v FROM public.events
-  WHERE public_slug = p_slug AND is_public = TRUE;
+  -- Check if slug exists at all (ignore is_public here)
+  SELECT * INTO v FROM public.events WHERE public_slug = p_slug;
 
   IF NOT FOUND THEN
     RETURN jsonb_build_object('success', FALSE, 'error', 'not_found');
+  END IF;
+
+  -- Slug exists but RSVP is disabled
+  IF NOT v.is_public THEN
+    RETURN jsonb_build_object('success', FALSE, 'error', 'not_public', 'event_name', v.event_name);
   END IF;
 
   RETURN jsonb_build_object(

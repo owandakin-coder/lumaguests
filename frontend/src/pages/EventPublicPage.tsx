@@ -11,7 +11,7 @@ interface EventPublicPageProps {
   slug: string;
 }
 
-type Step = 'loading' | 'form' | 'success' | 'declined' | 'error';
+type Step = 'loading' | 'form' | 'success' | 'declined' | 'error' | 'not_public';
 
 function useCountdown(eventDate: string | null) {
   const [now, setNow] = useState(() => new Date());
@@ -36,7 +36,8 @@ function useCountdown(eventDate: string | null) {
 const pad = (n: number) => String(n).padStart(2, '0');
 
 export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
-  const [event, setEvent]         = useState<PublicEventData | null>(null);
+  const [event, setEvent]           = useState<PublicEventData | null>(null);
+  const [disabledName, setDisabledName] = useState('');
   const [step, setStep]           = useState<Step>('loading');
   const [fullName, setFullName]   = useState('');
   const [phone, setPhone]         = useState('');
@@ -52,9 +53,14 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
 
   const load = async () => {
     try {
-      const data = await eventService.getBySlug(slug);
-      if (!data) { setStep('error'); return; }
-      setEvent(data);
+      const result = await eventService.getBySlug(slug);
+      if (result.error === 'not_public') {
+        setDisabledName(result.eventName || '');
+        setStep('not_public');
+        return;
+      }
+      if (!result.event) { setStep('error'); return; }
+      setEvent(result.event);
       setStep('form');
     } catch {
       setStep('error');
@@ -127,6 +133,24 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
             </div>
             <h2 className="text-xl font-bold text-charcoal-900 mb-2">דף לא נמצא</h2>
             <p className="text-sm text-charcoal-400">קישור זה אינו פעיל או שפג תוקפו.</p>
+          </motion.div>
+        )}
+
+        {/* RSVP disabled */}
+        {step === 'not_public' && (
+          <motion.div key="not_public"
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+            className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
+            <div className="w-16 h-16 rounded-3xl bg-amber-100 flex items-center justify-center mb-4">
+              <span className="text-3xl">🔒</span>
+            </div>
+            {disabledName && (
+              <h2 className="text-xl font-bold text-charcoal-900 mb-1">{disabledName}</h2>
+            )}
+            <p className="text-[15px] font-semibold text-charcoal-700 mb-2">ההרשמה אינה פתוחה כרגע</p>
+            <p className="text-[13px] text-charcoal-400 leading-relaxed max-w-xs">
+              בעל האירוע טרם פתח את הרישום. נסה שוב מאוחר יותר.
+            </p>
           </motion.div>
         )}
 

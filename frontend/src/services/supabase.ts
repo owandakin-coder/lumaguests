@@ -205,11 +205,21 @@ export const eventService = {
     return data as import('../types').Event;
   },
 
-  getBySlug: async (slug: string): Promise<import('../types').PublicEventData | null> => {
+  getBySlug: async (slug: string): Promise<{
+    event: import('../types').PublicEventData | null;
+    error?: 'not_found' | 'not_public';
+    eventName?: string;
+  }> => {
     const { data, error } = await supabase.rpc('get_public_event', { p_slug: slug });
     if (error) throw error;
-    if (!data?.success) return null;
-    return data.event as import('../types').PublicEventData;
+    if (!data?.success) {
+      return {
+        event: null,
+        error: data?.error as 'not_found' | 'not_public',
+        eventName: data?.event_name,
+      };
+    }
+    return { event: data.event as import('../types').PublicEventData };
   },
 
   publicRegister: async (
