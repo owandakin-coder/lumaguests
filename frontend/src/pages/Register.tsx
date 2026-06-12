@@ -36,10 +36,7 @@ export const Register = ({ onSuccess, onSwitchToLogin, onRegister }: RegisterPro
       style={{ background: '#F5F3EF' }}
     >
       {/* Dark top — logo as background */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+      <div
         className="flex-shrink-0"
         style={{
           height: 220,
@@ -51,10 +48,7 @@ export const Register = ({ onSuccess, onSwitchToLogin, onRegister }: RegisterPro
       />
 
       {/* Form area */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
+      <div
         className="flex-1 bg-[#F5F3EF] px-5 pt-8 pb-8 flex flex-col"
         style={{ borderRadius: '28px 28px 0 0', marginTop: -24 }}
       >
@@ -159,7 +153,7 @@ export const Register = ({ onSuccess, onSwitchToLogin, onRegister }: RegisterPro
         <p className="text-center text-[11px] text-charcoal-300 mt-auto pt-8">
           Powered by <span className="font-semibold text-charcoal-400">Atzma</span>
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 };
