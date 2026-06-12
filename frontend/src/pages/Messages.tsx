@@ -159,6 +159,17 @@ export const Messages = ({ guests, userId }: MessagesProps) => {
         }
       }
 
+      try {
+        const isReady = await rsvpService.verifyToken(token);
+        if (!isReady) {
+          window.alert('קישור ה-RSVP האישי לא זמין כרגע. צריך להריץ את RSVP_MIGRATION.sql ב-Supabase.');
+          return;
+        }
+      } catch {
+        window.alert('קישור ה-RSVP האישי לא זמין כרגע. צריך להריץ את RSVP_MIGRATION.sql ב-Supabase.');
+        return;
+      }
+
       const rsvpLink = rsvpService.buildLink(token);
       const msg = buildGuestRsvpMessage(name, event, rsvpLink);
       window.open(buildGuestRsvpWhatsAppUrl(g.phone, msg), '_blank');

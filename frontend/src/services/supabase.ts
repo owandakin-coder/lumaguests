@@ -253,6 +253,11 @@ export const rsvpService = {
     return data.guest as import('../types').RsvpPublicGuest;
   },
 
+  verifyToken: async (token: string) => {
+    const guest = await rsvpService.getByToken(token);
+    return !!guest;
+  },
+
   respond: async (
     token: string,
     status: 'CONFIRMED' | 'DECLINED',

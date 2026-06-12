@@ -111,17 +111,34 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
     }
   };
 
+  const ensureRsvpTokenReady = async () => {
+    const token = await ensureRsvpToken();
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const isReady = await rsvpService.verifyToken(token);
+      return isReady ? token : null;
+    } catch {
+      return null;
+    }
+  };
+
   const handleCall     = () => { window.location.href = `tel:${guest.phone}`; };
   const handleWhatsApp = async () => {
-    const token = await ensureRsvpToken();
+    const token = await ensureRsvpTokenReady();
     const url = token
       ? rsvpService.buildWhatsAppUrl(guest.phone, name, token)
       : `https://wa.me/${guest.phone.replace(/\D/g,'')}?text=${encodeURIComponent(`שלום ${name}! רצינו ליצור איתך קשר לגבי האירוע.`)}`;
     window.open(url, '_blank');
   };
   const handleCopyLink = async () => {
-    const token = await ensureRsvpToken();
-    if (!token) return;
+    const token = await ensureRsvpTokenReady();
+    if (!token) {
+      window.alert('קישור ה-RSVP האישי לא זמין כרגע. צריך להריץ את RSVP_MIGRATION.sql ב-Supabase.');
+      return;
+    }
     try {
       await navigator.clipboard.writeText(rsvpService.buildLink(token));
       setCopied(true);
@@ -129,9 +146,9 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
     } catch { /* clipboard blocked */ }
   };
   const handleOpenShare = async () => {
-    const token = await ensureRsvpToken();
+    const token = await ensureRsvpTokenReady();
     if (!token) {
-      window.alert('לא הצלחנו ליצור קישור RSVP אישי למוזמן הזה. נסה שוב.');
+      window.alert('קישור ה-RSVP האישי לא זמין כרגע. צריך להריץ את RSVP_MIGRATION.sql ב-Supabase.');
       return;
     }
 
