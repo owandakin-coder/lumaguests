@@ -425,12 +425,12 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
               onClick={e => e.stopPropagation()}
               className="bg-white w-full max-w-[430px] rounded-t-3xl flex flex-col"
               style={{
-                maxHeight: '85dvh',
-                paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+                maxHeight: '90dvh',
+                paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
               }}
             >
               {/* Handle + header */}
-              <div className="px-6 pt-5 pb-4 border-b border-charcoal-100 flex-shrink-0">
+              <div className="px-6 pt-5 pb-4 border-b border-charcoal-100 flex-shrink-0 sticky top-0 bg-white rounded-t-3xl z-10">
                 <div className="w-10 h-1 bg-charcoal-200 rounded-full mx-auto mb-5" />
                 <div className="flex items-center justify-between">
                   <h3 className="text-[18px] font-bold text-charcoal-900">שליחת הודעות</h3>
@@ -458,7 +458,10 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
               </div>
 
               {/* Guest list in queue — fills remaining space, scrollable */}
-              <div className="overflow-y-auto flex-1 min-h-[180px]">
+              <div
+                className="overflow-y-auto flex-1 min-h-[260px]"
+                style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+              >
                 {selectedList.map((g, idx) => {
                   const name  = g.fullName || g.full_name;
                   const sent  = sentIds.has(g.id);
