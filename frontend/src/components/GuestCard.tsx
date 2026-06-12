@@ -8,7 +8,7 @@ interface GuestCardProps {
   onEdit: (guest: Guest) => void;
   onDelete: (guest: Guest) => void;
   onView: (guest: Guest) => void;
-  event?: Pick<Event, 'event_name' | 'event_date' | 'venue_name'> | null;
+  event?: Pick<Event, 'event_name' | 'event_date' | 'venue_name' | 'cover_image_url'> | null;
 }
 
 const rsvpCfg: Record<RsvpStatus, { label: string; dot: string; bg: string; text: string }> = {

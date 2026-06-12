@@ -5,10 +5,10 @@ import {
   Shield, Palette, HelpCircle, FileText,
   LogOut, ChevronLeft, Trash2, Info, Bell, Globe, Star,
   X, Eye, EyeOff, Mail, Lock, MessageCircle, Check, CalendarDays,
-  MapPin, Link2, Share2, ToggleLeft, ToggleRight, AlignLeft,
+  MapPin, Link2, Share2, ToggleLeft, ToggleRight, AlignLeft, ImagePlus,
 } from 'lucide-react';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
-import { guestService, authService, eventService, supabase } from '../services/supabase';
+import { guestService, authService, eventService, supabase, storageService } from '../services/supabase';
 import { Event } from '../types';
 
 interface SettingsProps {
@@ -20,7 +20,7 @@ interface SettingsProps {
 
 type ModalType =
   | 'email' | 'password' | 'notifications' | 'theme' | 'language'
-  | 'eventName' | 'eventDate' | 'eventVenue' | 'eventDesc' | 'eventSlug' | 'eventShare'
+  | 'eventName' | 'eventDate' | 'eventVenue' | 'eventDesc' | 'eventSlug' | 'eventShare' | 'eventCover'
   | 'help' | 'contact' | 'terms' | 'privacy' | null;
 
 const EVENT_KEY      = 'luma_event_name';
@@ -94,7 +94,9 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
     email: '', password: '', confirm: '',
     event: '', eventDate: '', venue: '', venueAddr: '', desc: '', slug: '',
   });
-  const [showPass, setShowPass] = useState(false);
+  const [showPass,      setShowPass]      = useState(false);
+  const [selectedFile,  setSelectedFile]  = useState<File | null>(null);
+  const [previewUrl,    setPreviewUrl]    = useState<string | null>(null);
   const [busy, setBusy]     = useState(false);
   const [err, setErr]       = useState('');
   const [ok, setOk]         = useState('');
@@ -161,6 +163,42 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
   const saveEventDate = () => saveField({ event_date: f.eventDate || null }, f.eventDate ? 'תאריך האירוע נשמר' : 'תאריך האירוע נמחק');
   const saveVenue     = () => saveField({ venue_name: f.venue.trim() || null, venue_address: f.venueAddr.trim() || null }, 'מיקום האירוע נשמר');
   const saveDesc      = () => saveField({ description: f.desc.trim() || null }, 'תיאור נשמר');
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setErr('');
+  };
+
+  const uploadCover = async () => {
+    if (!selectedFile || !event?.id || !auth.user) return;
+    try {
+      setBusy(true); setErr('');
+      const url = await storageService.uploadEventCover(auth.user.id, event.id, selectedFile);
+      await onEventUpdate?.({ cover_image_url: url });
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      setOk('תמונה הועלתה בהצלחה ✓');
+      setTimeout(close, 1000);
+    } catch (e: any) {
+      setErr(e?.message?.includes('bucket') ? 'יש ליצור bucket "event-covers" ב-Supabase Storage' : (e?.message || 'שגיאה בהעלאה'));
+    } finally { setBusy(false); }
+  };
+
+  const removeCover = async () => {
+    if (!event?.id || !auth.user) return;
+    try {
+      setBusy(true); setErr('');
+      await storageService.removeEventCover(auth.user.id, event.id);
+      await onEventUpdate?.({ cover_image_url: null });
+      setSelectedFile(null); setPreviewUrl(null);
+      setOk('תמונה הוסרה');
+      setTimeout(close, 900);
+    } catch (e: any) { setErr(e?.message || 'שגיאה בהסרה'); }
+    finally { setBusy(false); }
+  };
 
   const saveSlug = async () => {
     const slug = f.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
@@ -244,6 +282,7 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
         { icon: Star,        label: 'שם האירוע',    value: eventName,                     action: () => open('eventName') },
         { icon: CalendarDays,label: 'תאריך',         value: eventDateDisplay,              action: () => open('eventDate') },
         { icon: MapPin,      label: 'מיקום',         value: event?.venue_name || 'לא הוגדר', action: () => open('eventVenue') },
+        { icon: ImagePlus,   label: 'תמונת שיתוף',   value: event?.cover_image_url ? 'הוגדרה ✓' : 'לא הוגדרה', action: () => open('eventCover') },
         { icon: AlignLeft,   label: 'תיאור',         value: event?.description ? event.description.substring(0, 22) + (event.description.length > 22 ? '…' : '') : 'לא הוגדר', action: () => open('eventDesc') },
         { icon: Info,        label: 'גרסה',          value: '1.0.0',                       action: null },
       ],
@@ -728,6 +767,57 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
                 </div>
               </button>
             </>
+          )}
+        </div>
+      </Sheet>
+
+      {/* Cover image */}
+      <Sheet open={activeModal === 'eventCover'} onClose={() => { close(); setSelectedFile(null); setPreviewUrl(null); }} title="תמונת שיתוף">
+        <div className="space-y-4">
+          <p className="text-[12px] text-charcoal-400 leading-relaxed">
+            תמונה זו תוצג כ-preview בהודעות וואטסאפ כשתשלח קישור RSVP לאורחים.
+          </p>
+
+          {/* Current or selected preview */}
+          {(previewUrl || event?.cover_image_url) && (
+            <div className="rounded-2xl overflow-hidden bg-charcoal-100"
+              style={{ aspectRatio: '16/9' }}>
+              <img
+                src={previewUrl || event?.cover_image_url || ''}
+                alt="תמונת האירוע"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+
+          {/* File picker */}
+          <label className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl border-2 border-dashed border-charcoal-200 cursor-pointer active:bg-charcoal-50 transition-colors">
+            <ImagePlus className="w-5 h-5 text-charcoal-400" />
+            <span className="text-[14px] font-semibold text-charcoal-600">
+              {selectedFile ? 'בחר תמונה אחרת' : 'בחר תמונה מהגלריה'}
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+          </label>
+
+          <Status />
+
+          {selectedFile && (
+            <Btn onPress={uploadCover} label="העלה תמונה" />
+          )}
+
+          {!selectedFile && event?.cover_image_url && (
+            <button
+              onClick={removeCover}
+              disabled={busy}
+              className="w-full py-3 rounded-2xl text-[13px] font-semibold text-red-500 active:bg-red-50 transition-colors"
+            >
+              {busy ? 'מסיר...' : 'הסר תמונה'}
+            </button>
           )}
         </div>
       </Sheet>

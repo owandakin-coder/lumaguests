@@ -285,8 +285,30 @@ export const rsvpService = {
     return qs ? `${base}?${qs}` : base;
   },
 
-  buildWhatsAppUrl: (phone: string, guestName: string, token: string, ev?: { event_name?: string | null; event_date?: string | null; venue_name?: string | null } | null): string => {
-    const link = rsvpService.buildLink(token, ev);
+  // Share link goes through /share/{token} → Vercel function injects dynamic OG image
+  buildShareLink: (
+    token: string,
+    ev?: { event_name?: string | null; event_date?: string | null; venue_name?: string | null; cover_image_url?: string | null } | null
+  ): string => {
+    const base = `${window.location.origin}/share/${token}`;
+    if (!ev) return base;
+    const p = new URLSearchParams();
+    if (ev.event_name && ev.event_name !== 'האירוע שלי') p.set('en', ev.event_name);
+    if (ev.event_date) p.set('ed', ev.event_date.split('T')[0]);
+    if (ev.venue_name) p.set('vn', ev.venue_name);
+    if (ev.cover_image_url) p.set('ci', ev.cover_image_url);
+    const qs = p.toString();
+    return qs ? `${base}?${qs}` : base;
+  },
+
+  buildWhatsAppUrl: (
+    phone: string,
+    guestName: string,
+    token: string,
+    ev?: { event_name?: string | null; event_date?: string | null; venue_name?: string | null; cover_image_url?: string | null } | null
+  ): string => {
+    // Use /share/ link so WhatsApp preview shows the event cover photo
+    const link = rsvpService.buildShareLink(token, ev);
     const eventName = (ev?.event_name && ev.event_name !== 'האירוע שלי') ? ev.event_name : 'האירוע שלנו';
     const lines: string[] = [`היי ${guestName} 👋`, '', `נשמח לראות אותך ב${eventName}`];
     if (ev?.event_date) {
@@ -296,6 +318,31 @@ export const rsvpService = {
     if (ev?.venue_name) lines.push(`📍 ${ev.venue_name}`);
     lines.push('', 'לאישור הגעה:', link, '', 'תודה ❤️');
     return `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(lines.join('\n'))}`;
+  },
+};
+
+// ── Storage — Event Cover Images ─────────────────────────────
+export const storageService = {
+  uploadEventCover: async (userId: string, eventId: string, file: File): Promise<string> => {
+    const ext  = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const path = `${userId}/${eventId}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from('event-covers')
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (error) throw error;
+
+    const { data } = supabase.storage.from('event-covers').getPublicUrl(path);
+    // Append a cache-buster so the browser picks up the new image
+    return `${data.publicUrl}?t=${Date.now()}`;
+  },
+
+  removeEventCover: async (userId: string, eventId: string): Promise<void> => {
+    // Try both common extensions
+    for (const ext of ['jpg', 'jpeg', 'png', 'webp']) {
+      await supabase.storage.from('event-covers').remove([`${userId}/${eventId}.${ext}`]);
+    }
   },
 };
 
