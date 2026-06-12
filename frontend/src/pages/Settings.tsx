@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -10,6 +10,7 @@ import {
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { guestService, authService, eventService, supabase, storageService } from '../services/supabase';
 import { Event } from '../types';
+import { ImageCropModal } from '../components/ImageCropModal';
 
 interface SettingsProps {
   onLogout: () => void;
@@ -94,9 +95,12 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
     email: '', password: '', confirm: '',
     event: '', eventDate: '', venue: '', venueAddr: '', desc: '', slug: '',
   });
-  const [showPass,      setShowPass]      = useState(false);
-  const [selectedFile,  setSelectedFile]  = useState<File | null>(null);
-  const [previewUrl,    setPreviewUrl]    = useState<string | null>(null);
+  const [showPass,     setShowPass]    = useState(false);
+  const [rawImageUrl,  setRawImageUrl] = useState<string | null>(null);
+  const [croppedBlob,  setCroppedBlob] = useState<Blob | null>(null);
+  const [croppedPreview, setCroppedPreview] = useState<string | null>(null);
+  const [showCropper,  setShowCropper] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy]     = useState(false);
   const [err, setErr]       = useState('');
   const [ok, setOk]         = useState('');
@@ -164,22 +168,49 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
   const saveVenue     = () => saveField({ venue_name: f.venue.trim() || null, venue_address: f.venueAddr.trim() || null }, 'מיקום האירוע נשמר');
   const saveDesc      = () => saveField({ description: f.desc.trim() || null }, 'תיאור נשמר');
 
+  const resetCoverState = () => {
+    setRawImageUrl(null); setCroppedBlob(null); setCroppedPreview(null); setShowCropper(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setSelectedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+
+    if (!file.type.startsWith('image/')) {
+      setErr('קובץ לא תקין — ניתן להעלות תמונות בלבד (JPG, PNG, WEBP)');
+      return;
+    }
+    const MAX_MB = 15;
+    if (file.size > MAX_MB * 1024 * 1024) {
+      setErr(`הקובץ גדול מדי — הגודל המקסימלי הוא ${MAX_MB}MB`);
+      return;
+    }
+
     setErr('');
+    const reader = new FileReader();
+    reader.onload = ev => {
+      setRawImageUrl(ev.target?.result as string);
+      setShowCropper(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropDone = (blob: Blob, sizeKB: number) => {
+    setCroppedBlob(blob);
+    setCroppedPreview(URL.createObjectURL(blob));
+    setShowCropper(false);
+    setOk(`תמונה חתוכה — ${sizeKB}KB`);
   };
 
   const uploadCover = async () => {
-    if (!selectedFile || !event?.id || !auth.user) return;
+    if (!croppedBlob || !event?.id || !auth.user) return;
     try {
       setBusy(true); setErr('');
-      const url = await storageService.uploadEventCover(auth.user.id, event.id, selectedFile);
+      const file = new File([croppedBlob], 'cover.jpg', { type: 'image/jpeg' });
+      const url  = await storageService.uploadEventCover(auth.user.id, event.id, file);
       await onEventUpdate?.({ cover_image_url: url });
-      setSelectedFile(null);
-      setPreviewUrl(null);
+      resetCoverState();
       setOk('תמונה הועלתה בהצלחה ✓');
       setTimeout(close, 1000);
     } catch (e: any) {
@@ -193,7 +224,7 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
       setBusy(true); setErr('');
       await storageService.removeEventCover(auth.user.id, event.id);
       await onEventUpdate?.({ cover_image_url: null });
-      setSelectedFile(null); setPreviewUrl(null);
+      resetCoverState();
       setOk('תמונה הוסרה');
       setTimeout(close, 900);
     } catch (e: any) { setErr(e?.message || 'שגיאה בהסרה'); }
@@ -772,18 +803,17 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
       </Sheet>
 
       {/* Cover image */}
-      <Sheet open={activeModal === 'eventCover'} onClose={() => { close(); setSelectedFile(null); setPreviewUrl(null); }} title="תמונת שיתוף">
+      <Sheet open={activeModal === 'eventCover'} onClose={() => { close(); resetCoverState(); }} title="תמונת שיתוף">
         <div className="space-y-4">
           <p className="text-[12px] text-charcoal-400 leading-relaxed">
-            תמונה זו תוצג כ-preview בהודעות וואטסאפ כשתשלח קישור RSVP לאורחים.
+            תמונה זו תוצג כ-preview בהודעות וואטסאפ כשתשלח קישור RSVP לאורחים. יחס 16:9, עד 15MB.
           </p>
 
-          {/* Current or selected preview */}
-          {(previewUrl || event?.cover_image_url) && (
-            <div className="rounded-2xl overflow-hidden bg-charcoal-100"
-              style={{ aspectRatio: '16/9' }}>
+          {/* Current or cropped preview */}
+          {(croppedPreview || event?.cover_image_url) && (
+            <div className="rounded-2xl overflow-hidden bg-charcoal-100" style={{ aspectRatio: '16/9' }}>
               <img
-                src={previewUrl || event?.cover_image_url || ''}
+                src={croppedPreview || event?.cover_image_url || ''}
                 alt="תמונת האירוע"
                 className="w-full h-full object-cover"
               />
@@ -794,9 +824,10 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
           <label className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl border-2 border-dashed border-charcoal-200 cursor-pointer active:bg-charcoal-50 transition-colors">
             <ImagePlus className="w-5 h-5 text-charcoal-400" />
             <span className="text-[14px] font-semibold text-charcoal-600">
-              {selectedFile ? 'בחר תמונה אחרת' : 'בחר תמונה מהגלריה'}
+              {croppedBlob ? 'בחר תמונה אחרת' : 'בחר תמונה מהגלריה'}
             </span>
             <input
+              ref={fileInputRef}
               type="file"
               accept="image/*"
               className="hidden"
@@ -806,11 +837,11 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
 
           <Status />
 
-          {selectedFile && (
+          {croppedBlob && (
             <Btn onPress={uploadCover} label="העלה תמונה" />
           )}
 
-          {!selectedFile && event?.cover_image_url && (
+          {!croppedBlob && event?.cover_image_url && (
             <button
               onClick={removeCover}
               disabled={busy}
@@ -821,6 +852,15 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
           )}
         </div>
       </Sheet>
+
+      {/* Cropper — full screen, rendered via portal inside ImageCropModal */}
+      {showCropper && rawImageUrl && (
+        <ImageCropModal
+          imageSrc={rawImageUrl}
+          onDone={handleCropDone}
+          onCancel={() => { setShowCropper(false); setRawImageUrl(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+        />
+      )}
 
       {/* Delete confirm modal — Portal to escape transform stacking context */}
       {createPortal(
