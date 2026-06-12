@@ -1,12 +1,15 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, Users, ArrowUpDown, Download } from 'lucide-react';
+import { Search, Plus, Users, ArrowUpDown, Download, Upload } from 'lucide-react';
 import { GuestCard } from '../components/GuestCard';
+import { ImportGuestsModal } from '../components/ImportGuestsModal';
 import { Guest, RsvpStatus, Category } from '../types';
 
 interface GuestListProps {
   guests:Guest[];loading:boolean;onAddGuest:()=>void;
   onEditGuest:(g:Guest)=>void;onDeleteGuest:(g:Guest)=>void;onViewGuest:(g:Guest)=>void;
+  onGuestsImported?:()=>void;
+  userId:string;
 }
 
 type SortType = 'newest' | 'oldest' | 'az' | 'status';
@@ -44,11 +47,12 @@ const catLabelFull: Record<string, string> = {
   GROOM:'חתן',BRIDE:'כלה',FAMILY:'משפחה',FRIENDS:'חברים',WORK:'עבודה',OTHER:'אחר',
 };
 
-export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onViewGuest}:GuestListProps)=>{
-  const [search,   setSearch]   = useState('');
-  const [status,   setStatus]   = useState<RsvpStatus|'ALL'>('ALL');
-  const [category, setCategory] = useState<Category|'ALL'>('ALL');
-  const [sort,     setSort]     = useState<SortType>('newest');
+export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onViewGuest,onGuestsImported,userId}:GuestListProps)=>{
+  const [search,        setSearch]        = useState('');
+  const [status,        setStatus]        = useState<RsvpStatus|'ALL'>('ALL');
+  const [category,      setCategory]      = useState<Category|'ALL'>('ALL');
+  const [sort,          setSort]          = useState<SortType>('newest');
+  const [importOpen,    setImportOpen]    = useState(false);
 
   const usedCategories = useMemo(() => {
     const used = new Set(guests.map(g => g.category));
@@ -128,6 +132,15 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* CSV Import */}
+          <button
+            onClick={() => setImportOpen(true)}
+            className="w-9 h-9 rounded-2xl bg-white flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
+            style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }}
+            title="ייבוא CSV"
+          >
+            <Upload className="w-4 h-4 text-charcoal-500" strokeWidth={2}/>
+          </button>
           {/* CSV Export */}
           {guests.length > 0 && (
             <button
@@ -245,6 +258,12 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
           </div>
         </AnimatePresence>
       )}
+      <ImportGuestsModal
+        open={importOpen}
+        userId={userId}
+        onClose={() => setImportOpen(false)}
+        onImported={() => { setImportOpen(false); onGuestsImported?.(); }}
+      />
     </div>
   );
 };

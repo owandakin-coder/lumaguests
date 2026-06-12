@@ -170,10 +170,12 @@ function App() {
           <GuestList
             guests={guests}
             loading={loading}
+            userId={auth.user!.id}
             onAddGuest={handleAddGuest}
             onEditGuest={handleEditGuest}
             onDeleteGuest={handleDeleteGuest}
             onViewGuest={handleViewGuest}
+            onGuestsImported={loadGuests}
           />
         );
       case 'messages':
