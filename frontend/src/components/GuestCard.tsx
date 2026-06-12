@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Phone, MessageCircle, Link } from 'lucide-react';
 import { Guest, RsvpStatus, Side, Event } from '../types';
 import { guestService, rsvpService, toWaPhone, openWhatsAppUrl } from '../services/supabase';
+import { buildGuestRsvpMessage, buildGuestRsvpWhatsAppUrl } from '../utils/rsvpShare';
 
 interface GuestCardProps {
   guest: Guest;
@@ -9,7 +10,7 @@ interface GuestCardProps {
   onDelete: (guest: Guest) => void;
   onView: (guest: Guest) => void;
   userId: string;
-  event?: Pick<Event, 'event_name' | 'event_date' | 'venue_name' | 'cover_image_url'> | null;
+  event?: Pick<Event, 'event_name' | 'event_date' | 'venue_name' | 'venue_address' | 'cover_image_url'> | null;
 }
 
 const rsvpCfg: Record<RsvpStatus, { label: string; dot: string; bg: string; text: string }> = {
@@ -120,7 +121,7 @@ export const GuestCard = ({ guest, onView, userId, event }: GuestCardProps) => {
 
     const personalRsvpLink = token ? rsvpService.buildPersonalRsvpLink({ rsvp_token: token }) : null;
     const url = personalRsvpLink && token
-      ? rsvpService.buildWhatsAppUrl(guest.phone, name, token, event)
+      ? buildGuestRsvpWhatsAppUrl(guest.phone, buildGuestRsvpMessage(name, event, personalRsvpLink))
       : `https://wa.me/${toWaPhone(guest.phone)}?text=${encodeURIComponent(`שלום ${name}! רצינו ליצור איתך קשר לגבי האירוע.`)}`;
     openWhatsAppUrl(url);
   };

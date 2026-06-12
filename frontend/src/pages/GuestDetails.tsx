@@ -7,6 +7,7 @@ import {
 import { RsvpShareModal } from '../components/RsvpShareModal';
 import { Guest, RsvpStatus } from '../types';
 import { guestService, rsvpService } from '../services/supabase';
+import { buildGuestRsvpMessage, buildGuestRsvpWhatsAppUrl } from '../utils/rsvpShare';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { useEvent } from '../hooks/useEvent';
 
@@ -128,8 +129,9 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
   const handleCall     = () => { window.location.href = `tel:${guest.phone}`; };
   const handleWhatsApp = async () => {
     const token = await ensureRsvpTokenReady();
-    const url = token
-      ? rsvpService.buildWhatsAppUrl(guest.phone, name, token, event)
+    const personalLink = token ? rsvpService.buildPersonalRsvpLink({ rsvp_token: token }) : null;
+    const url = token && personalLink
+      ? buildGuestRsvpWhatsAppUrl(guest.phone, buildGuestRsvpMessage(name, event, personalLink))
       : `https://wa.me/${guest.phone.replace(/\D/g,'')}?text=${encodeURIComponent(`שלום ${name}! רצינו ליצור איתך קשר לגבי האירוע.`)}`;
     window.open(url, '_blank');
   };
