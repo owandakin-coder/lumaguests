@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Phone, MessageCircle, Link } from 'lucide-react';
-import { Guest, RsvpStatus, Event } from '../types';
+import { Guest, RsvpStatus, Side, Event } from '../types';
 import { rsvpService, toWaPhone, openWhatsAppUrl } from '../services/supabase';
 
 interface GuestCardProps {
@@ -18,8 +18,6 @@ const rsvpCfg: Record<RsvpStatus, { label: string; dot: string; bg: string; text
 };
 
 const catLabel: Record<string, string> = {
-  GROOM: 'חתן',
-  BRIDE: 'כלה',
   FAMILY: 'משפחה',
   FRIENDS: 'חברים',
   WORK: 'עבודה',
@@ -27,8 +25,6 @@ const catLabel: Record<string, string> = {
 };
 
 const catAccent: Record<string, string> = {
-  GROOM: '#C9A84C',
-  BRIDE: '#F9A8D4',
   FAMILY: '#93C5FD',
   FRIENDS: '#C4B5FD',
   WORK: '#94A3B8',
@@ -36,8 +32,6 @@ const catAccent: Record<string, string> = {
 };
 
 const catBg: Record<string, string> = {
-  GROOM: '#FEF3C7',
-  BRIDE: '#FDF2F8',
   FAMILY: '#EFF6FF',
   FRIENDS: '#F5F3FF',
   WORK: '#F1F5F9',
@@ -45,12 +39,34 @@ const catBg: Record<string, string> = {
 };
 
 const catTextColor: Record<string, string> = {
-  GROOM: '#92400E',
-  BRIDE: '#9D174D',
   FAMILY: '#1E40AF',
   FRIENDS: '#5B21B6',
   WORK: '#374151',
   OTHER: '#6B7280',
+};
+
+const sideLabel: Record<Side, string> = {
+  GROOM: 'צד חתן',
+  BRIDE: 'צד כלה',
+  SHARED: 'משותף',
+};
+
+const sideAccent: Record<Side, string> = {
+  GROOM: '#C9A84C',
+  BRIDE: '#F9A8D4',
+  SHARED: '#A5B4FC',
+};
+
+const sideBg: Record<Side, string> = {
+  GROOM: '#FFFBEB',
+  BRIDE: '#FDF2F8',
+  SHARED: '#EEF2FF',
+};
+
+const sideTextColor: Record<Side, string> = {
+  GROOM: '#92400E',
+  BRIDE: '#9D174D',
+  SHARED: '#4338CA',
 };
 
 const avBgs = [
@@ -77,9 +93,12 @@ function avBg(name: string) {
 export const GuestCard = ({ guest, onView, event }: GuestCardProps) => {
   const name = guest.fullName || guest.full_name;
   const status = (guest.rsvpStatus || guest.rsvp_status) as RsvpStatus;
+  const side = guest.side as Side | null | undefined;
   const r = rsvpCfg[status];
-  const accent = catAccent[guest.category];
-  const cBg   = catBg[guest.category] || '#F9FAFB';
+
+  // Accent bar: side color takes priority over category color
+  const accent = side ? sideAccent[side] : (catAccent[guest.category] ?? '#D1D5DB');
+  const cBg   = catBg[guest.category]   || '#F9FAFB';
   const cText = catTextColor[guest.category] || '#6B7280';
   const [abg, afg] = avBg(name);
   const viaLink = guest.rsvp_via_link;
@@ -120,6 +139,7 @@ export const GuestCard = ({ guest, onView, event }: GuestCardProps) => {
             <p className="text-[15px] font-bold text-charcoal-900 truncate leading-tight mb-1">{name}</p>
             <p className="text-[12px] text-charcoal-400 mb-1.5" dir="ltr">{guest.phone}</p>
             <div className="flex items-center gap-1.5 flex-wrap">
+              {/* RSVP status badge */}
               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: r.bg }}>
                 <div className="w-1.5 h-1.5 rounded-full" style={{ background: r.dot }} />
                 <span className="text-[10px] font-bold" style={{ color: r.text }}>{r.label}</span>
@@ -127,8 +147,16 @@ export const GuestCard = ({ guest, onView, event }: GuestCardProps) => {
                   <Link className="w-2.5 h-2.5 mr-0.5" style={{ color: '#A855F7' }} strokeWidth={2.5} />
                 )}
               </div>
+              {/* Side badge — shown when side is assigned */}
+              {side && (
+                <div className="flex items-center gap-0.5 px-2 py-0.5 rounded-full" style={{ background: sideBg[side] }}>
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: sideAccent[side] }} />
+                  <span className="text-[10px] font-bold" style={{ color: sideTextColor[side] }}>{sideLabel[side]}</span>
+                </div>
+              )}
+              {/* Category badge */}
               <div className="flex items-center gap-0.5 px-2 py-0.5 rounded-full" style={{ background: cBg }}>
-                <div className="w-1.5 h-1.5 rounded-full" style={{ background: accent }} />
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background: catAccent[guest.category] ?? '#D1D5DB' }} />
                 <span className="text-[10px] font-bold" style={{ color: cText }}>{catLabel[guest.category] || 'אחר'}</span>
               </div>
               {guest.companions > 0 && (

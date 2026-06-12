@@ -5,10 +5,10 @@ import {
   FileText, ArrowRight, Loader2, Users, SkipForward,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { Category } from '../types';
+import { Category, Side } from '../types';
 import { rsvpService, supabase } from '../services/supabase';
 
-interface ContactDraft { name: string; phone: string; category: Category; }
+interface ContactDraft { name: string; phone: string; side: Side | null; category: Category; }
 
 interface ImportGuestsModalProps {
   open: boolean;
@@ -22,6 +22,7 @@ type ImportStep = 'upload' | 'contacts-review' | 'map' | 'preview' | 'importing'
 interface ColumnMap {
   fullName:   number | null;
   phone:      number | null;
+  side:       number | null;
   category:   number | null;
   companions: number | null;
   notes:      number | null;
@@ -30,6 +31,7 @@ interface ColumnMap {
 interface ParsedRow {
   fullName:   string;
   phone:      string;
+  side:       Side | null;
   category:   Category;
   companions: number;
   notes:      string;
@@ -74,28 +76,38 @@ function normalizePhone(raw: string): string {
 const PHONE_RE = /^0[2-9]\d{7,8}$/;
 
 const CATEGORY_MAP: Record<string, Category> = {
-  'חתן': 'GROOM',   groom: 'GROOM',
-  'כלה': 'BRIDE',   bride: 'BRIDE',
   'משפחה': 'FAMILY', family: 'FAMILY',
   'חברים': 'FRIENDS', friends: 'FRIENDS',
   'עבודה': 'WORK',   work: 'WORK',
   'אחר': 'OTHER',   other: 'OTHER',
 };
 
+const SIDE_MAP: Record<string, Side> = {
+  'חתן': 'GROOM', groom: 'GROOM',
+  'כלה': 'BRIDE', bride: 'BRIDE',
+  'משותף': 'SHARED', shared: 'SHARED', 'שניהם': 'SHARED',
+};
+
 function parseCategory(raw: string): Category {
   return CATEGORY_MAP[raw.trim().toLowerCase()] ?? CATEGORY_MAP[raw.trim()] ?? 'OTHER';
+}
+
+function parseSide(raw: string): Side | null {
+  const key = raw.trim().toLowerCase();
+  return SIDE_MAP[key] ?? SIDE_MAP[raw.trim()] ?? null;
 }
 
 const COL_PATTERNS: Record<keyof ColumnMap, RegExp> = {
   fullName:   /שם|name/i,
   phone:      /טלפון|נייד|phone|mobile|cell/i,
-  category:   /קטגוריה|צד|category|side/i,
+  side:       /^צד$|^side$/i,
+  category:   /קטגוריה|category/i,
   companions: /מלווים|companion|guest/i,
   notes:      /הערות|note|remark|comment/i,
 };
 
 function autoDetect(headers: string[]): ColumnMap {
-  const map: ColumnMap = { fullName: null, phone: null, category: null, companions: null, notes: null };
+  const map: ColumnMap = { fullName: null, phone: null, side: null, category: null, companions: null, notes: null };
   (Object.keys(COL_PATTERNS) as (keyof ColumnMap)[]).forEach(field => {
     const idx = headers.findIndex(h => COL_PATTERNS[field].test(h));
     if (idx !== -1) map[field] = idx;
@@ -108,6 +120,7 @@ function buildRow(raw: string[], map: ColumnMap): ParsedRow {
   const fullName   = get(map.fullName).trim();
   const rawPhone   = get(map.phone).trim();
   const phone      = normalizePhone(rawPhone);
+  const side       = map.side !== null ? parseSide(get(map.side)) : null;
   const category   = map.category !== null ? parseCategory(get(map.category)) : 'OTHER';
   const companions = Math.max(0, parseInt(get(map.companions), 10) || 0);
   const notes      = get(map.notes).trim();
@@ -117,21 +130,25 @@ function buildRow(raw: string[], map: ColumnMap): ParsedRow {
   if (!rawPhone)             errors.push('טלפון חסר');
   else if (!PHONE_RE.test(phone)) errors.push('טלפון לא תקין');
 
-  return { fullName, phone, category, companions, notes, valid: errors.length === 0, errors };
+  return { fullName, phone, side, category, companions, notes, valid: errors.length === 0, errors };
 }
 
 // ── Field labels ─────────────────────────────────────────────
 const FIELDS: { key: keyof ColumnMap; label: string; required: boolean }[] = [
   { key: 'fullName',   label: 'שם מלא',    required: true  },
   { key: 'phone',      label: 'טלפון',      required: true  },
+  { key: 'side',       label: 'צד',         required: false },
   { key: 'category',   label: 'קטגוריה',   required: false },
   { key: 'companions', label: 'מלווים',     required: false },
   { key: 'notes',      label: 'הערות',      required: false },
 ];
 
 const catLabel: Record<Category, string> = {
-  GROOM: 'חתן', BRIDE: 'כלה', FAMILY: 'משפחה',
-  FRIENDS: 'חברים', WORK: 'עבודה', OTHER: 'אחר',
+  FAMILY: 'משפחה', FRIENDS: 'חברים', WORK: 'עבודה', OTHER: 'אחר',
+};
+
+const sideLabel: Record<Side, string> = {
+  GROOM: 'צד החתן', BRIDE: 'צד הכלה', SHARED: 'משותף',
 };
 
 // ── Component ─────────────────────────────────────────────────
@@ -142,7 +159,7 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
   const [fileName, setFileName] = useState('');
   const [headers, setHeaders]   = useState<string[]>([]);
   const [rawRows, setRawRows]   = useState<string[][]>([]);
-  const [colMap, setColMap]     = useState<ColumnMap>({ fullName: null, phone: null, category: null, companions: null, notes: null });
+  const [colMap, setColMap]     = useState<ColumnMap>({ fullName: null, phone: null, side: null, category: null, companions: null, notes: null });
   const [progress, setProgress] = useState(0);
   const [result, setResult]     = useState<ImportResult | null>(null);
   const [contacts, setContacts] = useState<ContactDraft[]>([]);
@@ -158,6 +175,7 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
         .map((c: any) => ({
           name:     c.name[0].trim(),
           phone:    c.tel[0].replace(/[\s\-\(\)\.]/g, ''),
+          side:     null,
           category: 'OTHER' as Category,
         }));
       if (parsed.length > 0) { setContacts(parsed); setStep('contacts-review'); }
@@ -174,7 +192,8 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
         .filter(c => !existingPhones.has(normalizePhone(c.phone)))
         .map(c => ({
           user_id: userId, full_name: c.name, phone: c.phone,
-          rsvp_status: 'PENDING', companions: 0, category: c.category,
+          rsvp_status: 'PENDING', companions: 0,
+          side: c.side ?? null, category: c.category,
           rsvp_token: rsvpService.generateToken(),
         }));
       if (toInsert.length > 0) {
@@ -201,7 +220,7 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
     setStep('upload'); setDragging(false); setFileName('');
     setHeaders([]); setRawRows([]); setProgress(0); setResult(null);
     setContacts([]); setSavingContacts(false);
-    setColMap({ fullName: null, phone: null, category: null, companions: null, notes: null });
+    setColMap({ fullName: null, phone: null, side: null, category: null, companions: null, notes: null });
   }, []);
 
   const handleClose = () => { reset(); onClose(); };
@@ -282,6 +301,7 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
           phone:       row.phone,
           rsvp_status: 'PENDING',
           companions:  row.companions,
+          side:        row.side ?? null,
           category:    row.category,
           notes:       row.notes || null,
           rsvp_token:  rsvpService.generateToken(),
@@ -400,14 +420,14 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
                       <table className="text-[12px] text-charcoal-600 w-full">
                         <thead>
                           <tr className="border-b border-charcoal-100">
-                            {['שם מלא', 'טלפון', 'קטגוריה', 'מלווים', 'הערות'].map(h => (
+                            {['שם מלא', 'טלפון', 'צד', 'קטגוריה', 'מלווים', 'הערות'].map(h => (
                               <th key={h} className="text-right pb-1 pr-3 font-bold text-charcoal-700">{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           <tr>
-                            {['ישראל ישראלי', '0541234567', 'משפחה', '1', ''].map((v, i) => (
+                            {['ישראל ישראלי', '0541234567', 'חתן', 'משפחה', '1', ''].map((v, i) => (
                               <td key={i} className="pt-1.5 pr-3 text-charcoal-500">{v}</td>
                             ))}
                           </tr>
@@ -440,17 +460,28 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
                           <p className="text-[14px] font-semibold text-charcoal-900 truncate">{c.name}</p>
                           <p className="text-[11px] text-charcoal-400" dir="ltr">{c.phone}</p>
                         </div>
-                        <select
-                          value={c.category}
-                          onChange={e => setContacts(prev => prev.map((x, i) => i === idx ? { ...x, category: e.target.value as Category } : x))}
-                          className="text-[12px] font-semibold bg-charcoal-50 px-2.5 py-1.5 rounded-xl focus:outline-none flex-shrink-0"
-                        >
-                          {[
-                            { v: 'GROOM', l: 'חתן' }, { v: 'BRIDE', l: 'כלה' },
-                            { v: 'FAMILY', l: 'משפחה' }, { v: 'FRIENDS', l: 'חברים' },
-                            { v: 'WORK', l: 'עבודה' }, { v: 'OTHER', l: 'אחר' },
-                          ].map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
-                        </select>
+                        <div className="flex flex-col gap-1 flex-shrink-0">
+                          <select
+                            value={c.side ?? ''}
+                            onChange={e => setContacts(prev => prev.map((x, i) => i === idx ? { ...x, side: (e.target.value || null) as Side | null } : x))}
+                            className="text-[12px] font-semibold bg-charcoal-50 px-2.5 py-1.5 rounded-xl focus:outline-none"
+                          >
+                            <option value="">ללא צד</option>
+                            <option value="GROOM">🤵 חתן</option>
+                            <option value="BRIDE">👰 כלה</option>
+                            <option value="SHARED">💑 משותף</option>
+                          </select>
+                          <select
+                            value={c.category}
+                            onChange={e => setContacts(prev => prev.map((x, i) => i === idx ? { ...x, category: e.target.value as Category } : x))}
+                            className="text-[12px] font-semibold bg-charcoal-50 px-2.5 py-1.5 rounded-xl focus:outline-none"
+                          >
+                            <option value="FAMILY">משפחה</option>
+                            <option value="FRIENDS">חברים</option>
+                            <option value="WORK">עבודה</option>
+                            <option value="OTHER">אחר</option>
+                          </select>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -573,6 +604,9 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
                             <span className="text-[12px] text-charcoal-400" dir="ltr">
                               {row.phone || '—'}
                             </span>
+                            {row.side && (
+                              <span className="text-[11px] text-charcoal-400">{sideLabel[row.side]}</span>
+                            )}
                             {row.category && (
                               <span className="text-[11px] text-charcoal-400">{catLabel[row.category]}</span>
                             )}

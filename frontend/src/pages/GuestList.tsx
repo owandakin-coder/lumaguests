@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Plus, Users, ArrowUpDown, Download, Upload, Layers, List } from 'lucide-react';
 import { GuestCard } from '../components/GuestCard';
 import { ImportGuestsModal } from '../components/ImportGuestsModal';
-import { Guest, RsvpStatus, Category, Event } from '../types';
+import { Guest, RsvpStatus, Category, Side, Event } from '../types';
 
 interface GuestListProps {
   guests:Guest[];loading:boolean;onAddGuest:()=>void;
@@ -29,10 +29,15 @@ const statusFilters:{label:string;value:RsvpStatus|'ALL'}[]=[
   {label:'ממתינים',value:'PENDING'},{label:'לא מגיעים',value:'DECLINED'},
 ];
 
+const sideFilters:{label:string;value:Side|'ALL';color:string}[]=[
+  {label:'הכל',      value:'ALL',    color:'#1A1916'},
+  {label:'צד חתן',   value:'GROOM',  color:'#C9A84C'},
+  {label:'צד כלה',   value:'BRIDE',  color:'#F9A8D4'},
+  {label:'משותף',    value:'SHARED', color:'#A5B4FC'},
+];
+
 const categoryFilters:{label:string;value:Category|'ALL';color:string}[]=[
   {label:'הכל',    value:'ALL',     color:'#1A1916'},
-  {label:'חתן',    value:'GROOM',   color:'#C9A84C'},
-  {label:'כלה',    value:'BRIDE',   color:'#F9A8D4'},
   {label:'משפחה',  value:'FAMILY',  color:'#93C5FD'},
   {label:'חברים',  value:'FRIENDS', color:'#C4B5FD'},
   {label:'עבודה',  value:'WORK',    color:'#94A3B8'},
@@ -46,18 +51,34 @@ const rsvpStatusLabel: Record<RsvpStatus, string> = {
 };
 
 const catLabelFull: Record<string, string> = {
-  GROOM:'חתן',BRIDE:'כלה',FAMILY:'משפחה',FRIENDS:'חברים',WORK:'עבודה',OTHER:'אחר',
+  FAMILY:'משפחה', FRIENDS:'חברים', WORK:'עבודה', OTHER:'אחר',
 };
 
-const GROUP_ORDER: Category[] = ['GROOM','BRIDE','FAMILY','FRIENDS','WORK','OTHER'];
+const sideLabelFull: Record<string, string> = {
+  GROOM:'צד החתן', BRIDE:'צד הכלה', SHARED:'משותף',
+};
+
+// Grouped mode — group by side
+const SIDE_ORDER: (Side | null)[] = ['GROOM', 'BRIDE', 'SHARED', null];
+
+const sideGroupConfig: Record<string, { label: string; color: string; emoji: string }> = {
+  GROOM:  { label: 'צד החתן', color: '#C9A84C', emoji: '🤵' },
+  BRIDE:  { label: 'צד הכלה', color: '#F9A8D4', emoji: '👰' },
+  SHARED: { label: 'משותף',   color: '#A5B4FC', emoji: '💑' },
+  null:   { label: 'ללא שיוך', color: '#D1D5DB', emoji: '✦' },
+};
 
 export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onViewGuest,onGuestsImported,userId,initialStatusFilter,event}:GuestListProps)=>{
   const [search,        setSearch]        = useState('');
   const [status,        setStatus]        = useState<RsvpStatus|'ALL'>(initialStatusFilter || 'ALL');
+  const [side,          setSide]          = useState<Side|'ALL'>('ALL');
   const [category,      setCategory]      = useState<Category|'ALL'>('ALL');
   const [sort,          setSort]          = useState<SortType>('newest');
   const [importOpen,    setImportOpen]    = useState(false);
   const [grouped,       setGrouped]       = useState(false);
+
+  // Only show side filter when at least one guest has a side assigned
+  const hasSides = useMemo(() => guests.some(g => g.side), [guests]);
 
   const usedCategories = useMemo(() => {
     const used = new Set(guests.map(g => g.category));
@@ -70,6 +91,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
       const rsvp = g.rsvpStatus||g.rsvp_status;
       return (name.toLowerCase().includes(search.toLowerCase())||g.phone.includes(search))
         &&(status==='ALL'||rsvp===status)
+        &&(side==='ALL'||g.side===side)
         &&(category==='ALL'||g.category===category);
     });
 
@@ -95,31 +117,31 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
     }
 
     return list;
-  }, [guests, search, status, category, sort]);
+  }, [guests, search, status, side, category, sort]);
 
   const cycleSort = () => {
     const idx = sortCycle.indexOf(sort);
     setSort(sortCycle[(idx + 1) % sortCycle.length]);
   };
 
-  // Groups: only when grouped mode + no active filters that would confuse context
+  // Grouped mode — group by side
   const groupedList = useMemo(() => {
     if (!grouped) return null;
-    const map = new Map<Category, Guest[]>();
-    GROUP_ORDER.forEach(c => map.set(c, []));
-    filtered.forEach(g => { map.get(g.category as Category)?.push(g); });
-    return GROUP_ORDER.map(c => ({ cat: c, guests: map.get(c) ?? [] })).filter(g => g.guests.length > 0);
+    const map = new Map<Side | null, Guest[]>();
+    SIDE_ORDER.forEach(s => map.set(s, []));
+    filtered.forEach(g => { map.get((g.side as Side | null) ?? null)?.push(g); });
+    return SIDE_ORDER.map(s => ({ side: s, guests: map.get(s) ?? [] })).filter(g => g.guests.length > 0);
   }, [grouped, filtered]);
-
 
   const exportCSV = () => {
     const eventName = localStorage.getItem('luma_event_name') || 'מוזמנים';
-    const headers = ['שם', 'טלפון', 'סטטוס', 'קטגוריה', 'מלווים', 'סך אנשים', 'הערות'];
+    const headers = ['שם', 'טלפון', 'סטטוס', 'צד', 'קטגוריה', 'מלווים', 'סך אנשים', 'הערות'];
     const rows = filtered.map(g => [
       g.fullName||g.full_name,
       g.phone,
       rsvpStatusLabel[(g.rsvpStatus||g.rsvp_status) as RsvpStatus],
-      catLabelFull[g.category],
+      g.side ? sideLabelFull[g.side] : '',
+      catLabelFull[g.category] || 'אחר',
       g.companions,
       1 + g.companions,
       g.notes || '',
@@ -135,6 +157,8 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
     URL.revokeObjectURL(url);
   };
 
+  const activeFiltersCount = (side !== 'ALL' ? 1 : 0) + (category !== 'ALL' ? 1 : 0);
+
   return (
     <div className="space-y-4 pt-1">
 
@@ -147,22 +171,19 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Import button */}
           <button onClick={() => setImportOpen(true)}
             className="w-9 h-9 rounded-2xl bg-white flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
             style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }} title="ייבוא CSV / Excel">
             <Upload className="w-4 h-4 text-charcoal-500" strokeWidth={2}/>
           </button>
-          {/* Group toggle */}
           <button onClick={() => setGrouped(p => !p)}
             className="w-9 h-9 rounded-2xl flex items-center justify-center active:scale-90 transition-all flex-shrink-0"
             style={{ background: grouped ? '#1A1916' : 'white', boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }}
-            title="תצוגה לפי קבוצות">
+            title="תצוגה לפי צד">
             {grouped
               ? <Layers className="w-4 h-4 text-white" strokeWidth={2}/>
               : <List className="w-4 h-4 text-charcoal-500" strokeWidth={2}/>}
           </button>
-          {/* CSV Export */}
           {guests.length > 0 && (
             <button onClick={exportCSV}
               className="w-9 h-9 rounded-2xl bg-white flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
@@ -201,7 +222,6 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
             </button>
           ))}
         </div>
-        {/* Sort toggle */}
         <button
           onClick={cycleSort}
           className="flex items-center gap-1 px-3 py-2 rounded-2xl bg-white text-[11px] font-bold text-charcoal-700 active:scale-95 transition-transform flex-shrink-0"
@@ -212,7 +232,33 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
         </button>
       </div>
 
-      {/* Category filter — horizontal scroll */}
+      {/* Side filter — shown only when guests have sides */}
+      {!loading && hasSides && (
+        <div className="flex gap-2 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
+          {sideFilters.map(f => {
+            const active = side === f.value;
+            return (
+              <button key={f.value}
+                onClick={() => setSide(f.value as Side | 'ALL')}
+                className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-[14px] text-[12px] font-bold transition-all active:scale-95"
+                style={{
+                  background: active ? f.color : 'rgba(0,0,0,0.05)',
+                  color: active ? (f.value === 'BRIDE' ? '#9D174D' : 'white') : '#6E6862',
+                  boxShadow: active ? `0 2px 8px ${f.color}50` : 'none',
+                }}
+              >
+                {f.value !== 'ALL' && (
+                  <div className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: active ? 'rgba(0,0,0,0.25)' : f.color }} />
+                )}
+                {f.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Category filter — horizontal scroll, shown when 2+ categories used */}
       {!loading && usedCategories.length > 2 && (
         <div className="flex gap-2 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
           {usedCategories.map(f=>{
@@ -239,6 +285,18 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
         </div>
       )}
 
+      {/* Active filter summary */}
+      {activeFiltersCount > 0 && (
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-charcoal-400">{filtered.length} תוצאות עם הפילטרים הנוכחיים</span>
+          <button
+            onClick={() => { setSide('ALL'); setCategory('ALL'); }}
+            className="text-[11px] text-gold-600 font-bold underline">
+            נקה פילטרים
+          </button>
+        </div>
+      )}
+
       {/* List */}
       {loading ? (
         <div className="space-y-2.5">
@@ -251,12 +309,12 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
             <Users className="w-9 h-9 text-charcoal-300" strokeWidth={1.3}/>
           </div>
           <p className="text-[15px] font-bold text-charcoal-800 mb-1">
-            {search||status!=='ALL'||category!=='ALL' ? 'לא נמצאו תוצאות' : 'אין מוזמנים עדיין'}
+            {search||status!=='ALL'||side!=='ALL'||category!=='ALL' ? 'לא נמצאו תוצאות' : 'אין מוזמנים עדיין'}
           </p>
           <p className="text-[13px] text-charcoal-400 mb-6">
-            {search||status!=='ALL'||category!=='ALL' ? 'נסה לשנות את הסינון' : 'הוסף את המוזמן הראשון שלך'}
+            {search||status!=='ALL'||side!=='ALL'||category!=='ALL' ? 'נסה לשנות את הסינון' : 'הוסף את המוזמן הראשון שלך'}
           </p>
-          {!search&&status==='ALL'&&category==='ALL'&&(
+          {!search&&status==='ALL'&&side==='ALL'&&category==='ALL'&&(
             <button onClick={onAddGuest}
               className="px-5 py-2.5 rounded-2xl bg-charcoal-900 text-white text-[13px] font-bold active:scale-95 transition-transform">
               הוסף מוזמן
@@ -265,13 +323,14 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
         </motion.div>
       ) : groupedList ? (
         <div className="space-y-5">
-          {groupedList.map(({ cat, guests: grp }) => {
-            const cf = categoryFilters.find(f => f.value === cat);
+          {groupedList.map(({ side: s, guests: grp }) => {
+            const key = s ?? 'null';
+            const cfg = sideGroupConfig[key];
             return (
-              <div key={cat}>
+              <div key={key}>
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: cf?.color }}/>
-                  <span className="text-[12px] font-bold text-charcoal-500 uppercase tracking-widest">{cf?.label}</span>
+                  <span className="text-base leading-none">{cfg.emoji}</span>
+                  <span className="text-[12px] font-bold text-charcoal-500 uppercase tracking-widest">{cfg.label}</span>
                   <span className="text-[11px] text-charcoal-400 mr-1">
                     {grp.length} · {grp.reduce((a,g)=>a+1+(g.companions||0),0)} אנשים
                   </span>
@@ -300,6 +359,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
           </div>
         </AnimatePresence>
       )}
+
       <ImportGuestsModal
         open={importOpen}
         userId={userId}

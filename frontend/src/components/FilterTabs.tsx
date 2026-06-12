@@ -7,13 +7,11 @@ interface FilterTabsProps {
   onStatusChange: (status: RsvpStatus | 'ALL') => void;
 }
 
-const categories: (Category | 'ALL')[] = ['ALL', 'GROOM', 'BRIDE', 'FAMILY', 'FRIENDS', 'WORK', 'OTHER'];
+const categories: (Category | 'ALL')[] = ['ALL', 'FAMILY', 'FRIENDS', 'WORK', 'OTHER'];
 const statuses: (RsvpStatus | 'ALL')[] = ['ALL', 'CONFIRMED', 'PENDING', 'DECLINED'];
 
 const categoryColors: Record<string, string> = {
   ALL: 'text-charcoal-600',
-  GROOM: 'text-gold-600',
-  BRIDE: 'text-pink-600',
   FAMILY: 'text-blue-600',
   FRIENDS: 'text-purple-600',
   WORK: 'text-slate-600',

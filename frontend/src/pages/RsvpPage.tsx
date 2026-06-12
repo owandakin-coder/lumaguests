@@ -156,7 +156,7 @@ export const RsvpPage = ({
             </div>
             <h2 className="text-2xl font-bold text-charcoal-900 mb-1">{guest.full_name}</h2>
             <p className="text-sm text-charcoal-500 mb-6">
-              {guest.rsvp_status === 'CONFIRMED' ? 'אישרת הגעה לאירוע' : 'סימנת שלא תוכל/י להגיע'}
+              {guest.rsvp_status === 'CONFIRMED' ? 'אישרת הגעה לאירוע' : 'סימנת שלא תגיע'}
             </p>
             <div
               className="bg-white rounded-2xl p-4 text-center space-y-2"
@@ -264,7 +264,7 @@ export const RsvpPage = ({
                 className="w-full py-5 rounded-2xl text-charcoal-600 text-base font-bold flex items-center justify-center gap-3 disabled:opacity-60 transition-all border border-charcoal-200 bg-white"
               >
                 {submitting && choice === 'DECLINED' ? <Loader2 className="w-5 h-5 animate-spin" /> : <span className="text-lg">😔</span>}
-                לא אוכל/י להגיע
+                לא אגיע
               </motion.button>
             </div>
 
@@ -313,7 +313,7 @@ export const RsvpPage = ({
                 ? companions > 0
                   ? `אישרת הגעה לאירוע עם ${companions} מלווים. נשמח לראותך!`
                   : 'אישרת הגעה לאירוע. נשמח לראותך!'
-                : 'חבל שלא תוכל/י להגיע. מקווים לראותך בפעם הבאה!'}
+                : 'חבל שלא תגיע. מקווים לראותך בפעם הבאה!'}
             </p>
 
             <div className="mt-8 flex flex-col items-center gap-3">

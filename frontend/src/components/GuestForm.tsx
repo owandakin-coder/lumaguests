@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
-import { Category, RsvpStatus, Guest, CreateGuestInput } from '../types';
+import { Side, Category, RsvpStatus, Guest, CreateGuestInput } from '../types';
 
 interface GuestFormProps {
   initialData?: Guest;
@@ -11,9 +11,13 @@ interface GuestFormProps {
   title?: string;
 }
 
+const sides: { value: Side; label: string; color: string; emoji: string }[] = [
+  { value: 'GROOM',  label: 'צד החתן', color: '#C9A84C', emoji: '🤵' },
+  { value: 'BRIDE',  label: 'צד הכלה', color: '#F9A8D4', emoji: '👰' },
+  { value: 'SHARED', label: 'משותף',   color: '#A5B4FC', emoji: '💑' },
+];
+
 const categories: { value: Category; label: string; color: string }[] = [
-  { value: 'GROOM',   label: 'חתן',    color: '#C9A84C' },
-  { value: 'BRIDE',   label: 'כלה',    color: '#F9A8D4' },
   { value: 'FAMILY',  label: 'משפחה',  color: '#93C5FD' },
   { value: 'FRIENDS', label: 'חברים',  color: '#C4B5FD' },
   { value: 'WORK',    label: 'עבודה',  color: '#94A3B8' },
@@ -31,7 +35,8 @@ export const GuestForm = ({ initialData, onSubmit, isLoading=false, onCancel, ti
     fullName:   initialData?.fullName  || initialData?.full_name   || '',
     phone:      initialData?.phone     || '',
     companions: initialData?.companions || 0,
-    category:   initialData?.category  || 'FAMILY',
+    side:       initialData?.side      ?? null,
+    category:   (initialData?.category as Category) || 'FAMILY',
     rsvpStatus: initialData?.rsvpStatus || initialData?.rsvp_status || 'PENDING',
     notes:      initialData?.notes     || '',
   });
@@ -64,6 +69,9 @@ export const GuestForm = ({ initialData, onSubmit, isLoading=false, onCancel, ti
         ? 'bg-red-50 ring-2 ring-red-300'
         : 'bg-white focus:ring-2 focus:ring-charcoal-200'
     }`;
+
+  const toggleSide = (val: Side) =>
+    setForm(p => ({ ...p, side: p.side === val ? null : val }));
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -127,16 +135,43 @@ export const GuestForm = ({ initialData, onSubmit, isLoading=false, onCancel, ti
         </div>
       </div>
 
+      {/* Section: צד */}
+      <div>
+        <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-widest mb-2 mr-1">צד</p>
+        <div className="grid grid-cols-3 gap-2">
+          {sides.map(s => {
+            const active = form.side === s.value;
+            return (
+              <button key={s.value} type="button"
+                onClick={() => toggleSide(s.value)}
+                className={`py-3 rounded-2xl text-[13px] font-bold transition-all active:scale-95 flex flex-col items-center gap-1 ${
+                  active ? 'bg-charcoal-900 text-white' : 'bg-white text-charcoal-700'
+                }`}
+                style={{boxShadow: active ? 'none' : '0 1px 4px rgba(0,0,0,0.05)'}}>
+                <span className="text-base leading-none">{s.emoji}</span>
+                <span style={{ color: active ? s.color : undefined }}>{s.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        {form.side && (
+          <button type="button" onClick={() => setForm(p => ({ ...p, side: null }))}
+            className="mt-2 text-[11px] text-charcoal-400 mr-1 underline">
+            ניקוי בחירה
+          </button>
+        )}
+      </div>
+
       {/* Section: קטגוריה */}
       <div>
-        <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-widest mb-2 mr-1">צד / קטגוריה</p>
-        <div className="grid grid-cols-3 gap-2">
+        <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-widest mb-2 mr-1">קטגוריה</p>
+        <div className="grid grid-cols-2 gap-2">
           {categories.map(c=>{
             const active = form.category === c.value;
             return (
               <button key={c.value} type="button"
                 onClick={()=>setForm(p=>({...p,category:c.value}))}
-                className={`py-3 rounded-2xl text-[13px] font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5 ${
+                className={`py-3.5 rounded-2xl text-[13px] font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5 ${
                   active ? 'bg-charcoal-900 text-white' : 'bg-white text-charcoal-700'
                 }`}
                 style={{boxShadow:active?'none':'0 1px 4px rgba(0,0,0,0.05)'}}>

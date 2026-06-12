@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS guests (
   full_name VARCHAR(255) NOT NULL,
   phone VARCHAR(20) NOT NULL,
   companions INTEGER DEFAULT 0,
-  category TEXT DEFAULT 'OTHER' CHECK (category IN ('GROOM', 'BRIDE', 'FAMILY', 'FRIENDS', 'WORK', 'OTHER')),
+  side TEXT CHECK (side IN ('BRIDE', 'GROOM', 'SHARED')),
+  category TEXT DEFAULT 'OTHER' CHECK (category IN ('FAMILY', 'FRIENDS', 'WORK', 'OTHER')),
   rsvp_status TEXT DEFAULT 'PENDING' CHECK (rsvp_status IN ('PENDING', 'CONFIRMED', 'DECLINED')),
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()),
@@ -23,6 +24,7 @@ CREATE TABLE IF NOT EXISTS guests (
 CREATE INDEX IF NOT EXISTS guests_user_id_idx ON guests(user_id);
 CREATE INDEX IF NOT EXISTS guests_phone_idx ON guests(phone);
 CREATE INDEX IF NOT EXISTS guests_category_idx ON guests(category);
+CREATE INDEX IF NOT EXISTS guests_side_idx ON guests(side);
 CREATE INDEX IF NOT EXISTS guests_rsvp_status_idx ON guests(rsvp_status);
 
 -- ========== ROW LEVEL SECURITY ==========

@@ -194,7 +194,7 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
                   ? companions > 0
                     ? `אישרת הגעה עם ${companions} מלווים. נשמח לראותך!`
                     : 'אישרת הגעה לאירוע. נשמח לראותך!'
-                  : 'חבל שלא תוכל/י להגיע. מקווים לראותך בפעם הבאה!'}
+                  : 'חבל שלא תגיע. מקווים לראותך בפעם הבאה!'}
               </p>
               <button onClick={() => setStep('form')}
                 className="text-sm font-bold" style={{ color: accent }}>
@@ -419,7 +419,7 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
                   {submitting && choice === 'DECLINED'
                     ? <Loader2 className="w-4 h-4 animate-spin" />
                     : <XCircle className="w-4 h-4 text-charcoal-400" />}
-                  לא אוכל/י להגיע
+                  לא אגיע
                 </motion.button>
               </div>
 

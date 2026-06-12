@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Users, CheckCircle, Clock, XCircle, ChevronLeft, CalendarDays, Settings, Send, MapPin, PencilLine } from 'lucide-react';
-import { Guest, RsvpStatus, Category, Event } from '../types';
+import { Guest, RsvpStatus, Category, Side, Event } from '../types';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
 interface DashboardProps {
@@ -23,12 +23,16 @@ const rsvpDot: Record<RsvpStatus, string>   = { CONFIRMED:'#10B981', PENDING:'#F
 const rsvpLabel: Record<RsvpStatus, string> = { CONFIRMED:'אישר', PENDING:'ממתין', DECLINED:'לא מגיע' };
 
 const catConfig: { id: Category; label: string; color: string }[] = [
-  { id: 'GROOM',   label: 'חתן',   color: '#C9A84C' },
-  { id: 'BRIDE',   label: 'כלה',   color: '#F9A8D4' },
   { id: 'FAMILY',  label: 'משפחה', color: '#93C5FD' },
   { id: 'FRIENDS', label: 'חברים', color: '#C4B5FD' },
   { id: 'WORK',    label: 'עבודה', color: '#94A3B8' },
   { id: 'OTHER',   label: 'אחר',   color: '#D1D5DB' },
+];
+
+const sideConfig: { id: Side; label: string; color: string; emoji: string }[] = [
+  { id: 'GROOM',  label: 'צד החתן', color: '#C9A84C', emoji: '🤵' },
+  { id: 'BRIDE',  label: 'צד הכלה', color: '#F9A8D4', emoji: '👰' },
+  { id: 'SHARED', label: 'משותף',   color: '#A5B4FC', emoji: '💑' },
 ];
 
 const avPalette = [
@@ -104,6 +108,21 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
           : guests.filter(g => g.category === c.id).length,
       }))
       .filter(c => c.count > 0);
+  }, [guests]);
+
+  const sideBreakdown = useMemo(() => {
+    return sideConfig.map(sc => {
+      const sg = guests.filter(g => g.side === sc.id);
+      const confirmed = sg.filter(g => (g.rsvpStatus || g.rsvp_status) === 'CONFIRMED');
+      return {
+        ...sc,
+        total:     sg.length,
+        confirmed: confirmed.length,
+        pending:   sg.filter(g => (g.rsvpStatus || g.rsvp_status) === 'PENDING').length,
+        declined:  sg.filter(g => (g.rsvpStatus || g.rsvp_status) === 'DECLINED').length,
+        people:    confirmed.reduce((a, g) => a + 1 + (g.companions || 0), 0),
+      };
+    }).filter(sc => sc.total > 0);
   }, [guests]);
 
   const recent=useMemo(()=>
@@ -286,6 +305,46 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
           ))}
         </div>
       </motion.div>
+
+      {/* Side breakdown — bride vs groom panels */}
+      {!loading && sideBreakdown.length > 0 && (
+        <motion.div variants={fade} className="bg-white rounded-2xl p-4" style={{boxShadow:'0 1px 8px rgba(0,0,0,0.05)'}}>
+          <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-widest mb-3">לפי צד</p>
+          <div className={`grid gap-3 ${sideBreakdown.length >= 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {sideBreakdown.map(sc => (
+              <div key={sc.id} className="rounded-xl p-3"
+                style={{ background: `${sc.color}18`, borderTop: `2.5px solid ${sc.color}` }}>
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <span className="text-[15px] leading-none">{sc.emoji}</span>
+                  <span className="text-[12px] font-bold text-charcoal-800">{sc.label}</span>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-charcoal-400">מוזמנים</span>
+                    <span className="font-bold text-charcoal-800">{sc.total}</span>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-charcoal-400">אישרו</span>
+                    <span className="font-bold text-emerald-600">{sc.confirmed}</span>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-charcoal-400">ממתינים</span>
+                    <span className="font-bold text-amber-600">{sc.pending}</span>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-charcoal-400">לא מגיעים</span>
+                    <span className="font-bold text-red-400">{sc.declined}</span>
+                  </div>
+                  <div className="flex justify-between text-[11px] pt-1.5 border-t border-charcoal-100/60 mt-0.5">
+                    <span className="text-charcoal-500 font-semibold">מגיעים סה״כ</span>
+                    <span className="font-bold text-[13px]" style={{ color: sc.color }}>{sc.people}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Category breakdown */}
       {!loading && categoryBreakdown.length > 0 && (

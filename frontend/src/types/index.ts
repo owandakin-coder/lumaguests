@@ -1,4 +1,5 @@
-export type Category = 'GROOM' | 'BRIDE' | 'FAMILY' | 'FRIENDS' | 'WORK' | 'OTHER';
+export type Side = 'BRIDE' | 'GROOM' | 'SHARED';
+export type Category = 'FAMILY' | 'FRIENDS' | 'WORK' | 'OTHER';
 export type RsvpStatus = 'PENDING' | 'CONFIRMED' | 'DECLINED';
 
 export interface Guest {
@@ -8,6 +9,7 @@ export interface Guest {
   full_name: string;
   phone: string;
   companions: number;
+  side?: Side | null;
   category: Category;
   rsvpStatus?: RsvpStatus;
   rsvp_status: RsvpStatus;
@@ -41,6 +43,7 @@ export interface CreateGuestInput {
   fullName: string;
   phone: string;
   companions: number;
+  side?: Side | null;
   category: Category;
   rsvpStatus: RsvpStatus;
   notes?: string;
@@ -50,6 +53,7 @@ export interface UpdateGuestInput {
   fullName?: string;
   phone?: string;
   companions?: number;
+  side?: Side | null;
   category?: Category;
   rsvpStatus?: RsvpStatus;
   notes?: string;
