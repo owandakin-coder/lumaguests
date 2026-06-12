@@ -274,13 +274,28 @@ export const rsvpService = {
     return data as import('../types').RsvpResponse;
   },
 
-  buildLink: (token: string): string =>
-    `${window.location.origin}/rsvp/${token}`,
+  buildLink: (token: string, ev?: { event_name?: string | null; event_date?: string | null; venue_name?: string | null } | null): string => {
+    const base = `${window.location.origin}/rsvp/${token}`;
+    if (!ev) return base;
+    const p = new URLSearchParams();
+    if (ev.event_name && ev.event_name !== 'האירוע שלי') p.set('en', ev.event_name);
+    if (ev.event_date) p.set('ed', ev.event_date.split('T')[0]);
+    if (ev.venue_name) p.set('vn', ev.venue_name);
+    const qs = p.toString();
+    return qs ? `${base}?${qs}` : base;
+  },
 
-  buildWhatsAppUrl: (phone: string, guestName: string, token: string): string => {
-    const link = rsvpService.buildLink(token);
-    const msg  = `שלום ${guestName}! 🎉\nנשמח לאישור הגעה לאירוע:\n👉 ${link}`;
-    return `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
+  buildWhatsAppUrl: (phone: string, guestName: string, token: string, ev?: { event_name?: string | null; event_date?: string | null; venue_name?: string | null } | null): string => {
+    const link = rsvpService.buildLink(token, ev);
+    const eventName = (ev?.event_name && ev.event_name !== 'האירוע שלי') ? ev.event_name : 'האירוע שלנו';
+    const lines: string[] = [`היי ${guestName} 👋`, '', `נשמח לראות אותך ב${eventName}`];
+    if (ev?.event_date) {
+      const d = new Date(ev.event_date);
+      lines.push(`📅 ${d.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}`);
+    }
+    if (ev?.venue_name) lines.push(`📍 ${ev.venue_name}`);
+    lines.push('', 'לאישור הגעה:', link, '', 'תודה ❤️');
+    return `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(lines.join('\n'))}`;
   },
 };
 

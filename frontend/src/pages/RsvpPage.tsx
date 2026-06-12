@@ -6,14 +6,17 @@ import { RsvpPublicGuest } from '../types';
 
 interface RsvpPageProps {
   token: string;
+  eventName?: string;
+  eventDate?: string;
+  venueName?: string;
 }
 
 type Step = 'loading' | 'form' | 'already' | 'success' | 'error';
 
 const EVENT_KEY = 'luma_event_name';
 
-export const RsvpPage = ({ token }: RsvpPageProps) => {
-  const eventName = localStorage.getItem(EVENT_KEY) || '';
+export const RsvpPage = ({ token, eventName: propEventName, eventDate: propEventDate, venueName: propVenueName }: RsvpPageProps) => {
+  const eventName = propEventName || localStorage.getItem(EVENT_KEY) || '';
   const [guest, setGuest]         = useState<RsvpPublicGuest | null>(null);
   const [step, setStep]           = useState<Step>('loading');
   const [companions, setCompanions] = useState(0);
@@ -117,10 +120,10 @@ export const RsvpPage = ({ token }: RsvpPageProps) => {
           <motion.div key="form" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
             className="w-full max-w-sm">
 
-            {/* Brand */}
-            <div className="text-center mb-8">
+            {/* Event info card */}
+            <div className="mb-8">
               <div
-                className="w-16 h-16 rounded-3xl overflow-hidden mx-auto mb-3"
+                className="w-16 h-16 rounded-3xl overflow-hidden mx-auto mb-4"
                 style={{
                   background: '#1A1916',
                   backgroundImage: 'url("/logo hd.png")',
@@ -129,9 +132,21 @@ export const RsvpPage = ({ token }: RsvpPageProps) => {
                   boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
                 }}
               />
-              <p className="text-xs text-charcoal-400 font-medium uppercase tracking-widest">
-                {eventName || 'הזמנה לאירוע'}
-              </p>
+              {(eventName || propEventDate || propVenueName) ? (
+                <div className="bg-white rounded-2xl p-4 text-center" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
+                  {eventName && <p className="text-[17px] font-bold text-charcoal-900">{eventName}</p>}
+                  {propEventDate && (
+                    <p className="text-[13px] text-charcoal-500 mt-0.5">
+                      📅 {new Date(propEventDate).toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                  )}
+                  {propVenueName && <p className="text-[12px] text-charcoal-400 mt-0.5">📍 {propVenueName}</p>}
+                </div>
+              ) : (
+                <p className="text-xs text-charcoal-400 font-medium uppercase tracking-widest text-center">
+                  {eventName || 'הזמנה לאירוע'}
+                </p>
+              )}
             </div>
 
             {/* Guest name */}

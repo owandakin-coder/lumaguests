@@ -10,8 +10,10 @@ import { Settings }           from './pages/Settings';
 import { Messages }           from './pages/Messages';
 import { Login }              from './pages/Login';
 import { Register }           from './pages/Register';
+import { Onboarding }         from './pages/Onboarding';
 import { MobileBottomNav }    from './components/MobileBottomNav';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
+import { PaywallModal, FREE_GUEST_LIMIT } from './components/PaywallModal';
 import { ToastContainer }     from './components/Toast';
 import { useToast }           from './hooks/useToast';
 import { useSupabaseAuth }    from './hooks/useSupabaseAuth';
@@ -32,9 +34,20 @@ function App() {
   const [deletingGuest,setDeletingGuest]= useState<Guest | null>(null);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [guestStatusFilter, setGuestStatusFilter] = useState<RsvpStatus | 'ALL'>('ALL');
+  const [showPaywall,  setShowPaywall]  = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
   const auth  = useSupabaseAuth();
   const { event, update: updateEvent } = useEvent();
+
+  // Show onboarding for new users
+  useEffect(() => {
+    if (auth.isAuthenticated && !auth.isLoading) {
+      if (!localStorage.getItem('luma_onboarding_done')) {
+        setShowOnboarding(true);
+      }
+    }
+  }, [auth.isAuthenticated, auth.isLoading]);
 
   useEffect(() => {
     if (auth.isAuthenticated && !auth.isLoading && auth.user) {
@@ -84,7 +97,6 @@ function App() {
             setGuests(prev => [newRow, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
             setGuests(prev => prev.map(g => g.id === newRow.id ? { ...g, ...newRow } : g));
-            // Notify when guest responds via RSVP link
             if (newRow.rsvp_via_link && !oldRow?.rsvp_via_link) {
               const name = newRow.full_name;
               if (newRow.rsvp_status === 'CONFIRMED') {
@@ -103,11 +115,20 @@ function App() {
     return () => { supabase.removeChannel(channel); };
   }, [auth.isAuthenticated, auth.user?.id]);
 
+  const handleAddGuest = () => {
+    if (guests.length >= FREE_GUEST_LIMIT) {
+      setShowPaywall(true);
+      return;
+    }
+    setCurrentPage('add');
+  };
 
-  const handleAddGuest    = () => setCurrentPage('add');
   const handleEditGuest   = (guest: Guest) => { setEditingGuest(guest); setCurrentPage('edit'); };
   const handleDeleteGuest = (guest: Guest) => setDeletingGuest(guest);
   const handleViewGuest   = (guest: Guest) => { setViewingGuest(guest); setCurrentPage('details'); };
+
+  const handleSetupEvent    = () => setCurrentPage('settings');
+  const handleSendReminders = () => { setGuestStatusFilter('PENDING'); setCurrentPage('messages'); };
 
   const handleConfirmDelete = async () => {
     if (!deletingGuest || !auth.user) return;
@@ -168,10 +189,13 @@ function App() {
           <Dashboard
             guests={guests}
             loading={loading}
+            event={event}
             onAddGuest={handleAddGuest}
             onViewGuests={() => setCurrentPage('guests')}
             onViewGuest={handleViewGuest}
             onViewGuestsFiltered={(s) => { setGuestStatusFilter(s); setCurrentPage('guests'); }}
+            onSetupEvent={handleSetupEvent}
+            onSendReminders={handleSendReminders}
           />
         );
       case 'guests':
@@ -180,6 +204,7 @@ function App() {
             guests={guests}
             loading={loading}
             userId={auth.user!.id}
+            event={event}
             onAddGuest={handleAddGuest}
             onEditGuest={handleEditGuest}
             onDeleteGuest={handleDeleteGuest}
@@ -189,7 +214,7 @@ function App() {
           />
         );
       case 'messages':
-        return <Messages guests={guests} userId={auth.user!.id} />;
+        return <Messages guests={guests} userId={auth.user!.id} initialFilter="PENDING" />;
       case 'add':
         return <AddGuest onSuccess={handleAddSuccess} onCancel={handleBackToGuests} />;
       case 'edit':
@@ -236,13 +261,7 @@ function App() {
       <div dir="rtl">
         <AnimatePresence mode="wait">
           {authPage === 'login' ? (
-            <motion.div
-              key="login"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
+            <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               <Login
                 onSuccess={handleLoginSuccess}
                 onSwitchToRegister={() => setAuthPage('register')}
@@ -250,13 +269,7 @@ function App() {
               />
             </motion.div>
           ) : (
-            <motion.div
-              key="register"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
+            <motion.div key="register" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               <Register
                 onSuccess={handleRegisterSuccess}
                 onSwitchToLogin={() => setAuthPage('login')}
@@ -265,6 +278,19 @@ function App() {
             </motion.div>
           )}
         </AnimatePresence>
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
+      </div>
+    );
+  }
+
+  // Onboarding screen for new users
+  if (showOnboarding) {
+    return (
+      <div dir="rtl">
+        <Onboarding
+          onComplete={() => setShowOnboarding(false)}
+          onUpdateEvent={updateEvent}
+        />
         <ToastContainer toasts={toasts} onRemove={removeToast} />
       </div>
     );
@@ -311,6 +337,13 @@ function App() {
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeletingGuest(null)}
       />
+
+      <PaywallModal
+        isOpen={showPaywall}
+        guestCount={guests.length}
+        onClose={() => setShowPaywall(false)}
+      />
+
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );

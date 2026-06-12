@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Plus, Users, ArrowUpDown, Download, Upload, Layers, List } from 'lucide-react';
 import { GuestCard } from '../components/GuestCard';
 import { ImportGuestsModal } from '../components/ImportGuestsModal';
-import { Guest, RsvpStatus, Category } from '../types';
+import { Guest, RsvpStatus, Category, Event } from '../types';
 
 interface GuestListProps {
   guests:Guest[];loading:boolean;onAddGuest:()=>void;
@@ -11,6 +11,7 @@ interface GuestListProps {
   onGuestsImported?:()=>void;
   userId:string;
   initialStatusFilter?: RsvpStatus | 'ALL';
+  event?: Event | null;
 }
 
 type SortType = 'newest' | 'oldest' | 'az' | 'status';
@@ -50,7 +51,7 @@ const catLabelFull: Record<string, string> = {
 
 const GROUP_ORDER: Category[] = ['GROOM','BRIDE','FAMILY','FRIENDS','WORK','OTHER'];
 
-export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onViewGuest,onGuestsImported,userId,initialStatusFilter}:GuestListProps)=>{
+export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onViewGuest,onGuestsImported,userId,initialStatusFilter,event}:GuestListProps)=>{
   const [search,        setSearch]        = useState('');
   const [status,        setStatus]        = useState<RsvpStatus|'ALL'>(initialStatusFilter || 'ALL');
   const [category,      setCategory]      = useState<Category|'ALL'>('ALL');
@@ -278,7 +279,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
                 <div className="space-y-2">
                   {grp.map((g,i) => (
                     <motion.div key={g.id} initial={{opacity:0,y:4}} animate={{opacity:1,y:0}} transition={{delay:i*0.02}}>
-                      <GuestCard guest={g} onEdit={onEditGuest} onDelete={onDeleteGuest} onView={onViewGuest}/>
+                      <GuestCard guest={g} onEdit={onEditGuest} onDelete={onDeleteGuest} onView={onViewGuest} event={event}/>
                     </motion.div>
                   ))}
                 </div>
@@ -293,7 +294,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
               <motion.div key={g.id}
                 initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0}}
                 transition={{delay:Math.min(i*0.03,0.15)}}>
-                <GuestCard guest={g} onEdit={onEditGuest} onDelete={onDeleteGuest} onView={onViewGuest}/>
+                <GuestCard guest={g} onEdit={onEditGuest} onDelete={onDeleteGuest} onView={onViewGuest} event={event}/>
               </motion.div>
             ))}
           </div>

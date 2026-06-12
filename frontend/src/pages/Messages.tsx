@@ -15,6 +15,7 @@ import {
 interface MessagesProps {
   guests: Guest[];
   userId: string;
+  initialFilter?: FilterType;
 }
 
 type FilterType = 'PENDING' | 'CONFIRMED' | 'DECLINED' | 'ALL';
@@ -98,8 +99,8 @@ const filterTabs: { id: FilterType; label: string }[] = [
   { id: 'ALL',       label: 'הכל'        },
 ];
 
-export const Messages = ({ guests, userId }: MessagesProps) => {
-  const [filter, setFilter]       = useState<FilterType>('PENDING');
+export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: MessagesProps) => {
+  const [filter, setFilter]       = useState<FilterType>(initialFilter);
   const [search, setSearch]       = useState('');
   const [selected, setSelected]   = useState<Set<string>>(new Set());
   const [templateId, setTemplateId] = useState('rsvp');
@@ -314,6 +315,23 @@ export const Messages = ({ guests, userId }: MessagesProps) => {
             <span className="text-[12px] font-bold text-charcoal-900">{selected.size} נבחרו</span>
           )}
         </div>
+      )}
+
+      {/* Quick "send to all pending" shortcut */}
+      {filter === 'PENDING' && filtered.length > 0 && selected.size === 0 && (
+        <motion.button
+          initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+          onClick={() => {
+            setSelected(new Set(filtered.map(g => g.id)));
+            setSentIds(new Set());
+            setShowQueue(true);
+          }}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-[13px] font-bold active:scale-[0.98] transition-transform"
+          style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A', color: '#92400E' }}
+        >
+          <Send className="w-4 h-4" />
+          שלח תזכורת לכל {filtered.length} הממתינים
+        </motion.button>
       )}
 
       {/* Guest list */}

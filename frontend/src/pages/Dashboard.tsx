@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Users, CheckCircle, Clock, XCircle, ChevronLeft, CalendarDays } from 'lucide-react';
-import { Guest, RsvpStatus, Category } from '../types';
+import { Plus, Users, CheckCircle, Clock, XCircle, ChevronLeft, CalendarDays, Settings, Send } from 'lucide-react';
+import { Guest, RsvpStatus, Category, Event } from '../types';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
 interface DashboardProps {
@@ -11,6 +11,9 @@ interface DashboardProps {
   onViewGuests: () => void;
   onViewGuest: (guest: Guest) => void;
   onViewGuestsFiltered?: (status: RsvpStatus | 'ALL') => void;
+  onSetupEvent?: () => void;
+  onSendReminders?: () => void;
+  event?: Event | null;
 }
 
 const EVENT_KEY      = 'luma_event_name';
@@ -61,7 +64,7 @@ function Ring({pct,total,loading}:{pct:number;total:number;loading:boolean}){
 const fade={hidden:{opacity:0,y:6},show:{opacity:1,y:0,transition:{duration:0.2}}};
 const stagger={hidden:{},show:{transition:{staggerChildren:0.055}}};
 
-export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onViewGuestsFiltered}:DashboardProps)=>{
+export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onViewGuestsFiltered,onSetupEvent,onSendReminders,event}:DashboardProps)=>{
   const auth=useSupabaseAuth();
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
@@ -160,6 +163,38 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
           <span className="text-2xl">🎉</span>
           <p className="text-[15px] font-bold text-green-800">האירוע היום! בהצלחה!</p>
         </motion.div>
+      )}
+
+      {/* Event setup banner — shown when event details are incomplete */}
+      {!loading && (!event?.event_date || !event?.event_name || event.event_name === 'האירוע שלי') && (
+        <motion.button variants={fade} onClick={onSetupEvent}
+          className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 text-right active:scale-[0.98] transition-transform"
+          style={{ background: 'linear-gradient(135deg,#C9A84C15,#C9A84C08)', border: '1.5px dashed #C9A84C60' }}>
+          <div className="w-9 h-9 rounded-xl bg-gold-100 flex items-center justify-center flex-shrink-0">
+            <Settings className="w-4 h-4 text-gold-600" strokeWidth={2}/>
+          </div>
+          <div className="flex-1">
+            <p className="text-[13px] font-bold text-charcoal-800">השלם פרטי האירוע</p>
+            <p className="text-[11px] text-charcoal-400">הוסף שם, תאריך ומיקום — יוצגו לאורחים בדף RSVP</p>
+          </div>
+          <ChevronLeft className="w-4 h-4 text-charcoal-300 flex-shrink-0"/>
+        </motion.button>
+      )}
+
+      {/* Pending reminder card */}
+      {!loading && s.pending > 0 && (
+        <motion.button variants={fade} onClick={onSendReminders}
+          className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 text-right active:scale-[0.98] transition-transform"
+          style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A' }}>
+          <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <Send className="w-4 h-4 text-amber-600" strokeWidth={2}/>
+          </div>
+          <div className="flex-1">
+            <p className="text-[13px] font-bold text-charcoal-800">שלח תזכורת ל-{s.pending} ממתינים</p>
+            <p className="text-[11px] text-charcoal-400">לחץ לשליחת הודעה לכל מי שלא ענה עדיין</p>
+          </div>
+          <ChevronLeft className="w-4 h-4 text-charcoal-300 flex-shrink-0"/>
+        </motion.button>
       )}
 
       {/* Hero card */}

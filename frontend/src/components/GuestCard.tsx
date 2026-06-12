@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Phone, MessageCircle, Link } from 'lucide-react';
-import { Guest, RsvpStatus } from '../types';
+import { Guest, RsvpStatus, Event } from '../types';
 import { rsvpService } from '../services/supabase';
 
 interface GuestCardProps {
@@ -8,6 +8,7 @@ interface GuestCardProps {
   onEdit: (guest: Guest) => void;
   onDelete: (guest: Guest) => void;
   onView: (guest: Guest) => void;
+  event?: Pick<Event, 'event_name' | 'event_date' | 'venue_name'> | null;
 }
 
 const rsvpCfg: Record<RsvpStatus, { label: string; dot: string; bg: string; text: string }> = {
@@ -73,7 +74,7 @@ function avBg(name: string) {
   return avBgs[Math.abs(h) % avBgs.length];
 }
 
-export const GuestCard = ({ guest, onView }: GuestCardProps) => {
+export const GuestCard = ({ guest, onView, event }: GuestCardProps) => {
   const name = guest.fullName || guest.full_name;
   const status = (guest.rsvpStatus || guest.rsvp_status) as RsvpStatus;
   const r = rsvpCfg[status];
@@ -87,7 +88,7 @@ export const GuestCard = ({ guest, onView }: GuestCardProps) => {
     e.stopPropagation();
     const token = guest.rsvp_token;
     const url = token
-      ? rsvpService.buildWhatsAppUrl(guest.phone, name, token)
+      ? rsvpService.buildWhatsAppUrl(guest.phone, name, token, event)
       : `https://wa.me/${guest.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`שלום ${name}! רצינו ליצור איתך קשר לגבי האירוע.`)}`;
     window.open(url, '_blank');
   };
