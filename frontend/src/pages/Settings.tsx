@@ -245,7 +245,10 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
   };
 
   const copyPublicLink = async () => {
-    if (!event?.public_slug) return;
+    if (!event?.is_public || !event?.public_slug) {
+      setErr('יש להפעיל RSVP ציבורי לפני העתקת הקישור.');
+      return;
+    }
     const url = eventService.buildPublicUrl(event.public_slug);
     await navigator.clipboard.writeText(url);
     setCopied(true);
@@ -253,7 +256,10 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
   };
 
   const sharePublicLink = () => {
-    if (!event?.public_slug) return;
+    if (!event?.is_public || !event?.public_slug) {
+      setErr('יש להפעיל RSVP ציבורי לפני שיתוף הקישור.');
+      return;
+    }
     const url  = eventService.buildPublicUrl(event.public_slug);
     const msg  = `הוזמנת ל${eventName}! לאישור הגעה:\n${url}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
@@ -294,7 +300,7 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
     notifPerm === 'granted' ? 'פעיל' :
     notifPerm === 'denied'  ? 'חסום' : 'כבוי';
 
-  const publicUrl = event?.public_slug
+  const publicUrl = event?.is_public && event?.public_slug
     ? eventService.buildPublicUrl(event.public_slug)
     : null;
 

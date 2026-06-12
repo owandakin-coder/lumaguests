@@ -7,8 +7,12 @@ export const PUBLIC_RSVP_ERROR =
 export const isPublicRsvpEnabled = (event: Pick<Event, 'is_public' | 'public_rsvp_enabled'> | null | undefined) =>
   !!event && (event.public_rsvp_enabled ?? event.is_public);
 
-export const buildPublicRsvpLink = (event: Pick<Event, 'public_slug'> | null | undefined) =>
-  event?.public_slug ? `${window.location.origin}/event/${event.public_slug}` : null;
+export const buildPublicRsvpLink = (
+  event: Pick<Event, 'public_slug' | 'is_public' | 'public_rsvp_enabled'> | null | undefined
+) =>
+  event?.public_slug && isPublicRsvpEnabled(event)
+    ? `${window.location.origin}/event/${event.public_slug}`
+    : null;
 
 export const validatePublicRsvpShare = (event: Event | null | undefined) => {
   if (!event || !isPublicRsvpEnabled(event) || !event.public_slug) {
