@@ -297,7 +297,13 @@ export const rsvpService = {
   // Share link goes through /share/{token} → Vercel function injects dynamic OG image
   buildShareLink: (
     token: string,
-    ev?: { event_name?: string | null; event_date?: string | null; venue_name?: string | null; cover_image_url?: string | null } | null
+    ev?: {
+      event_name?: string | null;
+      event_date?: string | null;
+      venue_name?: string | null;
+      cover_image_url?: string | null;
+      updated_at?: string | null;
+    } | null
   ): string => {
     const base = `${window.location.origin}/share/${token}`;
     if (!ev) return base;
@@ -306,6 +312,7 @@ export const rsvpService = {
     if (ev.event_date) p.set('ed', ev.event_date.split('T')[0]);
     if (ev.venue_name) p.set('vn', ev.venue_name);
     if (ev.cover_image_url) p.set('ci', ev.cover_image_url);
+    if (ev.updated_at) p.set('v', ev.updated_at);
     const qs = p.toString();
     return qs ? `${base}?${qs}` : base;
   },
@@ -314,7 +321,13 @@ export const rsvpService = {
     phone: string,
     guestName: string,
     token: string,
-    ev?: { event_name?: string | null; event_date?: string | null; venue_name?: string | null; cover_image_url?: string | null } | null
+    ev?: {
+      event_name?: string | null;
+      event_date?: string | null;
+      venue_name?: string | null;
+      cover_image_url?: string | null;
+      updated_at?: string | null;
+    } | null
   ): string => {
     // Use /share/ link so WhatsApp preview shows the event cover photo
     const link = rsvpService.buildShareLink(token, ev);
