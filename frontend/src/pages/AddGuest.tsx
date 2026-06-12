@@ -17,7 +17,7 @@ export const AddGuest = ({ onSuccess, onCancel }: AddGuestProps) => {
     const hasDuplicate = await guestService.checkDuplicatePhone(data.phone, auth.user.id);
     if (hasDuplicate) throw new Error('מוזמן עם מספר טלפון זה כבר קיים');
 
-    await guestService.create({
+    const base = {
       full_name:   data.fullName.trim(),
       phone:       data.phone.trim(),
       companions:  data.companions ?? 0,
@@ -25,8 +25,18 @@ export const AddGuest = ({ onSuccess, onCancel }: AddGuestProps) => {
       rsvp_status: data.rsvpStatus,
       notes:       data.notes?.trim() || null,
       user_id:     auth.user.id,
-      rsvp_token:  rsvpService.generateToken(),
-    });
+    };
+
+    // Try with rsvp_token; if column doesn't exist yet fall back without it
+    try {
+      await guestService.create({ ...base, rsvp_token: rsvpService.generateToken() });
+    } catch (e: any) {
+      if (e?.message?.includes('rsvp_token') || e?.code === '42703') {
+        await guestService.create(base);
+      } else {
+        throw e;
+      }
+    }
 
     onSuccess();
   };

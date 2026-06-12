@@ -179,7 +179,7 @@ function App() {
           />
         );
       case 'messages':
-        return <Messages guests={guests} />;
+        return <Messages guests={guests} userId={auth.user!.id} />;
       case 'add':
         return <AddGuest onSuccess={handleAddSuccess} onCancel={handleBackToGuests} />;
       case 'edit':

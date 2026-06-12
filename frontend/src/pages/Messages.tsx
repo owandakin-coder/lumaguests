@@ -5,10 +5,11 @@ import {
   X, ChevronDown, ChevronUp, Send, Search,
 } from 'lucide-react';
 import { Guest, RsvpStatus } from '../types';
-import { rsvpService } from '../services/supabase';
+import { rsvpService, guestService } from '../services/supabase';
 
 interface MessagesProps {
   guests: Guest[];
+  userId: string;
 }
 
 type FilterType = 'PENDING' | 'CONFIRMED' | 'DECLINED' | 'ALL';
@@ -80,7 +81,7 @@ const filterTabs: { id: FilterType; label: string }[] = [
   { id: 'ALL',       label: 'הכל'        },
 ];
 
-export const Messages = ({ guests }: MessagesProps) => {
+export const Messages = ({ guests, userId }: MessagesProps) => {
   const [filter, setFilter]       = useState<FilterType>('PENDING');
   const [search, setSearch]       = useState('');
   const [selected, setSelected]   = useState<Set<string>>(new Set());
@@ -124,9 +125,23 @@ export const Messages = ({ guests }: MessagesProps) => {
     }
   };
 
-  const openWhatsApp = (g: Guest) => {
-    const name  = g.fullName || g.full_name;
-    const link  = g.rsvp_token ? rsvpService.buildLink(g.rsvp_token) : null;
+  const openWhatsApp = async (g: Guest) => {
+    const name = g.fullName || g.full_name;
+    let token  = g.rsvp_token;
+
+    // If guest has no token, generate and save one now
+    if (!token) {
+      token = rsvpService.generateToken();
+      try {
+        await guestService.update(g.id, { rsvp_token: token }, userId);
+        // update local ref so queue doesn't re-generate
+        g.rsvp_token = token;
+      } catch {
+        token = undefined; // send without link if update fails
+      }
+    }
+
+    const link  = token ? rsvpService.buildLink(token) : null;
     const msg   = activeTpl.build(name, link);
     const phone = g.phone.replace(/\D/g, '');
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
