@@ -8,6 +8,8 @@ import * as XLSX from 'xlsx';
 import { Category } from '../types';
 import { supabase } from '../services/supabase';
 
+interface ContactDraft { name: string; phone: string; category: Category; }
+
 interface ImportGuestsModalProps {
   open: boolean;
   onClose: () => void;
@@ -15,7 +17,7 @@ interface ImportGuestsModalProps {
   userId: string;
 }
 
-type ImportStep = 'upload' | 'map' | 'preview' | 'importing' | 'done';
+type ImportStep = 'upload' | 'contacts-review' | 'map' | 'preview' | 'importing' | 'done';
 
 interface ColumnMap {
   fullName:   number | null;
@@ -143,7 +145,49 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
   const [colMap, setColMap]     = useState<ColumnMap>({ fullName: null, phone: null, category: null, companions: null, notes: null });
   const [progress, setProgress] = useState(0);
   const [result, setResult]     = useState<ImportResult | null>(null);
+  const [contacts, setContacts] = useState<ContactDraft[]>([]);
+  const [savingContacts, setSavingContacts] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const hasContactsAPI = typeof navigator !== 'undefined' && 'contacts' in navigator && 'ContactsManager' in window;
+
+  const pickContacts = async () => {
+    try {
+      const raw = await (navigator as any).contacts.select(['name', 'tel'], { multiple: true });
+      const parsed: ContactDraft[] = raw
+        .filter((c: any) => c.name?.[0] && c.tel?.[0])
+        .map((c: any) => ({
+          name:     c.name[0].trim(),
+          phone:    c.tel[0].replace(/[\s\-\(\)\.]/g, ''),
+          category: 'OTHER' as Category,
+        }));
+      if (parsed.length > 0) { setContacts(parsed); setStep('contacts-review'); }
+    } catch { /* user cancelled */ }
+  };
+
+  const saveContacts = async () => {
+    if (!contacts.length || !userId) return;
+    setSavingContacts(true);
+    try {
+      const { data: existing } = await supabase.from('guests').select('phone').eq('user_id', userId);
+      const existingPhones = new Set((existing ?? []).map((g: any) => normalizePhone(g.phone)));
+      const toInsert = contacts
+        .filter(c => !existingPhones.has(normalizePhone(c.phone)))
+        .map(c => ({
+          user_id: userId, full_name: c.name, phone: c.phone,
+          rsvp_status: 'PENDING', companions: 0, category: c.category,
+          rsvp_token: crypto.randomUUID(),
+        }));
+      if (toInsert.length > 0) {
+        await supabase.from('guests').insert(toInsert);
+      }
+      setResult({ imported: toInsert.length, skipped: contacts.length - toInsert.length, errors: 0 });
+      setStep('done');
+      if (toInsert.length > 0) onImported();
+    } catch {
+      setResult({ imported: 0, skipped: 0, errors: contacts.length });
+      setStep('done');
+    } finally { setSavingContacts(false); }
+  };
 
   const preview = useMemo<ParsedRow[]>(
     () => rawRows.map(r => buildRow(r, colMap)),
@@ -156,6 +200,7 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
   const reset = useCallback(() => {
     setStep('upload'); setDragging(false); setFileName('');
     setHeaders([]); setRawRows([]); setProgress(0); setResult(null);
+    setContacts([]); setSavingContacts(false);
     setColMap({ fullName: null, phone: null, category: null, companions: null, notes: null });
   }, []);
 
@@ -303,9 +348,27 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
                   initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
                   className="px-5 py-6 space-y-5">
                   <div>
-                    <h3 className="text-[22px] font-bold text-charcoal-900">בחר קובץ</h3>
-                    <p className="text-[13px] text-charcoal-400 mt-1">CSV, Excel (.xlsx) — גרור ושחרר או לחץ לבחירה</p>
+                    <h3 className="text-[22px] font-bold text-charcoal-900">ייבוא מוזמנים</h3>
+                    <p className="text-[13px] text-charcoal-400 mt-1">בחר מקור ייבוא</p>
                   </div>
+
+                  {/* Contacts picker — only on supported devices */}
+                  {hasContactsAPI && (
+                    <button
+                      onClick={pickContacts}
+                      className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-charcoal-100 bg-white active:scale-[0.98] transition-transform text-right"
+                      style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.05)' }}
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-charcoal-900 flex items-center justify-center flex-shrink-0">
+                        <Users className="w-5 h-5 text-white" strokeWidth={1.8} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[15px] font-bold text-charcoal-900">ייבוא מאנשי קשר</p>
+                        <p className="text-[12px] text-charcoal-400">בחר ישירות מרשימת הטלפונים</p>
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-charcoal-300 -rotate-90 flex-shrink-0" />
+                    </button>
+                  )}
 
                   {/* Drop zone */}
                   <div
@@ -323,7 +386,7 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
                       <Upload className="w-6 h-6 text-charcoal-500" strokeWidth={1.8} />
                     </div>
                     <p className="text-[14px] font-semibold text-charcoal-700">
-                      {dragging ? 'שחרר כאן' : 'גרור קובץ CSV / Excel לכאן'}
+                      {dragging ? 'שחרר כאן' : 'ייבוא קובץ CSV / Excel'}
                     </p>
                     <p className="text-[12px] text-charcoal-400">או לחץ לבחירה מהמכשיר</p>
                     <input ref={fileRef} type="file" accept=".csv,.txt,.xlsx,.xls,.ods" className="hidden" onChange={onFileChange} />
@@ -354,6 +417,56 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
                     <p className="text-[11px] text-charcoal-400">
                       נתמך: Excel (.xlsx/.xls), Google Sheets CSV, קידוד UTF-8
                     </p>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── Contacts Review ── */}
+              {step === 'contacts-review' && (
+                <motion.div key="contacts-review"
+                  initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+                  className="px-5 py-6 space-y-4">
+                  <div>
+                    <h3 className="text-[22px] font-bold text-charcoal-900">אנשי קשר ({contacts.length})</h3>
+                    <p className="text-[13px] text-charcoal-400 mt-1">בחר קטגוריה לכל איש קשר</p>
+                  </div>
+                  <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
+                    {contacts.map((c, idx) => (
+                      <div key={idx} className={`flex items-center gap-3 px-4 py-3.5 ${idx < contacts.length - 1 ? 'border-b border-charcoal-100/60' : ''}`}>
+                        <div className="w-9 h-9 rounded-xl bg-charcoal-100 flex items-center justify-center text-[11px] font-bold text-charcoal-600 flex-shrink-0">
+                          {c.name.trim().split(/\s+/).map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[14px] font-semibold text-charcoal-900 truncate">{c.name}</p>
+                          <p className="text-[11px] text-charcoal-400" dir="ltr">{c.phone}</p>
+                        </div>
+                        <select
+                          value={c.category}
+                          onChange={e => setContacts(prev => prev.map((x, i) => i === idx ? { ...x, category: e.target.value as Category } : x))}
+                          className="text-[12px] font-semibold bg-charcoal-50 px-2.5 py-1.5 rounded-xl focus:outline-none flex-shrink-0"
+                        >
+                          {[
+                            { v: 'GROOM', l: 'חתן' }, { v: 'BRIDE', l: 'כלה' },
+                            { v: 'FAMILY', l: 'משפחה' }, { v: 'FRIENDS', l: 'חברים' },
+                            { v: 'WORK', l: 'עבודה' }, { v: 'OTHER', l: 'אחר' },
+                          ].map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2.5">
+                    <button onClick={() => setStep('upload')}
+                      className="flex items-center gap-1.5 px-4 py-3.5 rounded-2xl bg-white text-[14px] font-semibold text-charcoal-700 active:scale-95 transition-transform flex-shrink-0"
+                      style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.07)' }}>
+                      <ArrowRight className="w-4 h-4" />
+                      חזרה
+                    </button>
+                    <button onClick={saveContacts} disabled={savingContacts}
+                      className="flex-1 py-3.5 rounded-2xl bg-charcoal-900 text-white text-[15px] font-bold disabled:opacity-40 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                      style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>
+                      {savingContacts ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                      {savingContacts ? 'שומר...' : `הוסף ${contacts.length} אנשי קשר`}
+                    </button>
                   </div>
                 </motion.div>
               )}

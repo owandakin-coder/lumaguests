@@ -8,7 +8,7 @@ import {
   MapPin, Link2, Share2, ToggleLeft, ToggleRight, AlignLeft,
 } from 'lucide-react';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
-import { guestService, authService, eventService } from '../services/supabase';
+import { guestService, authService, eventService, supabase } from '../services/supabase';
 import { Event } from '../types';
 
 interface SettingsProps {
@@ -198,11 +198,14 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
     else if (perm === 'denied') setErr('ההתראות נחסמו — ניתן לשנות בהגדרות הדפדפן');
   };
 
-  const handleClearGuestData = async () => {
+  const handleDeleteAccount = async () => {
     if (!auth.user) return;
     try {
       setDeleteLoading(true);
+      // Delete all guests
       await guestService.deleteAll(auth.user.id);
+      // Delete the event record
+      await supabase.from('events').delete().eq('owner_user_id', auth.user.id);
       await authService.signOut();
       onLogout();
     } catch {
@@ -751,18 +754,18 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
                 <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
                   <Trash2 className="w-7 h-7 text-red-500" />
                 </div>
-                <h3 className="text-[20px] font-bold text-charcoal-900 text-center mb-2">ניקוי נתוני המוזמנים</h3>
+                <h3 className="text-[20px] font-bold text-charcoal-900 text-center mb-2">מחיקת כל הנתונים</h3>
                 <p className="text-[14px] text-charcoal-500 text-center leading-relaxed mb-6">
-                  פעולה זו תמחק את <strong>כל נתוני המוזמנים</strong> מהחשבון הנוכחי ותנתק אותך מהאפליקציה.
-                  החשבון עצמו יישאר קיים, ותוכל/י להתחבר שוב מאוחר יותר.
+                  פעולה זו תמחק לצמיתות את <strong>כל המוזמנים ופרטי האירוע</strong> שלך.
+                  לא ניתן לשחזר את הנתונים לאחר המחיקה.
                 </p>
                 <div className="space-y-2.5">
                   <button
-                    onClick={handleClearGuestData}
+                    onClick={handleDeleteAccount}
                     disabled={deleteLoading}
                     className="w-full py-4 rounded-2xl bg-red-500 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
                   >
-                    {deleteLoading ? 'מנקה...' : 'כן, נקה את הנתונים'}
+                    {deleteLoading ? 'מוחק...' : 'כן, מחק את כל הנתונים'}
                   </button>
                   <button
                     onClick={() => setShowDeleteConfirm(false)}

@@ -41,6 +41,17 @@ function App() {
     }
   }, [auth.isAuthenticated, auth.isLoading, auth.user?.id]);
 
+  // Refresh guests when user returns to the tab (e.g. from RSVP link in another tab)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && auth.isAuthenticated && auth.user) {
+        loadGuests();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [auth.isAuthenticated, auth.user?.id]);
+
   const loadGuests = async () => {
     if (!auth.user) return;
     try {
@@ -263,10 +274,14 @@ function App() {
   const isSubPage = ['add', 'edit', 'details'].includes(currentPage);
 
   return (
-    <div dir="rtl" className="min-h-screen bg-ivory-100">
+    <div dir="rtl" className="bg-ivory-100" style={{ height: '100dvh', overflow: 'hidden' }}>
       <main
-        className="max-w-[430px] mx-auto px-5 pb-32"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 16px)' }}
+        className="max-w-[430px] mx-auto px-5 overflow-y-auto h-full"
+        style={{
+          paddingTop: 'calc(env(safe-area-inset-top) + 16px)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom) + 120px)',
+          WebkitOverflowScrolling: 'touch' as any,
+        }}
       >
         <AnimatePresence mode="wait">
           <motion.div

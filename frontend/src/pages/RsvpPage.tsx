@@ -240,10 +240,13 @@ export const RsvpPage = ({ token }: RsvpPageProps) => {
                 : 'חבל שלא תוכל/י להגיע. מקווים לראותך בפעם הבאה!'}
             </p>
 
-            <button onClick={() => setStep('form')}
-              className="mt-8 text-sm text-gold-600 font-bold">
-              שינוי תשובה
-            </button>
+            <div className="mt-8 flex flex-col items-center gap-3">
+              <button onClick={() => setStep('form')}
+                className="text-sm text-gold-600 font-bold">
+                שינוי תשובה
+              </button>
+              <p className="text-xs text-charcoal-400">ניתן לסגור חלון זה</p>
+            </div>
           </motion.div>
         )}
 
