@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Users, CheckCircle, Clock, XCircle, ChevronLeft, CalendarDays, Settings, Send } from 'lucide-react';
+import { Plus, Users, CheckCircle, Clock, XCircle, ChevronLeft, CalendarDays, Settings, Send, MapPin, PencilLine } from 'lucide-react';
 import { Guest, RsvpStatus, Category, Event } from '../types';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
@@ -92,6 +92,7 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
     const target = new Date(eventDate);
     return Math.ceil((target.getTime() - now.getTime()) / 86400000);
   }, [eventDate]);
+  const safeCountdownDays = countdownDays ?? 0;
 
   const categoryBreakdown = useMemo(() => {
     const knownNonOther = catConfig.filter(c => c.id !== 'OTHER').map(c => c.id) as string[];
@@ -113,13 +114,29 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
 
   const subtitleText = useMemo(() => {
     if (countdownDays !== null) {
-      if (countdownDays > 0)  return `עוד ${countdownDays} ימים לאירוע ✦`;
+      if (countdownDays > 0)  return `עוד ${safeCountdownDays} ימים לאירוע ✦`;
       if (countdownDays === 0) return 'האירוע היום! 🎉';
       return eventName ? `✦ ${eventName}` : 'האירוע עבר';
     }
     if (eventName) return `✦ ${eventName}`;
     return new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'});
   }, [countdownDays, eventName]);
+
+  const displayEventName = event?.event_name && event.event_name !== 'האירוע שלי'
+    ? event.event_name
+    : (eventName || 'האירוע שלך');
+
+  const formattedEventDate = useMemo(() => {
+    const sourceDate = event?.event_date || eventDate;
+    if (!sourceDate) return null;
+    return new Date(sourceDate).toLocaleDateString('he-IL', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+  }, [event?.event_date, eventDate]);
+
+  const eventMeta = [formattedEventDate, event?.venue_name].filter(Boolean).join('  •  ');
 
   return(
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
@@ -139,7 +156,32 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
       </motion.div>
 
       {/* Countdown banner — when event date set */}
-      {countdownDays !== null && countdownDays > 0 && (
+      <motion.div
+        variants={fade}
+        className="rounded-[28px] px-4 py-4 flex items-center gap-3"
+        style={{ background: 'linear-gradient(135deg,#1A1916 0%,#2D2A26 100%)' }}
+      >
+        <div className="w-11 h-11 rounded-2xl bg-gold-500/15 flex items-center justify-center flex-shrink-0">
+          {event?.venue_name ? (
+            <MapPin className="w-5 h-5 text-gold-400" strokeWidth={2} />
+          ) : (
+            <CalendarDays className="w-5 h-5 text-gold-400" strokeWidth={2} />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[18px] font-bold text-white truncate">{displayEventName}</p>
+          <p className="text-[12px] text-white/60 truncate">{eventMeta || 'הגדר תאריך ומקום לאירוע'}</p>
+        </div>
+        <button
+          onClick={onSetupEvent}
+          className="px-3 py-2 rounded-2xl bg-white/10 border border-white/10 text-white text-[12px] font-bold flex items-center gap-1.5 active:scale-95 transition-transform flex-shrink-0"
+        >
+          <PencilLine className="w-3.5 h-3.5 text-gold-300" strokeWidth={2.2} />
+          ערוך אירוע
+        </button>
+      </motion.div>
+
+      {false && safeCountdownDays > 0 && (
         <motion.div variants={fade}
           className="rounded-2xl px-4 py-3 flex items-center gap-3"
           style={{ background: 'linear-gradient(135deg,#1A1916 0%,#2D2A26 100%)' }}>
@@ -148,10 +190,10 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
           </div>
           <div className="flex-1">
             <p className="text-[11px] text-white/50 font-medium">{eventName || 'האירוע'}</p>
-            <p className="text-[15px] font-bold text-white">עוד {countdownDays} ימים</p>
+            <p className="text-[15px] font-bold text-white">עוד {safeCountdownDays} ימים</p>
           </div>
           <div className="text-right">
-            <p className="text-[28px] font-black text-gold-400 leading-none">{countdownDays}</p>
+            <p className="text-[28px] font-black text-gold-400 leading-none">{safeCountdownDays}</p>
             <p className="text-[10px] text-white/40">ימים</p>
           </div>
         </motion.div>
