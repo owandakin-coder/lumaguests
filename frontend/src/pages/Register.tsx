@@ -55,9 +55,10 @@ export const Register = ({ onSuccess, onSwitchToLogin, onRegister }: RegisterPro
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
-        className="flex-1 bg-[#F5F3EF] px-5 pt-8 pb-10"
+        className="flex-1 bg-[#F5F3EF] px-5 pt-8 pb-8 flex flex-col"
+        style={{ borderRadius: '28px 28px 0 0', marginTop: -24 }}
       >
-        <h2 className="text-[24px] font-bold text-charcoal-900 mb-6">יצירת חשבון</h2>
+        <h2 className="text-[26px] font-bold text-charcoal-900 mb-6 text-center pt-2">יצירת חשבון</h2>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           {/* Name */}
@@ -152,6 +153,11 @@ export const Register = ({ onSuccess, onSwitchToLogin, onRegister }: RegisterPro
           <button onClick={onSwitchToLogin} className="text-gold-600 font-bold">
             כניסה
           </button>
+        </p>
+
+        {/* Powered by — pushed to bottom */}
+        <p className="text-center text-[11px] text-charcoal-300 mt-auto pt-8">
+          Powered by <span className="font-semibold text-charcoal-400">Atzma</span>
         </p>
       </motion.div>
     </div>

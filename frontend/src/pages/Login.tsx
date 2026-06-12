@@ -88,7 +88,8 @@ export const Login = ({ onSuccess, onSwitchToRegister, onLogin }: LoginProps) =>
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
-        className="flex-1 bg-[#F5F3EF] px-5 pt-8 pb-10"
+        className="flex-1 bg-[#F5F3EF] px-5 pt-8 pb-8 flex flex-col"
+        style={{ borderRadius: '28px 28px 0 0', marginTop: -24 }}
       >
         <AnimatePresence mode="wait">
 
@@ -100,8 +101,9 @@ export const Login = ({ onSuccess, onSwitchToRegister, onLogin }: LoginProps) =>
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.18 }}
+              className="flex flex-col flex-1"
             >
-              <h2 className="text-[24px] font-bold text-charcoal-900 mb-6">כניסה לחשבון</h2>
+              <h2 className="text-[26px] font-bold text-charcoal-900 mb-6 text-center pt-2">כניסה לחשבון</h2>
 
               <form onSubmit={handleLogin} className="space-y-3">
                 <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
@@ -243,6 +245,11 @@ export const Login = ({ onSuccess, onSwitchToRegister, onLogin }: LoginProps) =>
           )}
 
         </AnimatePresence>
+
+        {/* Powered by — pushed to bottom */}
+        <p className="text-center text-[11px] text-charcoal-300 mt-auto pt-8">
+          Powered by <span className="font-semibold text-charcoal-400">Atzma</span>
+        </p>
       </motion.div>
     </div>
   );
