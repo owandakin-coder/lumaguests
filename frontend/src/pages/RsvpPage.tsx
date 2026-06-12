@@ -9,6 +9,7 @@ interface RsvpPageProps {
   eventName?: string;
   eventDate?: string;
   venueName?: string;
+  venueAddress?: string;
 }
 
 type Step = 'loading' | 'form' | 'already' | 'success' | 'error';
@@ -21,6 +22,7 @@ export const RsvpPage = ({
   eventName: propEventName,
   eventDate: propEventDate,
   venueName: propVenueName,
+  venueAddress: propVenueAddress,
 }: RsvpPageProps) => {
   const eventName = propEventName || localStorage.getItem(EVENT_KEY) || '';
   const [guest, setGuest] = useState<RsvpPublicGuest | null>(null);
@@ -202,6 +204,7 @@ export const RsvpPage = ({
                   {eventName ? <p className="text-[17px] font-bold text-charcoal-900">{eventName}</p> : null}
                   {dateLabel ? <p className="text-[13px] text-charcoal-500 mt-0.5">📅 {dateLabel}</p> : null}
                   {propVenueName ? <p className="text-[12px] text-charcoal-400 mt-0.5">📍 {propVenueName}</p> : null}
+                  {propVenueAddress ? <p className="text-[11px] text-charcoal-300 mt-0.5">{propVenueAddress}</p> : null}
                 </div>
               ) : (
                 <p className="text-xs text-charcoal-400 font-medium uppercase tracking-widest text-center">

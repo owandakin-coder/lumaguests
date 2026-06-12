@@ -77,25 +77,25 @@ export const buildPublicRsvpWhatsAppUrl = (phone: string, message: string) =>
 
 export const buildGuestRsvpMessage = (
   guestName: string,
-  event: Pick<Event, 'event_name' | 'event_date' | 'venue_name'> | null | undefined,
+  event: Pick<Event, 'event_name' | 'event_date' | 'venue_name' | 'venue_address'> | null | undefined,
   rsvpLink: string
 ) => {
-  const eventName = event?.event_name || 'האירוע שלנו';
-  const venueName = event?.venue_name || 'פרטי המקום בהמשך';
+  const eventName  = event?.event_name   || 'האירוע שלנו';
+  const venueName  = event?.venue_name   || 'פרטי המקום בהמשך';
+  const venueAddr  = event?.venue_address;
 
-  return [
+  const lines: string[] = [
     `היי ${guestName} 👋`,
     '',
     `נשמח לראות אותך ב${eventName}`,
     '',
     `📅 ${formatEventDate(event?.event_date ?? null)}`,
     `📍 ${venueName}`,
-    '',
-    'לאישור הגעה:',
-    rsvpLink,
-    '',
-    'תודה ❤️',
-  ].join('\n');
+  ];
+  if (venueAddr) lines.push(`   ${venueAddr}`);
+  lines.push('', 'לאישור הגעה:', rsvpLink, '', 'תודה ❤️');
+
+  return lines.join('\n');
 };
 
 export const buildGuestRsvpWhatsAppUrl = (phone: string, message: string) =>

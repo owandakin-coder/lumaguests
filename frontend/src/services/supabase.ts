@@ -342,6 +342,7 @@ export const rsvpService = {
       event_name?: string | null;
       event_date?: string | null;
       venue_name?: string | null;
+      venue_address?: string | null;
       cover_image_url?: string | null;
       updated_at?: string | null;
     } | null
@@ -350,10 +351,11 @@ export const rsvpService = {
     if (!ev) return base;
     const p = new URLSearchParams();
     if (ev.event_name && ev.event_name !== 'האירוע שלי') p.set('en', ev.event_name);
-    if (ev.event_date) p.set('ed', ev.event_date.split('T')[0]);
-    if (ev.venue_name) p.set('vn', ev.venue_name);
+    if (ev.event_date)     p.set('ed', ev.event_date.split('T')[0]);
+    if (ev.venue_name)     p.set('vn', ev.venue_name);
+    if (ev.venue_address)  p.set('va', ev.venue_address);
     if (ev.cover_image_url) p.set('ci', ev.cover_image_url);
-    if (ev.updated_at) p.set('v', ev.updated_at);
+    if (ev.updated_at)     p.set('v',  ev.updated_at);
     const qs = p.toString();
     return qs ? `${base}?${qs}` : base;
   },
@@ -366,6 +368,7 @@ export const rsvpService = {
       event_name?: string | null;
       event_date?: string | null;
       venue_name?: string | null;
+      venue_address?: string | null;
       cover_image_url?: string | null;
       updated_at?: string | null;
     } | null
@@ -379,6 +382,7 @@ export const rsvpService = {
       lines.push(`📅 ${d.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}`);
     }
     if (ev?.venue_name) lines.push(`📍 ${ev.venue_name}`);
+    if (ev?.venue_address) lines.push(`   ${ev.venue_address}`);
     lines.push('', 'לאישור הגעה:', link, '', 'תודה ❤️');
     return `https://wa.me/${toWaPhone(phone)}?text=${encodeURIComponent(lines.join('\n'))}`;
   },

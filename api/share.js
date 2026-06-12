@@ -16,6 +16,7 @@ export default function handler(req, res) {
   const en    = req.query.en   || '';   // event name
   const ed    = req.query.ed   || '';   // event date (YYYY-MM-DD)
   const vn    = req.query.vn   || '';   // venue name
+  const va    = req.query.va   || '';   // venue address
 
   const host  = req.headers.host || 'lumaguests.vercel.app';
   const origin = `https://${host}`;
@@ -37,6 +38,7 @@ export default function handler(req, res) {
   if (en) p.set('en', en);
   if (ed) p.set('ed', ed);
   if (vn) p.set('vn', vn);
+  if (va) p.set('va', va);
   const qs     = p.toString();
   const rsvpUrl = `${origin}/rsvp/${token}${qs ? '?' + qs : ''}`;
 
