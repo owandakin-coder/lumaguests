@@ -66,28 +66,22 @@ export const Login = ({ onSuccess, onSwitchToRegister, onLogin }: LoginProps) =>
     <div
       dir="rtl"
       className="min-h-screen flex flex-col"
-      style={{ background: 'linear-gradient(180deg,#1A1916 0%,#1A1916 40%,#F5F3EF 40%)' }}
+      style={{ background: '#F5F3EF' }}
     >
-      {/* Dark top — brand */}
-      <div className="flex-shrink-0 px-6 pt-14 pb-10 text-center">
-        <motion.img
-          src="/Logo (2).png"
-          alt="Luma Guests"
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.4 }}
-          className="mx-auto mb-3"
-          style={{ width: 240, height: 'auto', mixBlendMode: 'screen' }}
-        />
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.25 }}
-          className="text-[13px] text-white/40 tracking-wide"
-        >
-          ניהול רשימת מוזמנים
-        </motion.p>
-      </div>
+      {/* Dark top — logo as background */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="flex-shrink-0"
+        style={{
+          height: 220,
+          backgroundImage: 'url("/Logo (2).png")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      />
 
       {/* Form area */}
       <motion.div
