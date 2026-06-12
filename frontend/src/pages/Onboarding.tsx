@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarDays, MapPin } from 'lucide-react';
 import { Event } from '../types';
@@ -14,6 +14,7 @@ const inputCls = 'w-full px-4 py-4 rounded-2xl bg-white text-[15px] text-charcoa
 export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const dateRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     event_name: '',
     event_date: '',
@@ -33,14 +34,24 @@ export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
             className={inputCls}
             style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}
           />
-          <div className="relative">
+          {/* Date picker — hidden native input + custom Hebrew display */}
+          <div
+            className={`${inputCls} relative cursor-pointer`}
+            style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}
+            onClick={() => dateRef.current?.showPicker?.()}
+          >
             <CalendarDays className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400 pointer-events-none" />
+            <span className={`block pr-7 ${form.event_date ? 'text-charcoal-900' : 'text-charcoal-400'}`}>
+              {form.event_date
+                ? new Date(form.event_date + 'T12:00:00').toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })
+                : 'תאריך האירוע'}
+            </span>
             <input
+              ref={dateRef}
               type="date"
               value={form.event_date}
               onChange={e => setForm(p => ({ ...p, event_date: e.target.value }))}
-              className={`${inputCls} pr-11`}
-              style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
           </div>
           <div className="relative">
