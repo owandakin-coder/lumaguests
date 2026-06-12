@@ -69,7 +69,7 @@ export const MobileBottomNav = ({ currentPage, onNavChange, pendingCount = 0, me
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full bg-red-500 flex items-center justify-center"
+                      className="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full bg-gold-500 flex items-center justify-center"
                     >
                       <span className="text-[9px] font-black text-white leading-none">
                         {badge > 99 ? '99+' : badge}

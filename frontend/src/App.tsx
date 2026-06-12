@@ -301,7 +301,7 @@ function App() {
           currentPage={currentPage}
           onNavChange={page => setCurrentPage(page as Page)}
           pendingCount={pendingCount}
-          messageCount={pendingCount}
+          messageCount={0}
         />
       )}
 

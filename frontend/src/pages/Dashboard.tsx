@@ -90,8 +90,14 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:Das
   }, [eventDate]);
 
   const categoryBreakdown = useMemo(() => {
+    const knownNonOther = catConfig.filter(c => c.id !== 'OTHER').map(c => c.id) as string[];
     return catConfig
-      .map(c => ({ ...c, count: guests.filter(g => g.category === c.id).length }))
+      .map(c => ({
+        ...c,
+        count: c.id === 'OTHER'
+          ? guests.filter(g => !g.category || !knownNonOther.includes(g.category)).length
+          : guests.filter(g => g.category === c.id).length,
+      }))
       .filter(c => c.count > 0);
   }, [guests]);
 
