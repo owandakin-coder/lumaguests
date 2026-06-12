@@ -16,7 +16,7 @@ import { ToastContainer }     from './components/Toast';
 import { useToast }           from './hooks/useToast';
 import { useSupabaseAuth }    from './hooks/useSupabaseAuth';
 import { Guest }              from './types';
-import { guestService, authService } from './services/supabase';
+import { guestService, authService, supabase } from './services/supabase';
 
 type Page     = 'dashboard' | 'guests' | 'add' | 'edit' | 'details' | 'settings' | 'messages';
 type AuthPage = 'login' | 'register';
@@ -51,6 +51,43 @@ function App() {
       setLoading(false);
     }
   };
+
+  // Realtime subscription — live RSVP notifications
+  useEffect(() => {
+    if (!auth.isAuthenticated || !auth.user) return;
+    const userId = auth.user.id;
+
+    const channel = supabase
+      .channel(`guests-${userId}`)
+      .on(
+        'postgres_changes' as any,
+        { event: '*', schema: 'public', table: 'guests', filter: `user_id=eq.${userId}` },
+        (payload: any) => {
+          const newRow = payload.new;
+          const oldRow = payload.old;
+
+          if (payload.eventType === 'INSERT') {
+            setGuests(prev => [newRow, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setGuests(prev => prev.map(g => g.id === newRow.id ? { ...g, ...newRow } : g));
+            // Notify when guest responds via RSVP link
+            if (newRow.rsvp_via_link && !oldRow?.rsvp_via_link) {
+              const name = newRow.full_name;
+              if (newRow.rsvp_status === 'CONFIRMED') {
+                addToast(`🎉 ${name} אישר/ה הגעה!`, 'success');
+              } else if (newRow.rsvp_status === 'DECLINED') {
+                addToast(`${name} לא יוכל/תוכל להגיע`, 'info');
+              }
+            }
+          } else if (payload.eventType === 'DELETE') {
+            setGuests(prev => prev.filter(g => g.id !== oldRow.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [auth.isAuthenticated, auth.user?.id]);
 
   const pendingCount = useMemo(
     () => guests.filter(g => (g.rsvpStatus || g.rsvp_status) === 'PENDING').length,

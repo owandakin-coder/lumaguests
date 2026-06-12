@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Users, CheckCircle, Clock, XCircle, ChevronLeft } from 'lucide-react';
+import { Plus, Users, CheckCircle, Clock, XCircle, ChevronLeft, CalendarDays } from 'lucide-react';
 import { Guest, RsvpStatus, Category } from '../types';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
@@ -12,7 +12,8 @@ interface DashboardProps {
   onViewGuest: (guest: Guest) => void;
 }
 
-const EVENT_KEY = 'luma_event_name';
+const EVENT_KEY      = 'luma_event_name';
+const EVENT_DATE_KEY = 'luma_event_date';
 
 const rsvpDot: Record<RsvpStatus, string>   = { CONFIRMED:'#10B981', PENDING:'#F59E0B', DECLINED:'#F87171' };
 const rsvpLabel: Record<RsvpStatus, string> = { CONFIRMED:'אישר', PENDING:'ממתין', DECLINED:'לא מגיע' };
@@ -62,9 +63,11 @@ const stagger={hidden:{},show:{transition:{staggerChildren:0.055}}};
 export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:DashboardProps)=>{
   const auth=useSupabaseAuth();
   const [eventName, setEventName] = useState('');
+  const [eventDate, setEventDate] = useState('');
 
   useEffect(() => {
     setEventName(localStorage.getItem(EVENT_KEY) || '');
+    setEventDate(localStorage.getItem(EVENT_DATE_KEY) || '');
   }, []);
 
   const s=useMemo(()=>{
@@ -77,12 +80,16 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:Das
     return{confirmed,pending,declined,total,people,pct};
   },[guests]);
 
+  const countdownDays = useMemo(() => {
+    if (!eventDate) return null;
+    const now = new Date(); now.setHours(0,0,0,0);
+    const target = new Date(eventDate);
+    return Math.ceil((target.getTime() - now.getTime()) / 86400000);
+  }, [eventDate]);
+
   const categoryBreakdown = useMemo(() => {
     return catConfig
-      .map(c => ({
-        ...c,
-        count: guests.filter(g => g.category === c.id).length,
-      }))
+      .map(c => ({ ...c, count: guests.filter(g => g.category === c.id).length }))
       .filter(c => c.count > 0);
   }, [guests]);
 
@@ -90,7 +97,17 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:Das
     [...guests].sort((a,b)=>new Date(b.createdAt||b.created_at||0).getTime()-new Date(a.createdAt||a.created_at||0).getTime()).slice(0,3)
   ,[guests]);
 
-  const displayName = auth.user?.email?.split('@')[0] || '';
+  const displayName = auth.user?.name?.split(' ')[0] || auth.user?.email?.split('@')[0] || '';
+
+  const subtitleText = useMemo(() => {
+    if (countdownDays !== null) {
+      if (countdownDays > 0)  return `עוד ${countdownDays} ימים לאירוע ✦`;
+      if (countdownDays === 0) return 'האירוע היום! 🎉';
+      return eventName ? `✦ ${eventName}` : 'האירוע עבר';
+    }
+    if (eventName) return `✦ ${eventName}`;
+    return new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'});
+  }, [countdownDays, eventName]);
 
   return(
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
@@ -101,11 +118,7 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:Das
           <h1 className="text-[26px] font-bold text-charcoal-900 leading-tight">
             {displayName ? `שלום, ${displayName}` : 'שלום 👋'}
           </h1>
-          <p className="text-[12px] text-charcoal-400">
-            {eventName
-              ? `✦ ${eventName}`
-              : new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'})}
-          </p>
+          <p className="text-[12px] text-charcoal-400">{subtitleText}</p>
         </div>
         <button onClick={onAddGuest}
           className="w-9 h-9 rounded-2xl bg-charcoal-900 flex items-center justify-center active:scale-90 transition-transform flex-shrink-0">
@@ -113,7 +126,34 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:Das
         </button>
       </motion.div>
 
-      {/* Hero card — ring + progress + stats */}
+      {/* Countdown banner — when event date set */}
+      {countdownDays !== null && countdownDays > 0 && (
+        <motion.div variants={fade}
+          className="rounded-2xl px-4 py-3 flex items-center gap-3"
+          style={{ background: 'linear-gradient(135deg,#1A1916 0%,#2D2A26 100%)' }}>
+          <div className="w-9 h-9 rounded-xl bg-gold-500/20 flex items-center justify-center flex-shrink-0">
+            <CalendarDays className="w-4.5 h-4.5 text-gold-400" strokeWidth={2}/>
+          </div>
+          <div className="flex-1">
+            <p className="text-[11px] text-white/50 font-medium">{eventName || 'האירוע'}</p>
+            <p className="text-[15px] font-bold text-white">עוד {countdownDays} ימים</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[28px] font-black text-gold-400 leading-none">{countdownDays}</p>
+            <p className="text-[10px] text-white/40">ימים</p>
+          </div>
+        </motion.div>
+      )}
+
+      {countdownDays === 0 && (
+        <motion.div variants={fade}
+          className="rounded-2xl px-4 py-3 flex items-center gap-3 bg-green-50 border border-green-200">
+          <span className="text-2xl">🎉</span>
+          <p className="text-[15px] font-bold text-green-800">האירוע היום! בהצלחה!</p>
+        </motion.div>
+      )}
+
+      {/* Hero card */}
       <motion.div variants={fade} className="bg-white rounded-3xl p-4" style={{boxShadow:'0 2px 16px rgba(0,0,0,0.07)'}}>
         <div className="py-2">
           <Ring pct={s.pct} total={s.total} loading={loading}/>
@@ -133,7 +173,6 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:Das
           </div>
         )}
 
-        {/* 2×2 stats */}
         <div className="grid grid-cols-2 gap-2">
           {[
             {icon:CheckCircle,label:'אישרו',     value:s.confirmed,color:'#10B981',bg:'#ECFDF5'},

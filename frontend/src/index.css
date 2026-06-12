@@ -74,3 +74,36 @@ input[type="tel"] {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
+
+/* Faster tap response (removes 300ms delay on iOS) */
+button, [role="button"], a {
+  touch-action: manipulation;
+}
+
+/* iOS momentum scroll for overflow containers */
+.scroll-ios {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+}
+
+/* Shimmer skeleton loading */
+@keyframes shimmer {
+  0%   { background-position: -400% 0; }
+  100% { background-position:  400% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, #EDEAE5 25%, #E0DDD7 50%, #EDEAE5 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* Prevent text selection on tap-hold */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Safe bottom padding utility */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 16px);
+}

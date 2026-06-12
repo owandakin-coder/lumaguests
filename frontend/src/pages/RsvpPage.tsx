@@ -10,7 +10,10 @@ interface RsvpPageProps {
 
 type Step = 'loading' | 'form' | 'already' | 'success' | 'error';
 
+const EVENT_KEY = 'luma_event_name';
+
 export const RsvpPage = ({ token }: RsvpPageProps) => {
+  const eventName = localStorage.getItem(EVENT_KEY) || '';
   const [guest, setGuest]         = useState<RsvpPublicGuest | null>(null);
   const [step, setStep]           = useState<Step>('loading');
   const [companions, setCompanions] = useState(0);
@@ -120,7 +123,9 @@ export const RsvpPage = ({ token }: RsvpPageProps) => {
                 style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
                 <span className="text-gold-400 text-lg font-black">L</span>
               </div>
-              <p className="text-xs text-charcoal-400 font-medium uppercase tracking-widest">הזמנה לאירוע</p>
+              <p className="text-xs text-charcoal-400 font-medium uppercase tracking-widest">
+                {eventName || 'הזמנה לאירוע'}
+              </p>
             </div>
 
             {/* Guest name */}
@@ -240,7 +245,9 @@ export const RsvpPage = ({ token }: RsvpPageProps) => {
             </h2>
             <p className="text-sm text-charcoal-400 leading-relaxed">
               {choice === 'CONFIRMED'
-                ? `אישרת הגעה לאירוע עם ${companions} מלווים.\nנשמח לראותך!`
+                ? companions > 0
+                  ? `אישרת הגעה לאירוע עם ${companions} מלווים. נשמח לראותך!`
+                  : 'אישרת הגעה לאירוע. נשמח לראותך!'
                 : 'חבל שלא תוכל/י להגיע. מקווים לראותך בפעם הבאה!'}
             </p>
 

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Phone, MessageCircle } from 'lucide-react';
+import { Phone, MessageCircle, Link } from 'lucide-react';
 import { Guest, RsvpStatus } from '../types';
 import { rsvpService } from '../services/supabase';
 
@@ -43,6 +43,7 @@ export const GuestCard = ({guest,onView}:GuestCardProps)=>{
   const r      = rsvpCfg[status];
   const accent = catAccent[guest.category];
   const [abg,afg] = avBg(name);
+  const viaLink = guest.rsvp_via_link;
 
   const handleWA=(e:React.MouseEvent)=>{
     e.stopPropagation();
@@ -79,10 +80,15 @@ export const GuestCard = ({guest,onView}:GuestCardProps)=>{
           <div className="flex-1 min-w-0">
             <p className="text-[15px] font-bold text-charcoal-900 truncate leading-tight mb-1">{name}</p>
             <p className="text-[12px] text-charcoal-400 mb-1.5" dir="ltr">{guest.phone}</p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* RSVP status pill */}
               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full" style={{background:r.bg}}>
                 <div className="w-1.5 h-1.5 rounded-full" style={{background:r.dot}}/>
                 <span className="text-[10px] font-bold" style={{color:r.text}}>{r.label}</span>
+                {/* Via link indicator */}
+                {viaLink && (
+                  <Link className="w-2.5 h-2.5 mr-0.5" style={{color:'#A855F7'}} strokeWidth={2.5}/>
+                )}
               </div>
               <span className="text-[11px] text-charcoal-400">{catLabel[guest.category]}</span>
               <span className="text-charcoal-300 text-[10px]">·</span>

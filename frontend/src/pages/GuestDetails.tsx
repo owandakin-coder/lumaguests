@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Phone, MessageCircle, Edit2, Trash2, ChevronRight, Users, Tag, StickyNote, Calendar, Link } from 'lucide-react';
+import {
+  Phone, MessageCircle, Edit2, Trash2, ChevronRight,
+  Users, Tag, StickyNote, Calendar, Link, CheckCircle,
+} from 'lucide-react';
 import { Guest, RsvpStatus } from '../types';
 import { guestService, rsvpService } from '../services/supabase';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
@@ -42,7 +45,7 @@ function avatarBg(name: string) {
 }
 
 export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetailsProps) => {
-  const [guest, setGuest]   = useState<Guest | null>(null);
+  const [guest, setGuest]     = useState<Guest | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied]   = useState(false);
   const auth = useSupabaseAuth();
@@ -78,6 +81,11 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
   const created = new Date(guest.createdAt || guest.created_at || '').toLocaleDateString('he-IL', {
     year: 'numeric', month: 'long', day: 'numeric',
   });
+  const respondedAt = guest.rsvp_responded_at
+    ? new Date(guest.rsvp_responded_at).toLocaleDateString('he-IL', {
+        year: 'numeric', month: 'long', day: 'numeric',
+      })
+    : null;
 
   const handleCall     = () => { window.location.href = `tel:${guest.phone}`; };
   const handleWhatsApp = () => {
@@ -108,12 +116,11 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
         <ChevronRight className="w-5 h-5 text-charcoal-600" />
       </button>
 
-      {/* Hero profile card — dark */}
+      {/* Hero card — dark */}
       <div
         className="rounded-3xl overflow-hidden"
         style={{ background: 'linear-gradient(160deg,#1A1916 0%,#2D2A26 100%)', boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }}
       >
-        {/* Category accent strip */}
         <div className="h-1.5 w-full" style={{ background: accent }} />
 
         <div className="p-5">
@@ -127,9 +134,16 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-[22px] font-bold text-white truncate">{name}</h1>
-              <div className="flex items-center gap-1.5 mt-1">
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                 <div className="w-2 h-2 rounded-full" style={{ background: cfg.dot }} />
                 <span className="text-[13px] font-semibold" style={{ color: cfg.dot }}>{cfg.label}</span>
+                {guest.rsvp_via_link && (
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full"
+                    style={{ background: 'rgba(168,85,247,0.2)' }}>
+                    <Link className="w-3 h-3" style={{ color: '#A855F7' }} />
+                    <span className="text-[10px] font-bold" style={{ color: '#A855F7' }}>דרך קישור</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -209,6 +223,41 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
           </div>
         )}
       </div>
+
+      {/* RSVP response info — shown when guest responded via link */}
+      {guest.rsvp_via_link && (
+        <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
+          <div className="px-4 py-3 border-b border-charcoal-100/60 flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" style={{ color: '#A855F7' }} strokeWidth={2} />
+            <p className="text-[12px] font-bold text-charcoal-700 uppercase tracking-wide">תגובה דרך קישור</p>
+          </div>
+
+          {respondedAt && (
+            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-charcoal-100/60">
+              <div className="w-8 h-8 rounded-xl bg-charcoal-50 flex items-center justify-center flex-shrink-0">
+                <Calendar className="w-4 h-4 text-charcoal-500" strokeWidth={1.8} />
+              </div>
+              <div>
+                <p className="text-[11px] text-charcoal-400 font-medium">תאריך תגובה</p>
+                <p className="text-[14px] font-semibold text-charcoal-900">{respondedAt}</p>
+              </div>
+            </div>
+          )}
+
+          {guest.rsvp_public_note && (
+            <div className="flex items-start gap-3 px-4 py-3.5">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                style={{ background: 'rgba(168,85,247,0.1)' }}>
+                <StickyNote className="w-4 h-4" style={{ color: '#A855F7' }} strokeWidth={1.8} />
+              </div>
+              <div>
+                <p className="text-[11px] font-medium mb-0.5" style={{ color: '#A855F7' }}>הודעה מהמוזמן</p>
+                <p className="text-[14px] text-charcoal-700 leading-relaxed">{guest.rsvp_public_note}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Delete */}
       <button

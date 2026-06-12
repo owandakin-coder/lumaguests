@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, Palette, HelpCircle, FileText,
   LogOut, ChevronLeft, Trash2, Info, Bell, Globe, Star,
-  X, Eye, EyeOff, Mail, Lock, MessageCircle, Check,
+  X, Eye, EyeOff, Mail, Lock, MessageCircle, Check, CalendarDays,
 } from 'lucide-react';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { guestService, authService } from '../services/supabase';
@@ -15,9 +15,10 @@ interface SettingsProps {
 
 type ModalType =
   | 'email' | 'password' | 'notifications' | 'theme' | 'language'
-  | 'eventName' | 'help' | 'contact' | 'terms' | 'privacy' | null;
+  | 'eventName' | 'eventDate' | 'help' | 'contact' | 'terms' | 'privacy' | null;
 
-const EVENT_KEY = 'luma_event_name';
+const EVENT_KEY      = 'luma_event_name';
+const EVENT_DATE_KEY = 'luma_event_date';
 
 // ── Bottom Sheet wrapper ──────────────────────────────────────
 const Sheet = ({ open, onClose, title, children }: {
@@ -69,10 +70,11 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
   const [activeModal, setActiveModal]     = useState<ModalType>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [eventName, setEventName]         = useState(() => localStorage.getItem(EVENT_KEY) || 'האירוע שלי');
-  const [notifPerm, setNotifPerm]         = useState<NotificationPermission>('default');
+  const [eventName, setEventName] = useState(() => localStorage.getItem(EVENT_KEY) || 'האירוע שלי');
+  const [eventDate, setEventDate] = useState(() => localStorage.getItem(EVENT_DATE_KEY) || '');
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission>('default');
 
-  const [f, setF]           = useState({ email: '', password: '', confirm: '', event: '' });
+  const [f, setF] = useState({ email: '', password: '', confirm: '', event: '', eventDate: '' });
   const [showPass, setShowPass] = useState(false);
   const [busy, setBusy]     = useState(false);
   const [err, setErr]       = useState('');
@@ -83,7 +85,7 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
   }, []);
 
   const open = (m: ModalType) => {
-    setF({ email: '', password: '', confirm: '', event: eventName });
+    setF({ email: '', password: '', confirm: '', event: eventName, eventDate: eventDate });
     setErr(''); setOk(''); setShowPass(false); setActiveModal(m);
   };
   const close = () => setActiveModal(null);
@@ -118,6 +120,19 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
     setTimeout(close, 900);
   };
 
+  const saveEventDate = () => {
+    if (f.eventDate) {
+      localStorage.setItem(EVENT_DATE_KEY, f.eventDate);
+      setEventDate(f.eventDate);
+      setOk('תאריך האירוע נשמר');
+    } else {
+      localStorage.removeItem(EVENT_DATE_KEY);
+      setEventDate('');
+      setOk('תאריך האירוע נמחק');
+    }
+    setTimeout(close, 900);
+  };
+
   const requestNotifications = async () => {
     if (!('Notification' in window)) { setErr('הדפדפן לא תומך בהתראות'); return; }
     const perm = await Notification.requestPermission();
@@ -142,6 +157,10 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
   const email   = userEmail || auth.user?.email || '';
   const initial = email ? email[0].toUpperCase() : 'U';
 
+  const eventDateDisplay = eventDate
+    ? new Date(eventDate).toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' })
+    : 'לא הוגדר';
+
   const notifLabel =
     notifPerm === 'granted' ? 'פעיל' :
     notifPerm === 'denied'  ? 'חסום' : 'כבוי';
@@ -158,8 +177,9 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
     {
       title: 'אירוע',
       rows: [
-        { icon: Star,    label: 'שם האירוע',      value: eventName,       action: () => open('eventName') },
-        { icon: Info,    label: 'גרסה',            value: '1.0.0',         action: null },
+        { icon: Star,        label: 'שם האירוע',      value: eventName,         action: () => open('eventName') },
+        { icon: CalendarDays,label: 'תאריך האירוע',   value: eventDateDisplay,  action: () => open('eventDate') },
+        { icon: Info,        label: 'גרסה',            value: '1.0.0',           action: null },
       ],
     },
     {
@@ -511,6 +531,25 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
           <p className="font-bold text-charcoal-900">יצירת קשר</p>
           <p>לשאלות בנוגע לפרטיות: support@lumaguests.app</p>
           <p className="text-charcoal-400 text-[11px] pt-2">עודכן לאחרונה: יוני 2026</p>
+        </div>
+      </Sheet>
+
+      {/* Event date */}
+      <Sheet open={activeModal === 'eventDate'} onClose={close} title="תאריך האירוע">
+        <div className="space-y-4">
+          <Field label="תאריך האירוע">
+            <input
+              type="date"
+              value={f.eventDate}
+              onChange={e => { setF(p => ({ ...p, eventDate: e.target.value })); setErr(''); }}
+              className={inputCls}
+            />
+          </Field>
+          <p className="text-[12px] text-charcoal-400 leading-relaxed">
+            התאריך ישמש לספירה לאחור בדשבורד. השאר ריק כדי למחוק.
+          </p>
+          <Status />
+          <Btn onPress={saveEventDate} label="שמור תאריך" />
         </div>
       </Sheet>
 

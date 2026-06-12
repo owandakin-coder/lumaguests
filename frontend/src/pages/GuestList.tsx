@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, Users } from 'lucide-react';
+import { Search, Plus, Users, ArrowUpDown, Download } from 'lucide-react';
 import { GuestCard } from '../components/GuestCard';
 import { Guest, RsvpStatus, Category } from '../types';
 
@@ -9,39 +9,112 @@ interface GuestListProps {
   onEditGuest:(g:Guest)=>void;onDeleteGuest:(g:Guest)=>void;onViewGuest:(g:Guest)=>void;
 }
 
+type SortType = 'newest' | 'oldest' | 'az' | 'status';
+
+const sortLabels: Record<SortType, string> = {
+  newest: 'חדש→ישן',
+  oldest: 'ישן→חדש',
+  az:     'א→ב',
+  status: 'סטטוס',
+};
+const sortCycle: SortType[] = ['newest', 'oldest', 'az', 'status'];
+
 const statusFilters:{label:string;value:RsvpStatus|'ALL'}[]=[
   {label:'הכל',value:'ALL'},{label:'אישרו',value:'CONFIRMED'},
   {label:'ממתינים',value:'PENDING'},{label:'לא מגיעים',value:'DECLINED'},
 ];
 
 const categoryFilters:{label:string;value:Category|'ALL';color:string}[]=[
-  {label:'הכל',value:'ALL',color:'#1A1916'},
-  {label:'חתן',value:'GROOM',color:'#C9A84C'},
-  {label:'כלה',value:'BRIDE',color:'#F9A8D4'},
-  {label:'משפחה',value:'FAMILY',color:'#93C5FD'},
-  {label:'חברים',value:'FRIENDS',color:'#C4B5FD'},
-  {label:'עבודה',value:'WORK',color:'#94A3B8'},
-  {label:'אחר',value:'OTHER',color:'#D1D5DB'},
+  {label:'הכל',    value:'ALL',     color:'#1A1916'},
+  {label:'חתן',    value:'GROOM',   color:'#C9A84C'},
+  {label:'כלה',    value:'BRIDE',   color:'#F9A8D4'},
+  {label:'משפחה',  value:'FAMILY',  color:'#93C5FD'},
+  {label:'חברים',  value:'FRIENDS', color:'#C4B5FD'},
+  {label:'עבודה',  value:'WORK',    color:'#94A3B8'},
+  {label:'אחר',    value:'OTHER',   color:'#D1D5DB'},
 ];
 
+const rsvpStatusLabel: Record<RsvpStatus, string> = {
+  CONFIRMED: 'אישר הגעה',
+  PENDING:   'ממתין',
+  DECLINED:  'לא מגיע',
+};
+
+const catLabelFull: Record<string, string> = {
+  GROOM:'חתן',BRIDE:'כלה',FAMILY:'משפחה',FRIENDS:'חברים',WORK:'עבודה',OTHER:'אחר',
+};
+
 export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onViewGuest}:GuestListProps)=>{
-  const [search,setSearch]=useState('');
-  const [status,setStatus]=useState<RsvpStatus|'ALL'>('ALL');
-  const [category,setCategory]=useState<Category|'ALL'>('ALL');
+  const [search,   setSearch]   = useState('');
+  const [status,   setStatus]   = useState<RsvpStatus|'ALL'>('ALL');
+  const [category, setCategory] = useState<Category|'ALL'>('ALL');
+  const [sort,     setSort]     = useState<SortType>('newest');
 
   const usedCategories = useMemo(() => {
     const used = new Set(guests.map(g => g.category));
     return categoryFilters.filter(f => f.value === 'ALL' || used.has(f.value as Category));
   }, [guests]);
 
-  const filtered=useMemo(()=>guests.filter(g=>{
-    const name=g.fullName||g.full_name;
-    const rsvp=g.rsvpStatus||g.rsvp_status;
-    const matchSearch=name.toLowerCase().includes(search.toLowerCase())||g.phone.includes(search);
-    const matchStatus=status==='ALL'||rsvp===status;
-    const matchCat=category==='ALL'||g.category===category;
-    return matchSearch&&matchStatus&&matchCat;
-  }),[guests,search,status,category]);
+  const filtered = useMemo(() => {
+    let list = guests.filter(g => {
+      const name = g.fullName||g.full_name;
+      const rsvp = g.rsvpStatus||g.rsvp_status;
+      return (name.toLowerCase().includes(search.toLowerCase())||g.phone.includes(search))
+        &&(status==='ALL'||rsvp===status)
+        &&(category==='ALL'||g.category===category);
+    });
+
+    const statusOrder: Record<RsvpStatus, number> = { CONFIRMED: 0, PENDING: 1, DECLINED: 2 };
+
+    switch (sort) {
+      case 'oldest':
+        list = [...list].sort((a,b) =>
+          new Date(a.createdAt||a.created_at||0).getTime() - new Date(b.createdAt||b.created_at||0).getTime());
+        break;
+      case 'az':
+        list = [...list].sort((a,b) =>
+          (a.fullName||a.full_name).localeCompare(b.fullName||b.full_name, 'he'));
+        break;
+      case 'status':
+        list = [...list].sort((a,b) =>
+          statusOrder[(a.rsvpStatus||a.rsvp_status) as RsvpStatus] -
+          statusOrder[(b.rsvpStatus||b.rsvp_status) as RsvpStatus]);
+        break;
+      default: // newest
+        list = [...list].sort((a,b) =>
+          new Date(b.createdAt||b.created_at||0).getTime() - new Date(a.createdAt||a.created_at||0).getTime());
+    }
+
+    return list;
+  }, [guests, search, status, category, sort]);
+
+  const cycleSort = () => {
+    const idx = sortCycle.indexOf(sort);
+    setSort(sortCycle[(idx + 1) % sortCycle.length]);
+  };
+
+  const exportCSV = () => {
+    const eventName = localStorage.getItem('luma_event_name') || 'מוזמנים';
+    const headers = ['שם', 'טלפון', 'סטטוס', 'קטגוריה', 'מלווים', 'סך אנשים', 'הערות'];
+    const rows = guests.map(g => [
+      g.fullName||g.full_name,
+      g.phone,
+      rsvpStatusLabel[(g.rsvpStatus||g.rsvp_status) as RsvpStatus],
+      catLabelFull[g.category],
+      g.companions,
+      1 + g.companions,
+      g.notes || '',
+    ]);
+    const csv = [headers, ...rows]
+      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `${eventName}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-4 pt-1">
@@ -54,10 +127,23 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
             {filtered.length} מתוך {guests.length} · {guests.reduce((a,g)=>a+1+(g.companions||0),0)} אנשים
           </p>
         </div>
-        <button onClick={onAddGuest}
-          className="w-10 h-10 rounded-2xl bg-charcoal-900 flex items-center justify-center active:scale-90 transition-transform flex-shrink-0">
-          <Plus className="w-5 h-5 text-white" strokeWidth={2.5}/>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* CSV Export */}
+          {guests.length > 0 && (
+            <button
+              onClick={exportCSV}
+              className="w-9 h-9 rounded-2xl bg-white flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
+              style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }}
+              title="ייצוא CSV"
+            >
+              <Download className="w-4 h-4 text-charcoal-500" strokeWidth={2}/>
+            </button>
+          )}
+          <button onClick={onAddGuest}
+            className="w-10 h-10 rounded-2xl bg-charcoal-900 flex items-center justify-center active:scale-90 transition-transform flex-shrink-0">
+            <Plus className="w-5 h-5 text-white" strokeWidth={2.5}/>
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -72,16 +158,27 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
         />
       </div>
 
-      {/* Status segmented control */}
-      <div className="flex rounded-2xl p-1" style={{background:'rgba(0,0,0,0.06)'}}>
-        {statusFilters.map(f=>(
-          <button key={f.value} onClick={()=>setStatus(f.value)}
-            className={`flex-1 py-2 rounded-xl text-[12px] font-semibold transition-all duration-200 ${
-              status===f.value ? 'bg-white text-charcoal-900 shadow-sm' : 'text-charcoal-500'
-            }`}>
-            {f.label}
-          </button>
-        ))}
+      {/* Status segmented control + sort button */}
+      <div className="flex gap-2 items-center">
+        <div className="flex-1 flex rounded-2xl p-1" style={{background:'rgba(0,0,0,0.06)'}}>
+          {statusFilters.map(f=>(
+            <button key={f.value} onClick={()=>setStatus(f.value)}
+              className={`flex-1 py-2 rounded-xl text-[12px] font-semibold transition-all duration-200 ${
+                status===f.value ? 'bg-white text-charcoal-900 shadow-sm' : 'text-charcoal-500'
+              }`}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+        {/* Sort toggle */}
+        <button
+          onClick={cycleSort}
+          className="flex items-center gap-1 px-3 py-2 rounded-2xl bg-white text-[11px] font-bold text-charcoal-700 active:scale-95 transition-transform flex-shrink-0"
+          style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}
+        >
+          <ArrowUpDown className="w-3 h-3" strokeWidth={2.5}/>
+          {sortLabels[sort]}
+        </button>
       </div>
 
       {/* Category filter — horizontal scroll */}
@@ -96,7 +193,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
                 className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-[14px] text-[12px] font-bold transition-all active:scale-95"
                 style={{
                   background: active ? f.color : 'rgba(0,0,0,0.05)',
-                  color: active ? (f.value === 'ALL' ? 'white' : 'white') : '#6E6862',
+                  color: active ? 'white' : '#6E6862',
                   boxShadow: active ? `0 2px 8px ${f.color}50` : 'none',
                 }}
               >

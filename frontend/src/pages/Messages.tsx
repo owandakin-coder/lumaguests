@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageCircle, CheckSquare, Square, Users,
-  X, ChevronDown, ChevronUp, Send,
+  X, ChevronDown, ChevronUp, Send, Search,
 } from 'lucide-react';
 import { Guest, RsvpStatus } from '../types';
 import { rsvpService } from '../services/supabase';
@@ -82,6 +82,7 @@ const filterTabs: { id: FilterType; label: string }[] = [
 
 export const Messages = ({ guests }: MessagesProps) => {
   const [filter, setFilter]       = useState<FilterType>('PENDING');
+  const [search, setSearch]       = useState('');
   const [selected, setSelected]   = useState<Set<string>>(new Set());
   const [templateId, setTemplateId] = useState('rsvp');
   const [showTpl, setShowTpl]     = useState(false);
@@ -89,9 +90,11 @@ export const Messages = ({ guests }: MessagesProps) => {
   const [sentIds, setSentIds]     = useState<Set<string>>(new Set());
 
   const filtered = useMemo(() => guests.filter(g => {
-    const s = g.rsvpStatus || g.rsvp_status;
-    return filter === 'ALL' || s === filter;
-  }), [guests, filter]);
+    const s    = g.rsvpStatus || g.rsvp_status;
+    const name = (g.fullName || g.full_name).toLowerCase();
+    const q    = search.toLowerCase();
+    return (filter === 'ALL' || s === filter) && (q === '' || name.includes(q) || g.phone.includes(q));
+  }), [guests, filter, search]);
 
   const counts = useMemo(() => ({
     PENDING:   guests.filter(g => (g.rsvpStatus || g.rsvp_status) === 'PENDING').length,
@@ -157,6 +160,26 @@ export const Messages = ({ guests }: MessagesProps) => {
             </span>
           </button>
         ))}
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400 pointer-events-none" />
+        <input
+          value={search}
+          onChange={e => { setSearch(e.target.value); setSelected(new Set()); }}
+          placeholder="חיפוש לפי שם או טלפון..."
+          className="w-full h-[48px] pr-11 pl-4 rounded-[24px] bg-white text-[14px] text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-charcoal-200 transition"
+          style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}
+        />
+        {search && (
+          <button
+            onClick={() => { setSearch(''); setSelected(new Set()); }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-charcoal-200 flex items-center justify-center"
+          >
+            <X className="w-3 h-3 text-charcoal-600" />
+          </button>
+        )}
       </div>
 
       {/* Template picker */}
@@ -281,9 +304,9 @@ export const Messages = ({ guests }: MessagesProps) => {
         </div>
       )}
 
-      {/* Sticky send button */}
+      {/* Sticky send button — bottom-24 clears the fixed bottom nav */}
       {selected.size > 0 && (
-        <div className="sticky bottom-4 pt-2">
+        <div className="sticky bottom-24 pt-2">
           <motion.button
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
