@@ -216,7 +216,9 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
       setOk('תמונה הועלתה בהצלחה ✓');
       setTimeout(close, 1000);
     } catch (e: any) {
-      setErr(e?.message?.includes('bucket') ? 'יש ליצור bucket "event-covers" ב-Supabase Storage' : (e?.message || 'שגיאה בהעלאה'));
+      const msg = (e?.message || '').toLowerCase();
+      const isBucketMissing = msg.includes('bucket') || msg.includes('not found') || msg.includes('storage');
+      setErr(isBucketMissing ? 'Storage לא מוגדר — יש ליצור bucket בשם "event-covers" ב-Supabase' : (e?.message || 'שגיאה בהעלאה'));
     } finally { setBusy(false); }
   };
 
