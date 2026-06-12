@@ -172,7 +172,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
         return;
       }
 
-      const rsvpLink = rsvpService.buildShareLink(token, event);
+      const rsvpLink = rsvpService.buildLink(token, event);
       const msg = buildGuestRsvpMessage(name, event, rsvpLink);
       window.open(buildGuestRsvpWhatsAppUrl(g.phone, msg), '_blank');
       setSentIds(prev => new Set(prev).add(g.id));

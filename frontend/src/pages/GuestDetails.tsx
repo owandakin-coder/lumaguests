@@ -140,7 +140,7 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
       return;
     }
     try {
-      await navigator.clipboard.writeText(rsvpService.buildShareLink(token, event));
+      await navigator.clipboard.writeText(rsvpService.buildLink(token, event));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch { /* clipboard blocked */ }

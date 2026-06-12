@@ -329,8 +329,7 @@ export const rsvpService = {
       updated_at?: string | null;
     } | null
   ): string => {
-    // Use /share/ link so WhatsApp preview shows the event cover photo
-    const link = rsvpService.buildShareLink(token, ev);
+    const link = rsvpService.buildLink(token, ev);
     const eventName = (ev?.event_name && ev.event_name !== 'האירוע שלי') ? ev.event_name : 'האירוע שלנו';
     const lines: string[] = [`היי ${guestName} 👋`, '', `נשמח לראות אותך ב${eventName}`];
     if (ev?.event_date) {
