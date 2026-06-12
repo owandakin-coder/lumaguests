@@ -265,9 +265,27 @@ export const eventService = {
 // 05X-XXXXXXX → 9725XXXXXXX  |  already international → unchanged
 export function toWaPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
-  if (digits.startsWith('972')) return digits;          // already international
-  if (digits.startsWith('0'))   return '972' + digits.slice(1); // local → international
+  if (digits.startsWith('972')) return digits;
+  if (digits.startsWith('0'))   return '972' + digits.slice(1);
   return digits;
+}
+
+// Opens a WhatsApp wa.me link safely in PWA context.
+// iOS PWA: window.open() opens an in-app Safari browser (blank screen + X to close).
+// Fix: convert to whatsapp:// URI scheme which opens the app directly.
+export function openWhatsAppUrl(waUrl: string): void {
+  try {
+    const url   = new URL(waUrl);
+    const phone = url.pathname.replace(/^\//, ''); // empty for wa.me/?text=... share links
+    const text  = url.searchParams.get('text') ?? '';
+    // whatsapp:// URI opens the app directly — no in-app browser, returns cleanly to PWA
+    const deepLink = phone
+      ? `whatsapp://send?phone=${phone}&text=${encodeURIComponent(text)}`
+      : `whatsapp://send?text=${encodeURIComponent(text)}`;
+    window.location.href = deepLink;
+  } catch {
+    window.open(waUrl, '_blank');
+  }
 }
 
 // ── RSVP Magic Link Service ───────────────────────────────────

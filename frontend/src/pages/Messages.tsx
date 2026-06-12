@@ -6,7 +6,7 @@ import {
   X, ChevronDown, ChevronUp, Send, Search,
 } from 'lucide-react';
 import { Guest, RsvpStatus } from '../types';
-import { rsvpService, guestService, toWaPhone } from '../services/supabase';
+import { rsvpService, guestService, toWaPhone, openWhatsAppUrl } from '../services/supabase';
 import { useEvent } from '../hooks/useEvent';
 import {
   buildGuestRsvpMessage,
@@ -178,7 +178,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
         return;
       }
       const msg = buildGuestRsvpMessage(name, event, rsvpLink);
-      window.open(buildGuestRsvpWhatsAppUrl(g.phone, msg), '_blank');
+      openWhatsAppUrl(buildGuestRsvpWhatsAppUrl(g.phone, msg));
       setSentIds(prev => new Set(prev).add(g.id));
       return;
     }
@@ -198,7 +198,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
     const link  = token ? rsvpService.buildLink(token) : null;
     const side  = sideLabel[g.category] ?? undefined;
     const msg   = activeTpl.build(name, link, side);
-    window.open(`https://wa.me/${toWaPhone(g.phone)}?text=${encodeURIComponent(msg)}`, '_blank');
+    openWhatsAppUrl(`https://wa.me/${toWaPhone(g.phone)}?text=${encodeURIComponent(msg)}`);
     setSentIds(prev => new Set(prev).add(g.id));
   };
 

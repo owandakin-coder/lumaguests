@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Phone, MessageCircle, Link } from 'lucide-react';
 import { Guest, RsvpStatus, Event } from '../types';
-import { rsvpService, toWaPhone } from '../services/supabase';
+import { rsvpService, toWaPhone, openWhatsAppUrl } from '../services/supabase';
 
 interface GuestCardProps {
   guest: Guest;
@@ -90,7 +90,7 @@ export const GuestCard = ({ guest, onView, event }: GuestCardProps) => {
     const url = personalRsvpLink && guest.rsvp_token
       ? rsvpService.buildWhatsAppUrl(guest.phone, name, guest.rsvp_token, event)
       : `https://wa.me/${toWaPhone(guest.phone)}?text=${encodeURIComponent(`שלום ${name}! רצינו ליצור איתך קשר לגבי האירוע.`)}`;
-    window.open(url, '_blank');
+    openWhatsAppUrl(url);
   };
 
   const handleCall = (e: React.MouseEvent) => {

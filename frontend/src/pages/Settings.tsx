@@ -8,7 +8,7 @@ import {
   MapPin, Link2, Share2, ToggleLeft, ToggleRight, AlignLeft, ImagePlus,
 } from 'lucide-react';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
-import { guestService, authService, eventService, supabase, storageService } from '../services/supabase';
+import { guestService, authService, eventService, supabase, storageService, openWhatsAppUrl } from '../services/supabase';
 import { Event } from '../types';
 import { ImageCropModal } from '../components/ImageCropModal';
 
@@ -289,7 +289,7 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
     }
     const url  = eventService.buildPublicUrl(event.public_slug);
     const msg  = `הוזמנת ל${eventName}! לאישור הגעה:\n${url}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    openWhatsAppUrl(`https://wa.me/?text=${encodeURIComponent(msg)}`);
   };
 
   const requestNotifications = async () => {
@@ -652,7 +652,7 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
             נשמח לעזור! ניתן לפנות אלינו בכל אחת מהדרכים הבאות:
           </p>
           <button
-            onClick={() => window.open('https://wa.me/?text=שלום%2C%20אני%20צריך%20עזרה%20עם%20Luma%20Guests', '_blank')}
+            onClick={() => openWhatsAppUrl('https://wa.me/?text=שלום%2C%20אני%20צריך%20עזרה%20עם%20Luma%20Guests')}
             className="w-full flex items-center gap-3 p-4 rounded-2xl active:scale-[0.98] transition-transform"
             style={{ background: 'rgba(16,185,129,0.1)' }}
           >
