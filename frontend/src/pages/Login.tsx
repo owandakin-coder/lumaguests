@@ -72,11 +72,12 @@ export const Login = ({ onSuccess, onSwitchToRegister, onLogin }: LoginProps) =>
       <div
         className="flex-shrink-0"
         style={{
-          height: 220,
+          paddingTop: 'env(safe-area-inset-top)',
+          minHeight: 'calc(220px + env(safe-area-inset-top))',
           background: '#1A1916',
           backgroundImage: 'url("/logo hd.png")',
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundPosition: 'center top',
           backgroundRepeat: 'no-repeat',
         }}
       />
