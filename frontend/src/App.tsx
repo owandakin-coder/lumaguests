@@ -13,7 +13,6 @@ import { Register }           from './pages/Register';
 import { Onboarding }         from './pages/Onboarding';
 import { MobileBottomNav }    from './components/MobileBottomNav';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
-import { PaywallModal, FREE_GUEST_LIMIT } from './components/PaywallModal';
 import { ToastContainer }     from './components/Toast';
 import { useToast }           from './hooks/useToast';
 import { useSupabaseAuth }    from './hooks/useSupabaseAuth';
@@ -34,7 +33,6 @@ function App() {
   const [deletingGuest,setDeletingGuest]= useState<Guest | null>(null);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [guestStatusFilter, setGuestStatusFilter] = useState<RsvpStatus | 'ALL'>('ALL');
-  const [showPaywall,  setShowPaywall]  = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
   const auth  = useSupabaseAuth();
@@ -115,13 +113,7 @@ function App() {
     return () => { supabase.removeChannel(channel); };
   }, [auth.isAuthenticated, auth.user?.id]);
 
-  const handleAddGuest = () => {
-    if (guests.length >= FREE_GUEST_LIMIT) {
-      setShowPaywall(true);
-      return;
-    }
-    setCurrentPage('add');
-  };
+  const handleAddGuest = () => setCurrentPage('add');
 
   const handleEditGuest   = (guest: Guest) => { setEditingGuest(guest); setCurrentPage('edit'); };
   const handleDeleteGuest = (guest: Guest) => setDeletingGuest(guest);
@@ -336,12 +328,6 @@ function App() {
         isLoading={isDeleteLoading}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeletingGuest(null)}
-      />
-
-      <PaywallModal
-        isOpen={showPaywall}
-        guestCount={guests.length}
-        onClose={() => setShowPaywall(false)}
       />
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
