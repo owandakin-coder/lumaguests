@@ -1,13 +1,14 @@
 import { motion } from 'framer-motion';
 import { Phone, MessageCircle, Link } from 'lucide-react';
 import { Guest, RsvpStatus, Side, Event } from '../types';
-import { rsvpService, toWaPhone, openWhatsAppUrl } from '../services/supabase';
+import { guestService, rsvpService, toWaPhone, openWhatsAppUrl } from '../services/supabase';
 
 interface GuestCardProps {
   guest: Guest;
   onEdit: (guest: Guest) => void;
   onDelete: (guest: Guest) => void;
   onView: (guest: Guest) => void;
+  userId: string;
   event?: Pick<Event, 'event_name' | 'event_date' | 'venue_name' | 'cover_image_url'> | null;
 }
 
@@ -90,7 +91,7 @@ function avBg(name: string) {
   return avBgs[Math.abs(h) % avBgs.length];
 }
 
-export const GuestCard = ({ guest, onView, event }: GuestCardProps) => {
+export const GuestCard = ({ guest, onView, userId, event }: GuestCardProps) => {
   const name = guest.fullName || guest.full_name;
   const status = (guest.rsvpStatus || guest.rsvp_status) as RsvpStatus;
   const side = guest.side as Side | null | undefined;
@@ -103,11 +104,23 @@ export const GuestCard = ({ guest, onView, event }: GuestCardProps) => {
   const [abg, afg] = avBg(name);
   const viaLink = guest.rsvp_via_link;
 
-  const handleWA = (e: React.MouseEvent) => {
+  const handleWA = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const personalRsvpLink = rsvpService.buildPersonalRsvpLink(guest);
-    const url = personalRsvpLink && guest.rsvp_token
-      ? rsvpService.buildWhatsAppUrl(guest.phone, name, guest.rsvp_token, event)
+    let token = guest.rsvp_token;
+
+    if (!token) {
+      token = rsvpService.generateToken();
+      try {
+        await guestService.update(guest.id, { rsvp_token: token }, userId);
+        guest.rsvp_token = token;
+      } catch {
+        token = undefined;
+      }
+    }
+
+    const personalRsvpLink = token ? rsvpService.buildPersonalRsvpLink({ rsvp_token: token }) : null;
+    const url = personalRsvpLink && token
+      ? rsvpService.buildWhatsAppUrl(guest.phone, name, token, event)
       : `https://wa.me/${toWaPhone(guest.phone)}?text=${encodeURIComponent(`שלום ${name}! רצינו ליצור איתך קשר לגבי האירוע.`)}`;
     openWhatsAppUrl(url);
   };

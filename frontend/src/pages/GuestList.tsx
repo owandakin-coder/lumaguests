@@ -266,7 +266,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
                 <div className="space-y-2">
                   {grp.map((g,i) => (
                     <motion.div key={g.id} initial={{opacity:0,y:4}} animate={{opacity:1,y:0}} transition={{delay:i*0.02}}>
-                      <GuestCard guest={g} onEdit={onEditGuest} onDelete={onDeleteGuest} onView={onViewGuest} event={event}/>
+                      <GuestCard guest={g} onEdit={onEditGuest} onDelete={onDeleteGuest} onView={onViewGuest} userId={userId} event={event}/>
                     </motion.div>
                   ))}
                 </div>
@@ -281,7 +281,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
               <motion.div key={g.id}
                 initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0}}
                 transition={{delay:Math.min(i*0.03,0.15)}}>
-                <GuestCard guest={g} onEdit={onEditGuest} onDelete={onDeleteGuest} onView={onViewGuest} event={event}/>
+                <GuestCard guest={g} onEdit={onEditGuest} onDelete={onDeleteGuest} onView={onViewGuest} userId={userId} event={event}/>
               </motion.div>
             ))}
           </div>
