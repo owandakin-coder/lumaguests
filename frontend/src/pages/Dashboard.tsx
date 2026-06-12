@@ -121,8 +121,11 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
         declined:  sg.filter(g => (g.rsvpStatus || g.rsvp_status) === 'DECLINED').length,
         people:    confirmed.reduce((a, g) => a + 1 + (g.companions || 0), 0),
       };
-    }).filter(sc => sc.total > 0);
+    });
   }, [guests]);
+
+  // Section visible only when at least one guest has a side assigned
+  const hasSideData = useMemo(() => guests.some(g => g.side), [guests]);
 
   const recent=useMemo(()=>
     [...guests].sort((a,b)=>new Date(b.createdAt||b.created_at||0).getTime()-new Date(a.createdAt||a.created_at||0).getTime()).slice(0,3)
@@ -290,17 +293,19 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
         </div>
       </motion.div>
 
-      {/* Side breakdown — bride vs groom panels */}
-      {!loading && sideBreakdown.length > 0 && (
+      {/* Side breakdown — always show bride + groom side by side */}
+      {!loading && hasSideData && (
         <motion.div variants={fade} className="bg-white rounded-2xl p-4" style={{boxShadow:'0 1px 8px rgba(0,0,0,0.05)'}}>
           <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-widest mb-3">לפי צד</p>
-          <div className={`grid gap-3 ${sideBreakdown.length >= 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            {sideBreakdown.map(sc => (
+
+          {/* Groom + Bride always in 2 columns */}
+          <div className="grid grid-cols-2 gap-3">
+            {sideBreakdown.filter(sc => sc.id === 'GROOM' || sc.id === 'BRIDE').map(sc => (
               <div key={sc.id} className="rounded-xl p-3"
                 style={{ background: `${sc.color}18`, borderTop: `2.5px solid ${sc.color}` }}>
-                <div className="flex items-center gap-1.5 mb-2.5">
+                <div className="flex items-center gap-1 mb-2.5">
                   <span className="text-[15px] leading-none">{sc.emoji}</span>
-                  <span className="text-[12px] font-bold text-charcoal-800">{sc.label}</span>
+                  <span className="text-[11px] font-bold text-charcoal-800 leading-tight">{sc.label}</span>
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-[11px]">
@@ -320,13 +325,32 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
                     <span className="font-bold text-red-400">{sc.declined}</span>
                   </div>
                   <div className="flex justify-between text-[11px] pt-1.5 border-t border-charcoal-100/60 mt-0.5">
-                    <span className="text-charcoal-500 font-semibold">מגיעים סה״כ</span>
+                    <span className="text-charcoal-500 font-semibold">מגיעים</span>
                     <span className="font-bold text-[13px]" style={{ color: sc.color }}>{sc.people}</span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Shared — full width row, only if has guests */}
+          {sideBreakdown.find(sc => sc.id === 'SHARED' && sc.total > 0) && (() => {
+            const sc = sideBreakdown.find(sc => sc.id === 'SHARED')!;
+            return (
+              <div className="mt-3 rounded-xl p-3 flex items-center gap-4"
+                style={{ background: `${sc.color}18`, borderTop: `2.5px solid ${sc.color}` }}>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[15px] leading-none">{sc.emoji}</span>
+                  <span className="text-[11px] font-bold text-charcoal-800">{sc.label}</span>
+                </div>
+                <div className="flex gap-4 mr-auto text-[11px]">
+                  <span><span className="font-bold text-charcoal-800">{sc.total}</span> <span className="text-charcoal-400">מוזמנים</span></span>
+                  <span><span className="font-bold text-emerald-600">{sc.confirmed}</span> <span className="text-charcoal-400">אישרו</span></span>
+                  <span><span className="font-bold" style={{ color: sc.color }}>{sc.people}</span> <span className="text-charcoal-400">מגיעים</span></span>
+                </div>
+              </div>
+            );
+          })()}
         </motion.div>
       )}
 
