@@ -69,29 +69,21 @@ export const Login = ({ onSuccess, onSwitchToRegister, onLogin }: LoginProps) =>
       style={{ background: 'linear-gradient(180deg,#1A1916 0%,#1A1916 40%,#F5F3EF 40%)' }}
     >
       {/* Dark top — brand */}
-      <div className="flex-shrink-0 px-6 pt-16 pb-12 text-center">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="w-16 h-16 rounded-2xl bg-gold-500 flex items-center justify-center mx-auto mb-5"
-          style={{ boxShadow: '0 8px 24px rgba(201,168,76,0.4)' }}
-        >
-          <span className="text-charcoal-900 text-2xl font-black">L</span>
-        </motion.div>
-        <motion.h1
-          initial={{ opacity: 0, y: 10 }}
+      <div className="flex-shrink-0 px-6 pt-14 pb-10 text-center">
+        <motion.img
+          src="/Logo (2).png"
+          alt="Luma Guests"
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="text-[32px] font-bold text-white leading-tight"
-        >
-          Luma Guests
-        </motion.h1>
+          transition={{ delay: 0.1, duration: 0.4 }}
+          className="mx-auto mb-3"
+          style={{ width: 220, height: 'auto' }}
+        />
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-[14px] text-white/50 mt-1"
+          transition={{ delay: 0.25 }}
+          className="text-[13px] text-white/40 tracking-wide"
         >
           ניהול רשימת מוזמנים
         </motion.p>
