@@ -43,7 +43,7 @@ export const Register = ({ onSuccess, onSwitchToLogin, onRegister }: RegisterPro
         className="flex-shrink-0"
         style={{
           height: 220,
-          backgroundImage: 'url("/Logo (2).png")',
+          backgroundImage: 'url("/logo hd.png")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
