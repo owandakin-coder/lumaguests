@@ -157,7 +157,7 @@ export const RsvpPage = ({
               {guest.rsvp_status === 'CONFIRMED' ? 'אישרת הגעה לאירוע' : 'סימנת שלא תוכל/י להגיע'}
             </p>
             <div
-              className="bg-white rounded-2xl p-4 text-right space-y-2"
+              className="bg-white rounded-2xl p-4 text-center space-y-2"
               style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
             >
               <p className="text-xs text-charcoal-400">סטטוס נוכחי</p>
