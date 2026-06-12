@@ -10,6 +10,7 @@ A premium guest-list management web application for event planning. Built with R
 - **Database**: Supabase PostgreSQL with Row Level Security
 - **Security**: Each user sees ONLY their own guests (RLS enforced)
 - **No backend server needed** - Supabase handles everything
+- **Legacy backend folder**: `backend/` contains an older Express/Prisma implementation and is not required for the active Supabase flow
 
 ## Features
 
@@ -36,7 +37,8 @@ A premium guest-list management web application for event planning. Built with R
 - Supabase JavaScript client
 
 **Backend:**
-- None! (Supabase + PostgreSQL)
+- Active app: None, Supabase handles auth + data
+- Legacy/optional: Express + Prisma server kept in `backend/`
 
 ## Quick Start
 

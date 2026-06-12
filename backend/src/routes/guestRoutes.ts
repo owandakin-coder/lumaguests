@@ -9,7 +9,7 @@ import {
   getStats,
 } from '../controllers/guestController';
 
-const router = Router();
+const router: import('express').Router = Router();
 
 // Protected guests endpoints
 router.get('/guests', authenticate, getAllGuests);

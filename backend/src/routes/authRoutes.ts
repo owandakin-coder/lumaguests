@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { register, login, getCurrentUser } from '../controllers/authController';
 import { authenticate } from '../middleware/authMiddleware';
 
-const router = Router();
+const router: import('express').Router = Router();
 
 // Public routes
 router.post('/register', register);

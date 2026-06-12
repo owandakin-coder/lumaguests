@@ -1,4 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { authService } from '../services/supabase';
 
 interface User {
@@ -13,25 +20,34 @@ interface AuthState {
   isAuthenticated: boolean;
 }
 
-export const useSupabaseAuth = () => {
+interface AuthContextValue extends AuthState {
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name?: string) => Promise<void>;
+  logout: () => Promise<void>;
+}
+
+const SupabaseAuthContext = createContext<AuthContextValue | null>(null);
+
+const buildUser = (user: any): User => ({
+  id: user.id,
+  email: user.email || '',
+  name: user.user_metadata?.name || undefined,
+});
+
+export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [auth, setAuth] = useState<AuthState>({
     user: null,
     isLoading: true,
     isAuthenticated: false,
   });
 
-  // Load auth state on mount
   useEffect(() => {
     const loadUser = async () => {
       try {
         const user = await authService.getCurrentUser();
         if (user) {
           setAuth({
-            user: {
-              id: user.id,
-              email: user.email || '',
-              name: user.user_metadata?.name || undefined,
-            },
+            user: buildUser(user),
             isLoading: false,
             isAuthenticated: true,
           });
@@ -54,15 +70,10 @@ export const useSupabaseAuth = () => {
 
     loadUser();
 
-    // Subscribe to auth changes
     const subscription = authService.onAuthStateChange((user: any) => {
       if (user) {
         setAuth({
-          user: {
-            id: user.id,
-            email: user.email || '',
-            name: user.user_metadata?.name || undefined,
-          },
+          user: buildUser(user),
           isLoading: false,
           isAuthenticated: true,
         });
@@ -84,11 +95,7 @@ export const useSupabaseAuth = () => {
     const data = await authService.signIn(email, password);
     if (data.user) {
       setAuth({
-        user: {
-          id: data.user.id,
-          email: data.user.email || '',
-          name: data.user.user_metadata?.name || undefined,
-        },
+        user: buildUser(data.user),
         isLoading: false,
         isAuthenticated: true,
       });
@@ -99,11 +106,7 @@ export const useSupabaseAuth = () => {
     const data = await authService.signUp(email, password, name);
     if (data.user) {
       setAuth({
-        user: {
-          id: data.user.id,
-          email: data.user.email || '',
-          name: data.user.user_metadata?.name || name || undefined,
-        },
+        user: buildUser(data.user),
         isLoading: false,
         isAuthenticated: true,
       });
@@ -119,10 +122,26 @@ export const useSupabaseAuth = () => {
     });
   }, []);
 
-  return {
+  const value = useMemo<AuthContextValue>(() => ({
     ...auth,
     login,
     register,
     logout,
-  };
+  }), [auth, login, logout, register]);
+
+  return (
+    <SupabaseAuthContext.Provider value={value}>
+      {children}
+    </SupabaseAuthContext.Provider>
+  );
+};
+
+export const useSupabaseAuth = () => {
+  const context = useContext(SupabaseAuthContext);
+
+  if (!context) {
+    throw new Error('useSupabaseAuth must be used within SupabaseAuthProvider');
+  }
+
+  return context;
 };

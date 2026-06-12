@@ -198,7 +198,7 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
     else if (perm === 'denied') setErr('ההתראות נחסמו — ניתן לשנות בהגדרות הדפדפן');
   };
 
-  const handleDeleteAccount = async () => {
+  const handleClearGuestData = async () => {
     if (!auth.user) return;
     try {
       setDeleteLoading(true);
@@ -751,17 +751,18 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
                 <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
                   <Trash2 className="w-7 h-7 text-red-500" />
                 </div>
-                <h3 className="text-[20px] font-bold text-charcoal-900 text-center mb-2">מחיקת חשבון</h3>
+                <h3 className="text-[20px] font-bold text-charcoal-900 text-center mb-2">ניקוי נתוני המוזמנים</h3>
                 <p className="text-[14px] text-charcoal-500 text-center leading-relaxed mb-6">
-                  פעולה זו תמחק את <strong>כל נתוני המוזמנים</strong> לצמיתות ותנתק אותך. לא ניתן לשחזר.
+                  פעולה זו תמחק את <strong>כל נתוני המוזמנים</strong> מהחשבון הנוכחי ותנתק אותך מהאפליקציה.
+                  החשבון עצמו יישאר קיים, ותוכל/י להתחבר שוב מאוחר יותר.
                 </p>
                 <div className="space-y-2.5">
                   <button
-                    onClick={handleDeleteAccount}
+                    onClick={handleClearGuestData}
                     disabled={deleteLoading}
                     className="w-full py-4 rounded-2xl bg-red-500 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
                   >
-                    {deleteLoading ? 'מוחק...' : 'כן, מחק הכל'}
+                    {deleteLoading ? 'מנקה...' : 'כן, נקה את הנתונים'}
                   </button>
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
