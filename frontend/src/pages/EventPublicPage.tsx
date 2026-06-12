@@ -34,6 +34,7 @@ function useCountdown(eventDate: string | null) {
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
+const normalizePhone = (value: string) => value.replace(/\D/g, '');
 
 export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
   const [event, setEvent]           = useState<PublicEventData | null>(null);
@@ -69,6 +70,7 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
 
   const validate = () => {
     const e: Record<string, string> = {};
+    if (!normalizePhone(phone)) e.phone = 'מספר טלפון הוא שדה חובה';
     if (!fullName.trim()) e.fullName = 'שם מלא הוא שדה חובה';
     if (!phone.trim())    e.phone    = 'מספר טלפון הוא שדה חובה';
     setErrors(e);
@@ -78,11 +80,12 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
   const handleSubmit = async (status: 'CONFIRMED' | 'DECLINED') => {
     if (!event || submitting) return;
     if (!validate()) return;
+    const normalizedPhone = normalizePhone(phone);
     try {
       setChoice(status);
       setSubmitting(true);
       const res = await eventService.publicRegister(
-        slug, fullName.trim(), phone.trim(), status, companions, note || undefined
+        slug, fullName.trim(), normalizedPhone, status, companions, note || undefined
       );
       if (!res.success) {
         setErrors({ submit: 'אירעה שגיאה, נסה שוב' });

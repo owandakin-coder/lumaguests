@@ -4,6 +4,7 @@ import {
   X, Upload, AlertTriangle, CheckCircle2, ChevronDown,
   FileText, ArrowRight, Loader2, Users, SkipForward,
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { Category } from '../types';
 import { supabase } from '../services/supabase';
 
@@ -161,20 +162,39 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
   const handleClose = () => { reset(); onClose(); };
 
   const processFile = (file: File) => {
-    if (!file.name.match(/\.(csv|txt)$/i)) return;
+    if (!file.name.match(/\.(csv|txt|xlsx|xls|ods)$/i)) return;
     setFileName(file.name);
+    const isExcel = /\.(xlsx|xls|ods)$/i.test(file.name);
     const reader = new FileReader();
-    reader.onload = e => {
-      const text = e.target?.result as string;
-      const all  = parseCSV(text);
-      if (all.length < 2) return;
-      const [head, ...body] = all;
-      setHeaders(head);
-      setRawRows(body.filter(r => r.some(c => c.trim())));
-      setColMap(autoDetect(head));
-      setStep('map');
-    };
-    reader.readAsText(file, 'UTF-8');
+    if (isExcel) {
+      reader.onload = e => {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const all: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+          .map((row: any) => (row as any[]).map(c => String(c ?? '').trim()));
+        const nonEmpty = all.filter(r => r.some(c => c));
+        if (nonEmpty.length < 2) return;
+        const [head, ...body] = nonEmpty;
+        setHeaders(head);
+        setRawRows(body.filter(r => r.some(c => c.trim())));
+        setColMap(autoDetect(head));
+        setStep('map');
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.onload = e => {
+        const text = e.target?.result as string;
+        const all  = parseCSV(text);
+        if (all.length < 2) return;
+        const [head, ...body] = all;
+        setHeaders(head);
+        setRawRows(body.filter(r => r.some(c => c.trim())));
+        setColMap(autoDetect(head));
+        setStep('map');
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
   };
 
   const onDrop = (e: React.DragEvent) => {
@@ -283,8 +303,8 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
                   initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
                   className="px-5 py-6 space-y-5">
                   <div>
-                    <h3 className="text-[22px] font-bold text-charcoal-900">בחר קובץ CSV</h3>
-                    <p className="text-[13px] text-charcoal-400 mt-1">גרור ושחרר או לחץ לבחירה</p>
+                    <h3 className="text-[22px] font-bold text-charcoal-900">בחר קובץ</h3>
+                    <p className="text-[13px] text-charcoal-400 mt-1">CSV, Excel (.xlsx) — גרור ושחרר או לחץ לבחירה</p>
                   </div>
 
                   {/* Drop zone */}
@@ -303,10 +323,10 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
                       <Upload className="w-6 h-6 text-charcoal-500" strokeWidth={1.8} />
                     </div>
                     <p className="text-[14px] font-semibold text-charcoal-700">
-                      {dragging ? 'שחרר כאן' : 'גרור קובץ CSV לכאן'}
+                      {dragging ? 'שחרר כאן' : 'גרור קובץ CSV / Excel לכאן'}
                     </p>
                     <p className="text-[12px] text-charcoal-400">או לחץ לבחירה מהמכשיר</p>
-                    <input ref={fileRef} type="file" accept=".csv,.txt" className="hidden" onChange={onFileChange} />
+                    <input ref={fileRef} type="file" accept=".csv,.txt,.xlsx,.xls,.ods" className="hidden" onChange={onFileChange} />
                   </div>
 
                   {/* Format hint */}
@@ -332,7 +352,7 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
                       </table>
                     </div>
                     <p className="text-[11px] text-charcoal-400">
-                      נתמך: Excel CSV, Google Sheets CSV, קידוד UTF-8 / Windows-1255
+                      נתמך: Excel (.xlsx/.xls), Google Sheets CSV, קידוד UTF-8
                     </p>
                   </div>
                 </motion.div>

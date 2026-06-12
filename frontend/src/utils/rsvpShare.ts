@@ -69,3 +69,29 @@ export const buildPublicRsvpMessage = (guestName: string, event: Event) => {
 
 export const buildPublicRsvpWhatsAppUrl = (phone: string, message: string) =>
   `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+
+export const buildGuestRsvpMessage = (
+  guestName: string,
+  event: Pick<Event, 'event_name' | 'event_date' | 'venue_name'> | null | undefined,
+  rsvpLink: string
+) => {
+  const eventName = event?.event_name || 'האירוע שלנו';
+  const venueName = event?.venue_name || 'פרטי המקום בהמשך';
+
+  return [
+    `היי ${guestName} 👋`,
+    '',
+    `נשמח לראות אותך ב${eventName}`,
+    '',
+    `📅 ${formatEventDate(event?.event_date ?? null)}`,
+    `📍 ${venueName}`,
+    '',
+    'לאישור הגעה:',
+    rsvpLink,
+    '',
+    'תודה ❤️',
+  ].join('\n');
+};
+
+export const buildGuestRsvpWhatsAppUrl = (phone: string, message: string) =>
+  `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;

@@ -1,13 +1,11 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertCircle, Copy, Image as ImageIcon, Link2, MessageCircle, X } from 'lucide-react';
+import { Copy, Image as ImageIcon, Link2, MessageCircle, X } from 'lucide-react';
 import { Event, Guest } from '../types';
 import {
-  buildPublicRsvpLink,
-  buildPublicRsvpMessage,
-  buildPublicRsvpWhatsAppUrl,
-  validatePublicRsvpShare,
+  buildGuestRsvpMessage,
+  buildGuestRsvpWhatsAppUrl,
 } from '../utils/rsvpShare';
 
 interface RsvpShareModalProps {
@@ -23,21 +21,16 @@ export const RsvpShareModal = ({ open, guest, event, isLoading = false, onClose 
   const [copiedLink, setCopiedLink] = useState(false);
 
   const guestName = guest ? guest.fullName || guest.full_name : '';
-  const error = useMemo(() => {
-    if (isLoading) {
-      return null;
-    }
-
-    return validatePublicRsvpShare(event);
-  }, [event, isLoading]);
-  const rsvpLink = useMemo(() => buildPublicRsvpLink(event), [event]);
+  const rsvpLink = useMemo(() => (
+    guest?.rsvp_token ? `${window.location.origin}/rsvp/${guest.rsvp_token}` : null
+  ), [guest]);
   const message = useMemo(() => {
-    if (!event || !guest || error) {
+    if (!guest || !rsvpLink) {
       return '';
     }
 
-    return buildPublicRsvpMessage(guestName, event);
-  }, [error, event, guest, guestName]);
+    return buildGuestRsvpMessage(guestName, event, rsvpLink);
+  }, [event, guest, guestName, rsvpLink]);
 
   const copyMessage = async () => {
     if (!message) return;
@@ -55,7 +48,7 @@ export const RsvpShareModal = ({ open, guest, event, isLoading = false, onClose 
 
   const openWhatsApp = () => {
     if (!guest || !message) return;
-    window.open(buildPublicRsvpWhatsAppUrl(guest.phone, message), '_blank');
+    window.open(buildGuestRsvpWhatsAppUrl(guest.phone, message), '_blank');
   };
 
   return createPortal(
@@ -118,10 +111,11 @@ export const RsvpShareModal = ({ open, guest, event, isLoading = false, onClose 
                 <div className="rounded-2xl bg-charcoal-50 px-4 py-6 text-center text-[13px] font-medium text-charcoal-500">
                   טוען את פרטי האירוע...
                 </div>
-              ) : error ? (
-                <div className="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 flex items-start gap-3">
-                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-[13px] font-medium text-red-600 leading-relaxed">{error}</p>
+              ) : !rsvpLink ? (
+                <div className="rounded-2xl bg-red-50 border border-red-200 px-4 py-3">
+                  <p className="text-[13px] font-medium text-red-600 leading-relaxed">
+                    לא הצלחנו ליצור קישור RSVP אישי למוזמן הזה.
+                  </p>
                 </div>
               ) : (
                 <>
@@ -140,7 +134,7 @@ export const RsvpShareModal = ({ open, guest, event, isLoading = false, onClose 
               <div className="space-y-2">
                 <button
                   onClick={openWhatsApp}
-                  disabled={!!error || isLoading}
+                  disabled={!rsvpLink || isLoading}
                   className="w-full py-4 rounded-2xl bg-green-500 text-white text-[15px] font-bold flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] transition-transform"
                   style={{ boxShadow: '0 4px 16px rgba(16,185,129,0.25)' }}
                 >
@@ -150,7 +144,7 @@ export const RsvpShareModal = ({ open, guest, event, isLoading = false, onClose 
 
                 <button
                   onClick={copyMessage}
-                  disabled={!!error || isLoading}
+                  disabled={!rsvpLink || isLoading}
                   className="w-full py-4 rounded-2xl bg-charcoal-900 text-white text-[15px] font-bold flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] transition-transform"
                 >
                   <Copy className="w-4 h-4" />
@@ -159,7 +153,7 @@ export const RsvpShareModal = ({ open, guest, event, isLoading = false, onClose 
 
                 <button
                   onClick={copyLink}
-                  disabled={!!error || isLoading}
+                  disabled={!rsvpLink || isLoading}
                   className="w-full py-4 rounded-2xl bg-white border border-charcoal-200 text-charcoal-700 text-[15px] font-bold flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] transition-transform"
                 >
                   <Link2 className="w-4 h-4" />

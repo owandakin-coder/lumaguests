@@ -71,13 +71,15 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:Das
   }, []);
 
   const s=useMemo(()=>{
-    const confirmed=guests.filter(g=>(g.rsvpStatus||g.rsvp_status)==='CONFIRMED').length;
+    const confirmedGuests=guests.filter(g=>(g.rsvpStatus||g.rsvp_status)==='CONFIRMED');
+    const confirmed=confirmedGuests.length;
     const pending=guests.filter(g=>(g.rsvpStatus||g.rsvp_status)==='PENDING').length;
     const declined=guests.filter(g=>(g.rsvpStatus||g.rsvp_status)==='DECLINED').length;
     const total=guests.length;
-    const people=guests.reduce((a,g)=>a+1+(g.companions||0),0);
+    // Only count people who are actually coming: confirmed guests + their companions
+    const peopleArriving=confirmedGuests.reduce((a,g)=>a+1+(g.companions||0),0);
     const pct=total>0?Math.round((confirmed/total)*100):0;
-    return{confirmed,pending,declined,total,people,pct};
+    return{confirmed,pending,declined,total,peopleArriving,pct};
   },[guests]);
 
   const countdownDays = useMemo(() => {
@@ -178,7 +180,7 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:Das
             {icon:CheckCircle,label:'אישרו',     value:s.confirmed,color:'#10B981',bg:'#ECFDF5'},
             {icon:Clock,      label:'ממתינים',   value:s.pending,  color:'#F59E0B',bg:'#FFFBEB'},
             {icon:XCircle,    label:'לא מגיעים',value:s.declined, color:'#F87171',bg:'#FFF1F2'},
-            {icon:Users,      label:'סך אנשים', value:s.people,   color:'#60A5FA',bg:'#EFF6FF'},
+            {icon:Users,      label:'מגיעים',   value:s.peopleArriving, color:'#60A5FA',bg:'#EFF6FF'},
           ].map(({icon:Icon,label,value,color,bg})=>(
             <div key={label} className="rounded-2xl p-3" style={{background:bg}}>
               {loading?(

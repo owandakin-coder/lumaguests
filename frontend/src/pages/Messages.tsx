@@ -8,9 +8,8 @@ import { Guest, RsvpStatus } from '../types';
 import { rsvpService, guestService } from '../services/supabase';
 import { useEvent } from '../hooks/useEvent';
 import {
-  buildPublicRsvpMessage,
-  buildPublicRsvpWhatsAppUrl,
-  validatePublicRsvpShare,
+  buildGuestRsvpMessage,
+  buildGuestRsvpWhatsAppUrl,
 } from '../utils/rsvpShare';
 
 interface MessagesProps {
@@ -107,7 +106,7 @@ export const Messages = ({ guests, userId }: MessagesProps) => {
   const [showTpl, setShowTpl]     = useState(false);
   const [showQueue, setShowQueue] = useState(false);
   const [sentIds, setSentIds]     = useState<Set<string>>(new Set());
-  const { event, loading: eventLoading } = useEvent();
+  const { event } = useEvent();
 
   const filtered = useMemo(() => guests.filter(g => {
     const s    = g.rsvpStatus || g.rsvp_status;
@@ -124,7 +123,6 @@ export const Messages = ({ guests, userId }: MessagesProps) => {
   }), [guests]);
 
   const activeTpl = TEMPLATES.find(t => t.id === templateId) ?? TEMPLATES[0];
-  const rsvpShareError = validatePublicRsvpShare(event);
   // Use full guests list (not filtered) so the queue always shows selected guests
   // even if the active filter/search changes after selection
   const selectedList = guests.filter(g => selected.has(g.id));
@@ -147,24 +145,26 @@ export const Messages = ({ guests, userId }: MessagesProps) => {
 
   const openWhatsApp = async (g: Guest) => {
     const name = g.fullName || g.full_name;
+    let token  = g.rsvp_token;
 
     if (templateId === 'rsvp') {
-      if (eventLoading) {
-        return;
+      if (!token) {
+        token = rsvpService.generateToken();
+        try {
+          await guestService.update(g.id, { rsvp_token: token }, userId);
+          g.rsvp_token = token;
+        } catch {
+          window.alert('לא הצלחנו ליצור קישור RSVP אישי למוזמן הזה. נסה שוב.');
+          return;
+        }
       }
 
-      if (!event || rsvpShareError) {
-        window.alert(rsvpShareError ?? 'יש להפעיל RSVP ציבורי ולהגדיר קישור אירוע לפני שליחת הודעה.');
-        return;
-      }
-
-      const msg = buildPublicRsvpMessage(name, event);
-      window.open(buildPublicRsvpWhatsAppUrl(g.phone, msg), '_blank');
+      const rsvpLink = rsvpService.buildLink(token);
+      const msg = buildGuestRsvpMessage(name, event, rsvpLink);
+      window.open(buildGuestRsvpWhatsAppUrl(g.phone, msg), '_blank');
       setSentIds(prev => new Set(prev).add(g.id));
       return;
     }
-
-    let token  = g.rsvp_token;
 
     // If guest has no token, generate and save one now
     if (!token) {

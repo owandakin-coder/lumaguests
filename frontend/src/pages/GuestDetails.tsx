@@ -91,21 +91,51 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
       })
     : null;
 
+  const ensureRsvpToken = async () => {
+    if (guest.rsvp_token) {
+      return guest.rsvp_token;
+    }
+
+    if (!auth.user) {
+      return null;
+    }
+
+    const token = rsvpService.generateToken();
+
+    try {
+      await guestService.update(guest.id, { rsvp_token: token }, auth.user.id);
+      setGuest((prev) => (prev ? { ...prev, rsvp_token: token } : prev));
+      return token;
+    } catch {
+      return null;
+    }
+  };
+
   const handleCall     = () => { window.location.href = `tel:${guest.phone}`; };
-  const handleWhatsApp = () => {
-    const token = guest.rsvp_token;
+  const handleWhatsApp = async () => {
+    const token = await ensureRsvpToken();
     const url = token
       ? rsvpService.buildWhatsAppUrl(guest.phone, name, token)
       : `https://wa.me/${guest.phone.replace(/\D/g,'')}?text=${encodeURIComponent(`שלום ${name}! רצינו ליצור איתך קשר לגבי האירוע.`)}`;
     window.open(url, '_blank');
   };
   const handleCopyLink = async () => {
-    if (!guest.rsvp_token) return;
+    const token = await ensureRsvpToken();
+    if (!token) return;
     try {
-      await navigator.clipboard.writeText(rsvpService.buildLink(guest.rsvp_token));
+      await navigator.clipboard.writeText(rsvpService.buildLink(token));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch { /* clipboard blocked */ }
+  };
+  const handleOpenShare = async () => {
+    const token = await ensureRsvpToken();
+    if (!token) {
+      window.alert('לא הצלחנו ליצור קישור RSVP אישי למוזמן הזה. נסה שוב.');
+      return;
+    }
+
+    setShareOpen(true);
   };
 
   return (
@@ -191,8 +221,8 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
             </button>
           </div>
 
-          <button
-            onClick={() => setShareOpen(true)}
+            <button
+              onClick={handleOpenShare}
             className="w-full mt-3 py-3 rounded-2xl bg-white/8 text-white text-[13px] font-bold border border-white/10 active:scale-[0.98] transition-transform"
           >
             שלח בקשת אישור הגעה
