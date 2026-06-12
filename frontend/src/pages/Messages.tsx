@@ -389,23 +389,42 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
         </div>
       )}
 
-      {/* Sticky send button — bottom-24 clears the fixed bottom nav */}
-      {selected.size > 0 && (
-        <div className="sticky bottom-24 pt-2">
-          <motion.button
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
+      {/* Sticky send button */}
+      {selected.size > 0 && createPortal(
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 12 }}
+          className="fixed bottom-0 left-0 right-0 z-40 flex justify-center"
+          style={{
+            paddingBottom: 'calc(env(safe-area-inset-bottom) + 88px)',
+            paddingInline: '20px',
+          }}
+        >
+          {/* Blur gradient behind button */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: 'linear-gradient(to top, rgba(245,243,239,0.92) 40%, transparent 100%)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              maskImage: 'linear-gradient(to top, black 40%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to top, black 40%, transparent 100%)',
+            }}
+          />
+          <button
             onClick={handleSendAll}
-            className="w-full py-4 rounded-2xl text-white text-[15px] font-bold flex items-center justify-center gap-2.5 active:scale-[0.98] transition-transform"
+            className="relative w-full max-w-[390px] py-4 rounded-2xl text-white text-[15px] font-bold flex items-center justify-center gap-2.5 active:scale-[0.98] transition-transform"
             style={{
               background: '#1A1916',
-              boxShadow: '0 4px 20px rgba(26,25,22,0.25)',
+              boxShadow: '0 4px 24px rgba(26,25,22,0.35)',
             }}
           >
             <Send className="w-4 h-4" />
             שלח ל-{selected.size} נבחרים
-          </motion.button>
-        </div>
+          </button>
+        </motion.div>,
+        document.body
       )}
 
       {/* Send queue bottom sheet */}
