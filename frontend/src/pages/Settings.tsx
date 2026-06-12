@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, Palette, HelpCircle, FileText,
@@ -25,10 +26,10 @@ type ModalType =
 const EVENT_KEY      = 'luma_event_name';
 const EVENT_DATE_KEY = 'luma_event_date';
 
-// ── Bottom Sheet wrapper ──────────────────────────────────────
+// ── Bottom Sheet wrapper — uses Portal to escape motion.div transform context ─
 const Sheet = ({ open, onClose, title, children }: {
   open: boolean; onClose: () => void; title: string; children: React.ReactNode;
-}) => (
+}) => createPortal(
   <AnimatePresence>
     {open && (
       <motion.div
@@ -42,7 +43,11 @@ const Sheet = ({ open, onClose, title, children }: {
           exit={{ y: 80, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
           onClick={e => e.stopPropagation()}
-          className="bg-white w-full max-w-[430px] rounded-t-3xl p-6 pb-10"
+          className="bg-white w-full max-w-[430px] rounded-t-3xl p-6 overflow-y-auto"
+          style={{
+            maxHeight: '85dvh',
+            paddingBottom: 'max(40px, env(safe-area-inset-bottom))',
+          }}
         >
           <div className="w-10 h-1 bg-charcoal-200 rounded-full mx-auto mb-5" />
           <div className="flex items-center justify-between mb-5">
@@ -55,7 +60,8 @@ const Sheet = ({ open, onClose, title, children }: {
         </motion.div>
       </motion.div>
     )}
-  </AnimatePresence>
+  </AnimatePresence>,
+  document.body
 );
 
 // ── Field ──────────────────────────────────────────────────────
@@ -723,50 +729,54 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
         </div>
       </Sheet>
 
-      {/* Delete confirm modal */}
-      <AnimatePresence>
-        {showDeleteConfirm && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4"
-            style={{ backdropFilter: 'blur(4px)' }}
-            onClick={() => setShowDeleteConfirm(false)}
-          >
+      {/* Delete confirm modal — Portal to escape transform stacking context */}
+      {createPortal(
+        <AnimatePresence>
+          {showDeleteConfirm && (
             <motion.div
-              initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 40, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-              onClick={e => e.stopPropagation()}
-              className="bg-white w-full max-w-[430px] rounded-t-3xl p-6 pb-10"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4"
+              style={{ backdropFilter: 'blur(4px)' }}
+              onClick={() => setShowDeleteConfirm(false)}
             >
-              <div className="w-10 h-1 bg-charcoal-200 rounded-full mx-auto mb-5" />
-              <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
-                <Trash2 className="w-7 h-7 text-red-500" />
-              </div>
-              <h3 className="text-[20px] font-bold text-charcoal-900 text-center mb-2">מחיקת חשבון</h3>
-              <p className="text-[14px] text-charcoal-500 text-center leading-relaxed mb-6">
-                פעולה זו תמחק את <strong>כל נתוני המוזמנים</strong> לצמיתות ותנתק אותך. לא ניתן לשחזר.
-              </p>
-              <div className="space-y-2.5">
-                <button
-                  onClick={handleDeleteAccount}
-                  disabled={deleteLoading}
-                  className="w-full py-4 rounded-2xl bg-red-500 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
-                >
-                  {deleteLoading ? 'מוחק...' : 'כן, מחק הכל'}
-                </button>
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  disabled={deleteLoading}
-                  className="w-full py-4 rounded-2xl bg-charcoal-100 text-charcoal-700 text-[15px] font-bold active:scale-[0.98] transition-transform"
-                >
-                  ביטול
-                </button>
-              </div>
+              <motion.div
+                initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 40, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                onClick={e => e.stopPropagation()}
+                className="bg-white w-full max-w-[430px] rounded-t-3xl p-6"
+                style={{ paddingBottom: 'max(40px, env(safe-area-inset-bottom))' }}
+              >
+                <div className="w-10 h-1 bg-charcoal-200 rounded-full mx-auto mb-5" />
+                <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
+                  <Trash2 className="w-7 h-7 text-red-500" />
+                </div>
+                <h3 className="text-[20px] font-bold text-charcoal-900 text-center mb-2">מחיקת חשבון</h3>
+                <p className="text-[14px] text-charcoal-500 text-center leading-relaxed mb-6">
+                  פעולה זו תמחק את <strong>כל נתוני המוזמנים</strong> לצמיתות ותנתק אותך. לא ניתן לשחזר.
+                </p>
+                <div className="space-y-2.5">
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deleteLoading}
+                    className="w-full py-4 rounded-2xl bg-red-500 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+                  >
+                    {deleteLoading ? 'מוחק...' : 'כן, מחק הכל'}
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deleteLoading}
+                    className="w-full py-4 rounded-2xl bg-charcoal-100 text-charcoal-700 text-[15px] font-bold active:scale-[0.98] transition-transform"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </motion.div>
   );
 };
