@@ -104,7 +104,9 @@ export const Messages = ({ guests }: MessagesProps) => {
   }), [guests]);
 
   const activeTpl = TEMPLATES.find(t => t.id === templateId) ?? TEMPLATES[0];
-  const selectedList = filtered.filter(g => selected.has(g.id));
+  // Use full guests list (not filtered) so the queue always shows selected guests
+  // even if the active filter/search changes after selection
+  const selectedList = guests.filter(g => selected.has(g.id));
 
   const toggleSelect = (id: string) => {
     setSelected(prev => {
@@ -337,11 +339,14 @@ export const Messages = ({ guests }: MessagesProps) => {
               exit={{ y: 80, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 380, damping: 32 }}
               onClick={e => e.stopPropagation()}
-              className="bg-white w-full max-w-[430px] rounded-t-3xl pb-10"
-              style={{ maxHeight: '80vh' }}
+              className="bg-white w-full max-w-[430px] rounded-t-3xl flex flex-col"
+              style={{
+                maxHeight: '85dvh',
+                paddingBottom: 'env(safe-area-inset-bottom)',
+              }}
             >
               {/* Handle + header */}
-              <div className="px-6 pt-5 pb-4 border-b border-charcoal-100">
+              <div className="px-6 pt-5 pb-4 border-b border-charcoal-100 flex-shrink-0">
                 <div className="w-10 h-1 bg-charcoal-200 rounded-full mx-auto mb-5" />
                 <div className="flex items-center justify-between">
                   <h3 className="text-[18px] font-bold text-charcoal-900">שליחת הודעות</h3>
@@ -368,8 +373,8 @@ export const Messages = ({ guests }: MessagesProps) => {
                 </div>
               </div>
 
-              {/* Guest list in queue */}
-              <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 200px)' }}>
+              {/* Guest list in queue — fills remaining space, scrollable */}
+              <div className="overflow-y-auto flex-1">
                 {selectedList.map((g, idx) => {
                   const name  = g.fullName || g.full_name;
                   const sent  = sentIds.has(g.id);
@@ -410,7 +415,7 @@ export const Messages = ({ guests }: MessagesProps) => {
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mx-5 mt-4 p-4 rounded-2xl bg-green-50 text-center"
+                  className="mx-5 my-4 p-4 rounded-2xl bg-green-50 text-center flex-shrink-0"
                 >
                   <p className="text-[15px] font-bold text-green-700">✓ כל ההודעות נשלחו!</p>
                   <p className="text-[12px] text-green-600 mt-0.5">{selectedList.length} הודעות</p>
