@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Plus, Users, ArrowUpDown, Download, Upload, Layers, List } from 'lucide-react';
 import { GuestCard } from '../components/GuestCard';
 import { ImportGuestsModal } from '../components/ImportGuestsModal';
+import { FilterSheet, FilterButton } from '../components/FilterSheet';
 import { Guest, RsvpStatus, Category, Side, Event } from '../types';
 
 interface GuestListProps {
@@ -27,21 +28,6 @@ const sortCycle: SortType[] = ['newest', 'oldest', 'az', 'status'];
 const statusFilters:{label:string;value:RsvpStatus|'ALL'}[]=[
   {label:'הכל',value:'ALL'},{label:'אישרו',value:'CONFIRMED'},
   {label:'ממתינים',value:'PENDING'},{label:'לא מגיעים',value:'DECLINED'},
-];
-
-const sideFilters:{label:string;value:Side|'ALL';color:string}[]=[
-  {label:'הכל',      value:'ALL',    color:'#1A1916'},
-  {label:'צד חתן',   value:'GROOM',  color:'#C9A84C'},
-  {label:'צד כלה',   value:'BRIDE',  color:'#F9A8D4'},
-  {label:'משותף',    value:'SHARED', color:'#A5B4FC'},
-];
-
-const categoryFilters:{label:string;value:Category|'ALL';color:string}[]=[
-  {label:'הכל',    value:'ALL',     color:'#1A1916'},
-  {label:'משפחה',  value:'FAMILY',  color:'#93C5FD'},
-  {label:'חברים',  value:'FRIENDS', color:'#C4B5FD'},
-  {label:'עבודה',  value:'WORK',    color:'#94A3B8'},
-  {label:'אחר',    value:'OTHER',   color:'#D1D5DB'},
 ];
 
 const rsvpStatusLabel: Record<RsvpStatus, string> = {
@@ -69,21 +55,16 @@ const sideGroupConfig: Record<string, { label: string; color: string; emoji: str
 };
 
 export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onViewGuest,onGuestsImported,userId,initialStatusFilter,event}:GuestListProps)=>{
-  const [search,        setSearch]        = useState('');
-  const [status,        setStatus]        = useState<RsvpStatus|'ALL'>(initialStatusFilter || 'ALL');
-  const [side,          setSide]          = useState<Side|'ALL'>('ALL');
-  const [category,      setCategory]      = useState<Category|'ALL'>('ALL');
-  const [sort,          setSort]          = useState<SortType>('newest');
-  const [importOpen,    setImportOpen]    = useState(false);
-  const [grouped,       setGrouped]       = useState(false);
+  const [search,      setSearch]      = useState('');
+  const [status,      setStatus]      = useState<RsvpStatus|'ALL'>(initialStatusFilter || 'ALL');
+  const [side,        setSide]        = useState<Side|'ALL'>('ALL');
+  const [category,    setCategory]    = useState<Category|'ALL'>('ALL');
+  const [sort,        setSort]        = useState<SortType>('newest');
+  const [importOpen,  setImportOpen]  = useState(false);
+  const [filterOpen,  setFilterOpen]  = useState(false);
+  const [grouped,     setGrouped]     = useState(false);
 
-  // Only show side filter when at least one guest has a side assigned
-  const hasSides = useMemo(() => guests.some(g => g.side), [guests]);
-
-  const usedCategories = useMemo(() => {
-    const used = new Set(guests.map(g => g.category));
-    return categoryFilters.filter(f => f.value === 'ALL' || used.has(f.value as Category));
-  }, [guests]);
+  const activeFilterCount = (side !== 'ALL' ? 1 : 0) + (category !== 'ALL' ? 1 : 0);
 
   const filtered = useMemo(() => {
     let list = guests.filter(g => {
@@ -111,7 +92,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
           statusOrder[(a.rsvpStatus||a.rsvp_status) as RsvpStatus] -
           statusOrder[(b.rsvpStatus||b.rsvp_status) as RsvpStatus]);
         break;
-      default: // newest
+      default:
         list = [...list].sort((a,b) =>
           new Date(b.createdAt||b.created_at||0).getTime() - new Date(a.createdAt||a.created_at||0).getTime());
     }
@@ -124,7 +105,6 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
     setSort(sortCycle[(idx + 1) % sortCycle.length]);
   };
 
-  // Grouped mode — group by side
   const groupedList = useMemo(() => {
     if (!grouped) return null;
     const map = new Map<Side | null, Guest[]>();
@@ -156,8 +136,6 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-
-  const activeFiltersCount = (side !== 'ALL' ? 1 : 0) + (category !== 'ALL' ? 1 : 0);
 
   return (
     <div className="space-y-4 pt-1">
@@ -210,7 +188,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
         />
       </div>
 
-      {/* Status segmented control + sort button */}
+      {/* Status bar + filter + sort */}
       <div className="flex gap-2 items-center">
         <div className="flex-1 flex rounded-2xl p-1" style={{background:'rgba(0,0,0,0.06)'}}>
           {statusFilters.map(f=>(
@@ -222,6 +200,9 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
             </button>
           ))}
         </div>
+        {/* Filter button */}
+        <FilterButton onClick={() => setFilterOpen(true)} activeCount={activeFilterCount} />
+        {/* Sort toggle */}
         <button
           onClick={cycleSort}
           className="flex items-center gap-1 px-3 py-2 rounded-2xl bg-white text-[11px] font-bold text-charcoal-700 active:scale-95 transition-transform flex-shrink-0"
@@ -232,63 +213,10 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
         </button>
       </div>
 
-      {/* Side filter — shown only when guests have sides */}
-      {!loading && hasSides && (
-        <div className="flex gap-2 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
-          {sideFilters.map(f => {
-            const active = side === f.value;
-            return (
-              <button key={f.value}
-                onClick={() => setSide(f.value as Side | 'ALL')}
-                className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-[14px] text-[12px] font-bold transition-all active:scale-95"
-                style={{
-                  background: active ? f.color : 'rgba(0,0,0,0.05)',
-                  color: active ? (f.value === 'BRIDE' ? '#9D174D' : 'white') : '#6E6862',
-                  boxShadow: active ? `0 2px 8px ${f.color}50` : 'none',
-                }}
-              >
-                {f.value !== 'ALL' && (
-                  <div className="w-1.5 h-1.5 rounded-full"
-                    style={{ background: active ? 'rgba(0,0,0,0.25)' : f.color }} />
-                )}
-                {f.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Category filter — horizontal scroll, shown when 2+ categories used */}
-      {!loading && usedCategories.length > 2 && (
-        <div className="flex gap-2 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
-          {usedCategories.map(f=>{
-            const active = category === f.value;
-            return (
-              <button
-                key={f.value}
-                onClick={() => setCategory(f.value as Category | 'ALL')}
-                className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-[14px] text-[12px] font-bold transition-all active:scale-95"
-                style={{
-                  background: active ? f.color : 'rgba(0,0,0,0.05)',
-                  color: active ? 'white' : '#6E6862',
-                  boxShadow: active ? `0 2px 8px ${f.color}50` : 'none',
-                }}
-              >
-                {f.value !== 'ALL' && (
-                  <div className="w-1.5 h-1.5 rounded-full"
-                    style={{ background: active ? 'rgba(255,255,255,0.7)' : f.color }} />
-                )}
-                {f.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Active filter summary */}
-      {activeFiltersCount > 0 && (
+      {/* Active filter summary pill */}
+      {activeFilterCount > 0 && (
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-charcoal-400">{filtered.length} תוצאות עם הפילטרים הנוכחיים</span>
+          <span className="text-[11px] text-charcoal-400">{filtered.length} תוצאות</span>
           <button
             onClick={() => { setSide('ALL'); setCategory('ALL'); }}
             className="text-[11px] text-gold-600 font-bold underline">
@@ -365,6 +293,16 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
         userId={userId}
         onClose={() => setImportOpen(false)}
         onImported={() => { setImportOpen(false); onGuestsImported?.(); }}
+      />
+
+      <FilterSheet
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        side={side}
+        category={category}
+        onSideChange={setSide}
+        onCategoryChange={setCategory}
+        resultCount={filtered.length}
       />
 
     </div>
