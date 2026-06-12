@@ -140,7 +140,11 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
       return;
     }
     try {
-      await navigator.clipboard.writeText(rsvpService.buildLink(token, event));
+      const personalLink = rsvpService.buildPersonalRsvpLink({ rsvp_token: token });
+      if (!personalLink) {
+        return;
+      }
+      await navigator.clipboard.writeText(personalLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch { /* clipboard blocked */ }

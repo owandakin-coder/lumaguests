@@ -86,9 +86,9 @@ export const GuestCard = ({ guest, onView, event }: GuestCardProps) => {
 
   const handleWA = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const token = guest.rsvp_token;
-    const url = token
-      ? rsvpService.buildWhatsAppUrl(guest.phone, name, token, event)
+    const personalRsvpLink = rsvpService.buildPersonalRsvpLink(guest);
+    const url = personalRsvpLink && guest.rsvp_token
+      ? rsvpService.buildWhatsAppUrl(guest.phone, name, guest.rsvp_token, event)
       : `https://wa.me/${toWaPhone(guest.phone)}?text=${encodeURIComponent(`שלום ${name}! רצינו ליצור איתך קשר לגבי האירוע.`)}`;
     window.open(url, '_blank');
   };

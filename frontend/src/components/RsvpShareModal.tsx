@@ -29,8 +29,8 @@ export const RsvpShareModal = ({
 
   const guestName = guest ? guest.fullName || guest.full_name : '';
   const rsvpLink = useMemo(
-    () => (guest?.rsvp_token ? rsvpService.buildLink(guest.rsvp_token, event) : null),
-    [event, guest]
+    () => rsvpService.buildPersonalRsvpLink(guest),
+    [guest]
   );
 
   const message = useMemo(() => {

@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Category } from '../types';
-import { supabase } from '../services/supabase';
+import { rsvpService, supabase } from '../services/supabase';
 
 interface ContactDraft { name: string; phone: string; category: Category; }
 
@@ -175,7 +175,7 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
         .map(c => ({
           user_id: userId, full_name: c.name, phone: c.phone,
           rsvp_status: 'PENDING', companions: 0, category: c.category,
-          rsvp_token: crypto.randomUUID(),
+          rsvp_token: rsvpService.generateToken(),
         }));
       if (toInsert.length > 0) {
         await supabase.from('guests').insert(toInsert);
@@ -284,7 +284,7 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
           companions:  row.companions,
           category:    row.category,
           notes:       row.notes || null,
-          rsvp_token:  crypto.randomUUID(),
+          rsvp_token:  rsvpService.generateToken(),
         });
         setProgress(Math.round(((toInsert.length + skipped) / validRows.length) * 80));
       }

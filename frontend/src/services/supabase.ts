@@ -104,9 +104,28 @@ export const guestService = {
   },
 
   update: async (id: string, updates: any, userId: string) => {
+    let safeUpdates = { ...updates };
+
+    if ('rsvp_token' in safeUpdates) {
+      const { data: currentGuest, error: currentError } = await supabase
+        .from('guests')
+        .select('rsvp_token')
+        .eq('id', id)
+        .eq('user_id', userId)
+        .single();
+
+      if (currentError) throw currentError;
+
+      if (currentGuest?.rsvp_token) {
+        delete safeUpdates.rsvp_token;
+      } else if (!safeUpdates.rsvp_token) {
+        delete safeUpdates.rsvp_token;
+      }
+    }
+
     const { data, error } = await supabase
       .from('guests')
-      .update(updates)
+      .update(safeUpdates)
       .eq('id', id)
       .eq('user_id', userId)
       .select()
@@ -255,6 +274,9 @@ export function toWaPhone(phone: string): string {
 export const rsvpService = {
   generateToken: (): string => crypto.randomUUID(),
 
+  buildPersonalRsvpLink: (guest: Pick<import('../types').Guest, 'rsvp_token'> | null | undefined): string | null =>
+    guest?.rsvp_token ? `${window.location.origin}/rsvp/${guest.rsvp_token}` : null,
+
   getByToken: async (token: string) => {
     const { data, error } = await supabase.rpc('get_guest_by_token', { p_token: token });
     if (error) throw error;
@@ -284,7 +306,8 @@ export const rsvpService = {
   },
 
   buildLink: (token: string, ev?: { event_name?: string | null; event_date?: string | null; venue_name?: string | null } | null): string => {
-    const base = `${window.location.origin}/rsvp/${token}`;
+    const base = rsvpService.buildPersonalRsvpLink({ rsvp_token: token });
+    if (!base) return `${window.location.origin}/rsvp/${token}`;
     if (!ev) return base;
     const p = new URLSearchParams();
     if (ev.event_name && ev.event_name !== 'האירוע שלי') p.set('en', ev.event_name);
@@ -329,7 +352,7 @@ export const rsvpService = {
       updated_at?: string | null;
     } | null
   ): string => {
-    const link = rsvpService.buildLink(token, ev);
+    const link = rsvpService.buildPersonalRsvpLink({ rsvp_token: token }) || `${window.location.origin}/rsvp/${token}`;
     const eventName = (ev?.event_name && ev.event_name !== 'האירוע שלי') ? ev.event_name : 'האירוע שלנו';
     const lines: string[] = [`היי ${guestName} 👋`, '', `נשמח לראות אותך ב${eventName}`];
     if (ev?.event_date) {

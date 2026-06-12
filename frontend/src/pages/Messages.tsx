@@ -172,7 +172,11 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
         return;
       }
 
-      const rsvpLink = rsvpService.buildLink(token, event);
+      const rsvpLink = rsvpService.buildPersonalRsvpLink({ rsvp_token: token });
+      if (!rsvpLink) {
+        window.alert('לא הצלחנו ליצור קישור RSVP אישי למוזמן הזה. נסה שוב.');
+        return;
+      }
       const msg = buildGuestRsvpMessage(name, event, rsvpLink);
       window.open(buildGuestRsvpWhatsAppUrl(g.phone, msg), '_blank');
       setSentIds(prev => new Set(prev).add(g.id));
