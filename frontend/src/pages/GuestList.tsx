@@ -10,6 +10,7 @@ interface GuestListProps {
   onEditGuest:(g:Guest)=>void;onDeleteGuest:(g:Guest)=>void;onViewGuest:(g:Guest)=>void;
   onGuestsImported?:()=>void;
   userId:string;
+  initialStatusFilter?: RsvpStatus | 'ALL';
 }
 
 type SortType = 'newest' | 'oldest' | 'az' | 'status';
@@ -49,9 +50,9 @@ const catLabelFull: Record<string, string> = {
 
 const GROUP_ORDER: Category[] = ['GROOM','BRIDE','FAMILY','FRIENDS','WORK','OTHER'];
 
-export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onViewGuest,onGuestsImported,userId}:GuestListProps)=>{
+export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onViewGuest,onGuestsImported,userId,initialStatusFilter}:GuestListProps)=>{
   const [search,        setSearch]        = useState('');
-  const [status,        setStatus]        = useState<RsvpStatus|'ALL'>('ALL');
+  const [status,        setStatus]        = useState<RsvpStatus|'ALL'>(initialStatusFilter || 'ALL');
   const [category,      setCategory]      = useState<Category|'ALL'>('ALL');
   const [sort,          setSort]          = useState<SortType>('newest');
   const [importOpen,    setImportOpen]    = useState(false);
@@ -113,7 +114,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
   const exportCSV = () => {
     const eventName = localStorage.getItem('luma_event_name') || 'מוזמנים';
     const headers = ['שם', 'טלפון', 'סטטוס', 'קטגוריה', 'מלווים', 'סך אנשים', 'הערות'];
-    const rows = guests.map(g => [
+    const rows = filtered.map(g => [
       g.fullName||g.full_name,
       g.phone,
       rsvpStatusLabel[(g.rsvpStatus||g.rsvp_status) as RsvpStatus],

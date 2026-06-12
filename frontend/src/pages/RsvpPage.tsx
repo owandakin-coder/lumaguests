@@ -119,10 +119,16 @@ export const RsvpPage = ({ token }: RsvpPageProps) => {
 
             {/* Brand */}
             <div className="text-center mb-8">
-              <div className="w-12 h-12 rounded-2xl bg-charcoal-900 flex items-center justify-center mx-auto mb-3"
-                style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
-                <span className="text-gold-400 text-lg font-black">L</span>
-              </div>
+              <div
+                className="w-16 h-16 rounded-3xl overflow-hidden mx-auto mb-3"
+                style={{
+                  background: '#1A1916',
+                  backgroundImage: 'url("/logo hd.png")',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                }}
+              />
               <p className="text-xs text-charcoal-400 font-medium uppercase tracking-widest">
                 {eventName || 'הזמנה לאירוע'}
               </p>

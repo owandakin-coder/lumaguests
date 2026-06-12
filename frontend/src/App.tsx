@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { Dashboard }          from './pages/Dashboard';
@@ -15,7 +15,7 @@ import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { ToastContainer }     from './components/Toast';
 import { useToast }           from './hooks/useToast';
 import { useSupabaseAuth }    from './hooks/useSupabaseAuth';
-import { Guest }              from './types';
+import { Guest, RsvpStatus }  from './types';
 import { guestService, authService, supabase } from './services/supabase';
 import { useEvent } from './hooks/useEvent';
 
@@ -31,6 +31,7 @@ function App() {
   const [viewingGuest, setViewingGuest] = useState<Guest | null>(null);
   const [deletingGuest,setDeletingGuest]= useState<Guest | null>(null);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const [guestStatusFilter, setGuestStatusFilter] = useState<RsvpStatus | 'ALL'>('ALL');
   const { toasts, addToast, removeToast } = useToast();
   const auth  = useSupabaseAuth();
   const { event, update: updateEvent } = useEvent();
@@ -102,10 +103,6 @@ function App() {
     return () => { supabase.removeChannel(channel); };
   }, [auth.isAuthenticated, auth.user?.id]);
 
-  const pendingCount = useMemo(
-    () => guests.filter(g => (g.rsvpStatus || g.rsvp_status) === 'PENDING').length,
-    [guests]
-  );
 
   const handleAddGuest    = () => setCurrentPage('add');
   const handleEditGuest   = (guest: Guest) => { setEditingGuest(guest); setCurrentPage('edit'); };
@@ -174,6 +171,7 @@ function App() {
             onAddGuest={handleAddGuest}
             onViewGuests={() => setCurrentPage('guests')}
             onViewGuest={handleViewGuest}
+            onViewGuestsFiltered={(s) => { setGuestStatusFilter(s); setCurrentPage('guests'); }}
           />
         );
       case 'guests':
@@ -187,6 +185,7 @@ function App() {
             onDeleteGuest={handleDeleteGuest}
             onViewGuest={handleViewGuest}
             onGuestsImported={loadGuests}
+            initialStatusFilter={guestStatusFilter}
           />
         );
       case 'messages':
@@ -300,7 +299,7 @@ function App() {
         <MobileBottomNav
           currentPage={currentPage}
           onNavChange={page => setCurrentPage(page as Page)}
-          pendingCount={pendingCount}
+          pendingCount={0}
           messageCount={0}
         />
       )}

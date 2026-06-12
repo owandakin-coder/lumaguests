@@ -128,12 +128,15 @@ export const GuestCard = ({ guest, onView }: GuestCardProps) => {
               </div>
               <div className="flex items-center gap-0.5 px-2 py-0.5 rounded-full" style={{ background: cBg }}>
                 <div className="w-1.5 h-1.5 rounded-full" style={{ background: accent }} />
-                <span className="text-[10px] font-bold" style={{ color: cText }}>{catLabel[guest.category]}</span>
+                <span className="text-[10px] font-bold" style={{ color: cText }}>{catLabel[guest.category] || 'אחר'}</span>
               </div>
               {guest.companions > 0 && (
                 <span className="text-[10px] text-charcoal-400">+{guest.companions}</span>
               )}
             </div>
+            {guest.notes ? (
+              <p className="text-[11px] text-charcoal-400 truncate mt-1.5 italic">{guest.notes}</p>
+            ) : null}
           </div>
 
           <div className="flex flex-col gap-1.5 flex-shrink-0">

@@ -10,6 +10,7 @@ interface DashboardProps {
   onAddGuest: () => void;
   onViewGuests: () => void;
   onViewGuest: (guest: Guest) => void;
+  onViewGuestsFiltered?: (status: RsvpStatus | 'ALL') => void;
 }
 
 const EVENT_KEY      = 'luma_event_name';
@@ -60,7 +61,7 @@ function Ring({pct,total,loading}:{pct:number;total:number;loading:boolean}){
 const fade={hidden:{opacity:0,y:6},show:{opacity:1,y:0,transition:{duration:0.2}}};
 const stagger={hidden:{},show:{transition:{staggerChildren:0.055}}};
 
-export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:DashboardProps)=>{
+export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onViewGuestsFiltered}:DashboardProps)=>{
   const auth=useSupabaseAuth();
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
@@ -183,12 +184,14 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:Das
 
         <div className="grid grid-cols-2 gap-2">
           {[
-            {icon:CheckCircle,label:'אישרו',     value:s.confirmed,color:'#10B981',bg:'#ECFDF5'},
-            {icon:Clock,      label:'ממתינים',   value:s.pending,  color:'#F59E0B',bg:'#FFFBEB'},
-            {icon:XCircle,    label:'לא מגיעים',value:s.declined, color:'#F87171',bg:'#FFF1F2'},
-            {icon:Users,      label:'מגיעים',   value:s.peopleArriving, color:'#60A5FA',bg:'#EFF6FF'},
-          ].map(({icon:Icon,label,value,color,bg})=>(
-            <div key={label} className="rounded-2xl p-3" style={{background:bg}}>
+            {icon:CheckCircle,label:'אישרו',     value:s.confirmed,      color:'#10B981',bg:'#ECFDF5',filter:'CONFIRMED' as const},
+            {icon:Clock,      label:'ממתינים',   value:s.pending,        color:'#F59E0B',bg:'#FFFBEB',filter:'PENDING'   as const},
+            {icon:XCircle,    label:'לא מגיעים',value:s.declined,       color:'#F87171',bg:'#FFF1F2',filter:'DECLINED'  as const},
+            {icon:Users,      label:'מגיעים',   value:s.peopleArriving, color:'#60A5FA',bg:'#EFF6FF',filter:'CONFIRMED' as const},
+          ].map(({icon:Icon,label,value,color,bg,filter})=>(
+            <button key={label} className="rounded-2xl p-3 text-right w-full active:scale-[0.96] transition-transform"
+              style={{background:bg}}
+              onClick={() => onViewGuestsFiltered?.(filter)}>
               {loading?(
                 <div className="animate-pulse space-y-1">
                   <div className="h-3.5 w-3.5 rounded bg-charcoal-200"/>
@@ -202,7 +205,7 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest}:Das
                   <p className="text-[11px] font-semibold text-charcoal-500">{label}</p>
                 </>
               )}
-            </div>
+            </button>
           ))}
         </div>
       </motion.div>
