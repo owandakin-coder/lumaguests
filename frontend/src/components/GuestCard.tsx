@@ -8,6 +8,7 @@ interface GuestCardProps {
   onEdit: (guest: Guest) => void;
   onDelete: (guest: Guest) => void;
   onView: (guest: Guest) => void;
+  onShareRsvp?: (guest: Guest) => void;
 }
 
 const rsvpCfg: Record<RsvpStatus,{label:string;dot:string;bg:string;text:string}> = {
@@ -37,7 +38,7 @@ function avBg(name:string){
   return avBgs[Math.abs(h)%avBgs.length];
 }
 
-export const GuestCard = ({guest,onView}:GuestCardProps)=>{
+export const GuestCard = ({guest,onView,onShareRsvp}:GuestCardProps)=>{
   const name   = guest.fullName||guest.full_name;
   const status = (guest.rsvpStatus||guest.rsvp_status) as RsvpStatus;
   const r      = rsvpCfg[status];
@@ -47,6 +48,10 @@ export const GuestCard = ({guest,onView}:GuestCardProps)=>{
 
   const handleWA=(e:React.MouseEvent)=>{
     e.stopPropagation();
+    if (onShareRsvp) {
+      onShareRsvp(guest);
+      return;
+    }
     const token = guest.rsvp_token;
     const url = token
       ? rsvpService.buildWhatsAppUrl(guest.phone, name, token)
@@ -56,6 +61,10 @@ export const GuestCard = ({guest,onView}:GuestCardProps)=>{
   const handleCall=(e:React.MouseEvent)=>{
     e.stopPropagation();
     window.location.href=`tel:${guest.phone}`;
+  };
+  const handleShareRsvp = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onShareRsvp?.(guest);
   };
 
   return (
@@ -110,6 +119,15 @@ export const GuestCard = ({guest,onView}:GuestCardProps)=>{
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="px-4 pb-4 pt-0">
+        <button
+          onClick={handleShareRsvp}
+          className="w-full py-3 rounded-2xl bg-charcoal-50 text-charcoal-800 text-[13px] font-bold active:scale-[0.98] transition-transform"
+        >
+          שלח בקשת אישור הגעה
+        </button>
       </div>
     </motion.div>
   );

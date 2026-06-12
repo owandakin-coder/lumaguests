@@ -4,9 +4,11 @@ import {
   Phone, MessageCircle, Edit2, Trash2, ChevronRight,
   Users, Tag, StickyNote, Calendar, Link, CheckCircle,
 } from 'lucide-react';
+import { RsvpShareModal } from '../components/RsvpShareModal';
 import { Guest, RsvpStatus } from '../types';
 import { guestService, rsvpService } from '../services/supabase';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { useEvent } from '../hooks/useEvent';
 
 interface GuestDetailsProps {
   guestId: string;
@@ -48,7 +50,9 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
   const [guest, setGuest]     = useState<Guest | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied]   = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const auth = useSupabaseAuth();
+  const { event, loading: eventLoading } = useEvent();
 
   useEffect(() => { if (auth.user) load(); }, [guestId, auth.user]);
 
@@ -186,6 +190,13 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
               <span className="text-[10px] font-bold" style={{ color: '#C9A84C' }}>עריכה</span>
             </button>
           </div>
+
+          <button
+            onClick={() => setShareOpen(true)}
+            className="w-full mt-3 py-3 rounded-2xl bg-white/8 text-white text-[13px] font-bold border border-white/10 active:scale-[0.98] transition-transform"
+          >
+            שלח בקשת אישור הגעה
+          </button>
         </div>
       </div>
 
@@ -267,6 +278,14 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
         <Trash2 className="w-4 h-4" />
         מחיקת מוזמן
       </button>
+
+      <RsvpShareModal
+        open={shareOpen}
+        guest={guest}
+        event={event}
+        isLoading={eventLoading}
+        onClose={() => setShareOpen(false)}
+      />
 
     </motion.div>
   );

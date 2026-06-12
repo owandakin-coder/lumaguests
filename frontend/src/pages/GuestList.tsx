@@ -4,8 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Plus, Users, ArrowUpDown, Download, Upload, BookUser, Layers, List, X, Check } from 'lucide-react';
 import { GuestCard } from '../components/GuestCard';
 import { ImportGuestsModal } from '../components/ImportGuestsModal';
+import { RsvpShareModal } from '../components/RsvpShareModal';
 import { Guest, RsvpStatus, Category } from '../types';
 import { rsvpService, supabase } from '../services/supabase';
+import { useEvent } from '../hooks/useEvent';
 
 interface GuestListProps {
   guests:Guest[];loading:boolean;onAddGuest:()=>void;
@@ -62,6 +64,8 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
   const [grouped,       setGrouped]       = useState(false);
   const [contacts,      setContacts]      = useState<ContactDraft[]>([]);
   const [savingContacts,setSavingContacts]= useState(false);
+  const [sharingGuest,  setSharingGuest]  = useState<Guest | null>(null);
+  const { event, loading: eventLoading } = useEvent();
 
   const usedCategories = useMemo(() => {
     const used = new Set(guests.map(g => g.category));
@@ -201,7 +205,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
           {/* CSV Import */}
           <button onClick={() => setImportOpen(true)}
             className="w-9 h-9 rounded-2xl bg-white flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
-            style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }} title="ייבוא CSV">
+            style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }} title="ייבוא CSV / Excel">
             <Upload className="w-4 h-4 text-charcoal-500" strokeWidth={2}/>
           </button>
           {/* Group toggle */}
@@ -330,7 +334,13 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
                 <div className="space-y-2">
                   {grp.map((g,i) => (
                     <motion.div key={g.id} initial={{opacity:0,y:4}} animate={{opacity:1,y:0}} transition={{delay:i*0.02}}>
-                      <GuestCard guest={g} onEdit={onEditGuest} onDelete={onDeleteGuest} onView={onViewGuest}/>
+                      <GuestCard
+                        guest={g}
+                        onEdit={onEditGuest}
+                        onDelete={onDeleteGuest}
+                        onView={onViewGuest}
+                        onShareRsvp={setSharingGuest}
+                      />
                     </motion.div>
                   ))}
                 </div>
@@ -345,7 +355,13 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
               <motion.div key={g.id}
                 initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0}}
                 transition={{delay:Math.min(i*0.03,0.15)}}>
-                <GuestCard guest={g} onEdit={onEditGuest} onDelete={onDeleteGuest} onView={onViewGuest}/>
+                <GuestCard
+                  guest={g}
+                  onEdit={onEditGuest}
+                  onDelete={onDeleteGuest}
+                  onView={onViewGuest}
+                  onShareRsvp={setSharingGuest}
+                />
               </motion.div>
             ))}
           </div>
@@ -356,6 +372,13 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
         userId={userId}
         onClose={() => setImportOpen(false)}
         onImported={() => { setImportOpen(false); onGuestsImported?.(); }}
+      />
+      <RsvpShareModal
+        open={!!sharingGuest}
+        guest={sharingGuest}
+        event={event}
+        isLoading={eventLoading}
+        onClose={() => setSharingGuest(null)}
       />
 
       {/* Contacts review portal */}

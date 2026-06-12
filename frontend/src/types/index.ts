@@ -89,6 +89,7 @@ export interface Event {
   cover_image_url: string | null;
   public_slug: string | null;
   is_public: boolean;
+  public_rsvp_enabled?: boolean | null;
   theme_color: string;
   created_at: string;
   updated_at: string;
