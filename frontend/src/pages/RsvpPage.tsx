@@ -123,16 +123,16 @@ export const RsvpPage = ({ token, eventName: propEventName, eventDate: propEvent
             {/* Event info card */}
             <div className="mb-8">
               <div
-                className="w-24 h-24 rounded-full mx-auto mb-4 border border-gold-200/80 flex items-center justify-center p-3"
+                className="w-28 h-28 rounded-[30px] mx-auto mb-4 border border-gold-200/80 flex items-center justify-center p-2"
                 style={{
-                  background: 'radial-gradient(circle at 30% 30%, #FFF9ED 0%, #F5E7BF 100%)',
-                  boxShadow: '0 10px 28px rgba(0,0,0,0.12)',
+                  background: 'linear-gradient(180deg, #FFFDF8 0%, #F5E7BF 100%)',
+                  boxShadow: '0 12px 30px rgba(0,0,0,0.10)',
                 }}
               >
                 <img
-                  src="/newlogo.png"
+                  src="/logowhite.png"
                   alt="Luma Guests"
-                  className="w-full h-full object-contain rounded-full"
+                  className="w-full h-full object-contain"
                 />
               </div>
               {(eventName || propEventDate || propVenueName) ? (
