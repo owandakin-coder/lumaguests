@@ -33,6 +33,7 @@ function App() {
   const [deletingGuest,setDeletingGuest]= useState<Guest | null>(null);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [guestStatusFilter, setGuestStatusFilter] = useState<RsvpStatus | 'ALL'>('ALL');
+  const [messagesInitialFilter, setMessagesInitialFilter] = useState<RsvpStatus | 'ALL'>('ALL');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
   const auth  = useSupabaseAuth();
@@ -120,7 +121,7 @@ function App() {
   const handleViewGuest   = (guest: Guest) => { setViewingGuest(guest); setCurrentPage('details'); };
 
   const handleSetupEvent    = () => setCurrentPage('settings');
-  const handleSendReminders = () => { setGuestStatusFilter('PENDING'); setCurrentPage('messages'); };
+  const handleSendReminders = () => { setGuestStatusFilter('PENDING'); setMessagesInitialFilter('PENDING'); setCurrentPage('messages'); };
 
   const handleConfirmDelete = async () => {
     if (!deletingGuest || !auth.user) return;
@@ -206,7 +207,7 @@ function App() {
           />
         );
       case 'messages':
-        return <Messages guests={guests} userId={auth.user!.id} initialFilter="PENDING" />;
+        return <Messages guests={guests} userId={auth.user!.id} initialFilter={messagesInitialFilter} />;
       case 'add':
         return <AddGuest onSuccess={handleAddSuccess} onCancel={handleBackToGuests} />;
       case 'edit':
@@ -316,7 +317,10 @@ function App() {
       {!isSubPage && (
         <MobileBottomNav
           currentPage={currentPage}
-          onNavChange={page => setCurrentPage(page as Page)}
+          onNavChange={page => {
+            if (page === 'messages') setMessagesInitialFilter('ALL');
+            setCurrentPage(page as Page);
+          }}
           pendingCount={0}
           messageCount={0}
         />

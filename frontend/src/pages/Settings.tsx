@@ -81,6 +81,8 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
 
   const [activeModal, setActiveModal]     = useState<ModalType>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showSlugWarning,   setShowSlugWarning]   = useState(false);
+  const [pendingSlug,       setPendingSlug]       = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [notifPerm, setNotifPerm] = useState<NotificationPermission>('default');
   const [copied, setCopied]       = useState(false);
@@ -231,14 +233,39 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
     finally { setBusy(false); }
   };
 
-  const saveSlug = async () => {
+  const doSaveSlug = async (slug: string) => {
+    try {
+      setBusy(true); setErr('');
+      if (onEventUpdate) await onEventUpdate({ public_slug: slug });
+      setOk('הקישור עודכן');
+      setTimeout(close, 900);
+    } catch (e: any) {
+      const isDuplicate = e?.code === '23505' || e?.message?.includes('unique') || e?.message?.includes('duplicate');
+      setErr(isDuplicate ? 'הכינוי כבר תפוס — בחר כינוי אחר' : (e?.message || 'שגיאה בשמירה'));
+    } finally { setBusy(false); }
+  };
+
+  const saveSlug = () => {
     const slug = f.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
     if (!slug) { setErr('יש להזין כינוי תקין'); return; }
-    await saveField({ public_slug: slug }, 'הקישור עודכן');
+    // Warn if slug was already set (old links will break)
+    if (event?.public_slug && event.public_slug !== slug) {
+      setPendingSlug(slug);
+      setShowSlugWarning(true);
+      return;
+    }
+    doSaveSlug(slug);
   };
 
   const togglePublic = async () => {
     if (!onEventUpdate) return;
+    // Guard: activating without a date → open the date sheet with a hint
+    if (!event?.is_public && !event?.event_date) {
+      open('eventDate');
+      // err/ok reset in open(); set ok after to show the hint
+      setTimeout(() => setOk('הוסף תאריך כדי להפעיל RSVP ציבורי'), 0);
+      return;
+    }
     try {
       await onEventUpdate({ is_public: !event?.is_public });
     } catch { /* silent */ }
@@ -866,6 +893,56 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
           onDone={handleCropDone}
           onCancel={() => { setShowCropper(false); setRawImageUrl(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
         />
+      )}
+
+      {/* Slug change warning */}
+      {createPortal(
+        <AnimatePresence>
+          {showSlugWarning && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-[60] flex items-end justify-center p-4"
+              style={{ backdropFilter: 'blur(4px)' }}
+              onClick={() => setShowSlugWarning(false)}
+            >
+              <motion.div
+                initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 40, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                onClick={e => e.stopPropagation()}
+                className="bg-white w-full max-w-[430px] rounded-t-3xl p-6"
+                style={{ paddingBottom: 'max(40px, env(safe-area-inset-bottom))' }}
+                dir="rtl"
+              >
+                <div className="w-10 h-1 bg-charcoal-200 rounded-full mx-auto mb-5" />
+                <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">⚠️</span>
+                </div>
+                <h3 className="text-[18px] font-bold text-charcoal-900 text-center mb-2">שינוי כינוי ישבור קישורים</h3>
+                <p className="text-[13px] text-charcoal-500 text-center leading-relaxed mb-6">
+                  קישורים ציבוריים שכבר שלחת לאורחים יפסיקו לעבוד.<br />
+                  הכינוי הישן: <span className="font-mono font-bold text-charcoal-800">{event?.public_slug}</span>
+                </p>
+                <div className="space-y-2.5">
+                  <button
+                    onClick={() => { setShowSlugWarning(false); doSaveSlug(pendingSlug); }}
+                    disabled={busy}
+                    className="w-full py-4 rounded-2xl bg-amber-500 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+                  >
+                    {busy ? 'שומר...' : 'כן, שנה את הכינוי'}
+                  </button>
+                  <button
+                    onClick={() => setShowSlugWarning(false)}
+                    className="w-full py-4 rounded-2xl bg-charcoal-100 text-charcoal-700 text-[15px] font-bold active:scale-[0.98] transition-transform"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
       )}
 
       {/* Delete confirm modal — Portal to escape transform stacking context */}
