@@ -121,9 +121,7 @@ function App() {
   const handleViewGuest   = (guest: Guest) => { setViewingGuest(guest); setCurrentPage('details'); };
 
   const handleSetupEvent    = () => setCurrentPage('settings');
-  const handleSendReminders = () => { setGuestStatusFilter('PENDING'); setMessagesInitialFilter('PENDING'); setCurrentPage('messages'); };
-
-  const handleConfirmDelete = async () => {
+const handleConfirmDelete = async () => {
     if (!deletingGuest || !auth.user) return;
     try {
       setIsDeleteLoading(true);
@@ -188,7 +186,6 @@ function App() {
             onViewGuest={handleViewGuest}
             onViewGuestsFiltered={(s) => { setGuestStatusFilter(s); setCurrentPage('guests'); }}
             onSetupEvent={handleSetupEvent}
-            onSendReminders={handleSendReminders}
           />
         );
       case 'guests':
