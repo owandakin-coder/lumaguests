@@ -73,6 +73,7 @@ export const Login = ({ onSuccess, onSwitchToRegister, onLogin }: LoginProps) =>
         className="flex-shrink-0"
         style={{
           height: 220,
+          background: '#1A1916',
           backgroundImage: 'url("/logo hd.png")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
