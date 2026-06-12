@@ -28,7 +28,7 @@ export const MobileBottomNav = ({ currentPage, onNavChange, pendingCount = 0, me
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50"
+    <div className="fixed bottom-0 left-0 right-0 z-40"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="mx-4 mb-4">
         <nav
