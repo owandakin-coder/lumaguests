@@ -223,8 +223,8 @@ export const GuestForm = ({ initialData, onSubmit, isLoading=false, onCancel, ti
         <div className="bg-red-50 text-red-600 text-[13px] px-4 py-3 rounded-2xl font-medium">{errors.submit}</div>
       )}
 
-      {/* Sticky CTA */}
-      <div className="sticky bottom-4 pt-2">
+      {/* CTA */}
+      <div className="pt-2">
         <button type="submit" disabled={isLoading}
           className="w-full py-4 rounded-2xl bg-charcoal-900 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
           style={{boxShadow:'0 4px 16px rgba(26,25,22,0.2)'}}>
