@@ -52,7 +52,10 @@ export const GuestForm = ({ initialData, onSubmit, isLoading=false, onCancel, ti
     e.preventDefault();
     if (!validate()) return;
     try { await onSubmit(form); }
-    catch (err) { setErrors(p=>({...p,submit:err instanceof Error?err.message:'שגיאה, נסה שוב'})); }
+    catch (err: any) {
+      const msg = err?.message || (typeof err === 'string' ? err : 'שגיאה בשמירה, נסה שוב');
+      setErrors(p=>({...p, submit: msg}));
+    }
   };
 
   const fieldCls = (f: string) =>

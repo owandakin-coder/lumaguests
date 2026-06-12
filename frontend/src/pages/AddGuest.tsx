@@ -18,12 +18,12 @@ export const AddGuest = ({ onSuccess, onCancel }: AddGuestProps) => {
     if (hasDuplicate) throw new Error('מוזמן עם מספר טלפון זה כבר קיים');
 
     await guestService.create({
-      full_name:   data.fullName,
-      phone:       data.phone,
-      companions:  data.companions,
+      full_name:   data.fullName.trim(),
+      phone:       data.phone.trim(),
+      companions:  data.companions ?? 0,
       category:    data.category,
       rsvp_status: data.rsvpStatus,
-      notes:       data.notes,
+      notes:       data.notes?.trim() || null,
       user_id:     auth.user.id,
       rsvp_token:  rsvpService.generateToken(),
     });
