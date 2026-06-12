@@ -60,7 +60,7 @@ export const Register = ({ onSuccess, onSwitchToLogin, onRegister }: RegisterPro
           transition={{ delay: 0.2 }}
           className="text-[14px] text-white/50 mt-1"
         >
-          ניהול מוזמנים פרמיום
+          ניהול רשימת מוזמנים
         </motion.p>
       </div>
 
