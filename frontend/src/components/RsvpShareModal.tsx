@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Copy, Image as ImageIcon, Link2, MessageCircle, X } from 'lucide-react';
 import { Event, Guest } from '../types';
+import { rsvpService } from '../services/supabase';
 import {
   buildGuestRsvpMessage,
   buildGuestRsvpWhatsAppUrl,
@@ -22,8 +23,8 @@ export const RsvpShareModal = ({ open, guest, event, isLoading = false, onClose 
 
   const guestName = guest ? guest.fullName || guest.full_name : '';
   const rsvpLink = useMemo(() => (
-    guest?.rsvp_token ? `${window.location.origin}/rsvp/${guest.rsvp_token}` : null
-  ), [guest]);
+    guest?.rsvp_token ? rsvpService.buildShareLink(guest.rsvp_token, event) : null
+  ), [event, guest]);
   const message = useMemo(() => {
     if (!guest || !rsvpLink) {
       return '';

@@ -129,7 +129,7 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
   const handleWhatsApp = async () => {
     const token = await ensureRsvpTokenReady();
     const url = token
-      ? rsvpService.buildWhatsAppUrl(guest.phone, name, token)
+      ? rsvpService.buildWhatsAppUrl(guest.phone, name, token, event)
       : `https://wa.me/${guest.phone.replace(/\D/g,'')}?text=${encodeURIComponent(`שלום ${name}! רצינו ליצור איתך קשר לגבי האירוע.`)}`;
     window.open(url, '_blank');
   };
@@ -140,7 +140,7 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
       return;
     }
     try {
-      await navigator.clipboard.writeText(rsvpService.buildLink(token));
+      await navigator.clipboard.writeText(rsvpService.buildShareLink(token, event));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch { /* clipboard blocked */ }
