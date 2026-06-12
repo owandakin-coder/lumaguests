@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, XCircle, Users, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { rsvpService } from '../services/supabase';
 import { RsvpPublicGuest } from '../types';
 
@@ -134,8 +134,30 @@ export const RsvpPage = ({ token }: RsvpPageProps) => {
               <p className="text-sm text-charcoal-400 mt-1">נשמח לדעת אם תגיע/י</p>
             </div>
 
+            {/* Companions — FIRST so guest sets count before confirming */}
+            <div className="bg-white rounded-2xl p-5 mb-5"
+              style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
+              <p className="text-[13px] font-bold text-charcoal-500 text-center mb-4">כמה אנשים מגיעים?</p>
+              <div className="flex items-center justify-center gap-5">
+                <button onClick={() => setCompanions(c => Math.max(0, c-1))}
+                  className="w-12 h-12 rounded-2xl bg-charcoal-100 flex items-center justify-center text-2xl font-bold text-charcoal-700 active:scale-90 transition-transform">
+                  −
+                </button>
+                <div className="text-center min-w-[64px]">
+                  <span className="text-[48px] font-black text-charcoal-900 leading-none">{companions + 1}</span>
+                  <p className="text-[12px] text-charcoal-400 mt-1">
+                    {companions + 1 === 1 ? 'רק אני' : `${companions + 1} אנשים`}
+                  </p>
+                </div>
+                <button onClick={() => setCompanions(c => c + 1)}
+                  className="w-12 h-12 rounded-2xl bg-charcoal-900 flex items-center justify-center text-2xl font-bold text-white active:scale-90 transition-transform">
+                  +
+                </button>
+              </div>
+            </div>
+
             {/* Main CTA buttons */}
-            <div className="space-y-3 mb-6">
+            <div className="space-y-3 mb-5">
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={() => !submitting && handleSubmit('CONFIRMED')}
@@ -157,60 +179,27 @@ export const RsvpPage = ({ token }: RsvpPageProps) => {
                 whileTap={{ scale: 0.97 }}
                 onClick={() => !submitting && handleSubmit('DECLINED')}
                 disabled={submitting}
-                className="w-full py-5 rounded-2xl text-white text-lg font-bold flex items-center justify-center gap-3 disabled:opacity-60 transition-all"
-                style={{
-                  background: submitting && choice === 'DECLINED' ? '#DC2626' : '#F87171',
-                  boxShadow: '0 4px 20px rgba(248,113,113,0.3)',
-                }}
+                className="w-full py-5 rounded-2xl text-charcoal-600 text-base font-bold flex items-center justify-center gap-3 disabled:opacity-60 transition-all border border-charcoal-200 bg-white"
               >
                 {submitting && choice === 'DECLINED'
                   ? <Loader2 className="w-5 h-5 animate-spin" />
-                  : <span className="text-xl">❌</span>
+                  : <span className="text-lg">😔</span>
                 }
                 לא אוכל/י להגיע
               </motion.button>
             </div>
 
-            {/* Optional fields */}
-            <div className="bg-white rounded-2xl p-4 space-y-4"
-              style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
-
-              {/* Companions */}
-              <div>
-                <p className="text-xs font-bold text-charcoal-400 uppercase tracking-wide mb-2">כמה אנשים מגיעים?</p>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setCompanions(c => Math.max(0, c-1))}
-                    className="w-9 h-9 rounded-xl bg-charcoal-100 flex items-center justify-center text-lg font-bold text-charcoal-700 active:scale-90 transition-transform">
-                    −
-                  </button>
-                  <div className="flex-1 text-center">
-                    <span className="text-2xl font-bold text-charcoal-900">{companions + 1}</span>
-                    <span className="text-sm text-charcoal-400 mr-1"> אנשים</span>
-                  </div>
-                  <button onClick={() => setCompanions(c => c + 1)}
-                    className="w-9 h-9 rounded-xl bg-charcoal-900 flex items-center justify-center text-lg font-bold text-white active:scale-90 transition-transform">
-                    +
-                  </button>
-                </div>
-                {companions > 0 && (
-                  <p className="text-xs text-charcoal-400 text-center mt-1">
-                    <Users className="inline w-3 h-3 ml-1" />
-                    {companions} מלווים
-                  </p>
-                )}
-              </div>
-
-              {/* Note */}
-              <div>
-                <p className="text-xs font-bold text-charcoal-400 uppercase tracking-wide mb-2">הערות / רגישויות מזון</p>
-                <textarea
-                  value={note}
-                  onChange={e => setNote(e.target.value)}
-                  placeholder="לדוגמה: צמחוני, ללא גלוטן..."
-                  rows={2}
-                  className="w-full px-3 py-2.5 rounded-xl bg-charcoal-50 text-sm text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-charcoal-200 resize-none transition"
-                />
-              </div>
+            {/* Note */}
+            <div className="bg-white rounded-2xl p-4"
+              style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.05)' }}>
+              <p className="text-xs font-bold text-charcoal-400 uppercase tracking-wide mb-2">הערות / רגישויות מזון</p>
+              <textarea
+                value={note}
+                onChange={e => setNote(e.target.value)}
+                placeholder="לדוגמה: צמחוני, ללא גלוטן..."
+                rows={2}
+                className="w-full px-3 py-2.5 rounded-xl bg-charcoal-50 text-sm text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-charcoal-200 resize-none transition"
+              />
             </div>
 
             <p className="text-center text-xs text-charcoal-400 mt-5">

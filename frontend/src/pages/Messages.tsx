@@ -18,7 +18,15 @@ type Template = {
   id: string;
   label: string;
   emoji: string;
-  build: (name: string, link: string | null) => string;
+  build: (name: string, link: string | null, side?: string) => string;
+};
+
+const sideLabel: Partial<Record<string, string>> = {
+  GROOM:   'מצד החתן',
+  BRIDE:   'מצד הכלה',
+  FAMILY:  'מצד המשפחה',
+  FRIENDS: 'מצד החברים',
+  WORK:    'מצד העבודה',
 };
 
 const TEMPLATES: Template[] = [
@@ -26,19 +34,23 @@ const TEMPLATES: Template[] = [
     id: 'rsvp',
     label: 'בקשת אישור',
     emoji: '📩',
-    build: (name, link) =>
-      link
-        ? `שלום ${name}! 🎉\nנשמח לאישורך לאירוע:\n👉 ${link}`
-        : `שלום ${name}! 🎉\nנשמח לאישורך להגעה לאירוע.`,
+    build: (name, link, side) => {
+      const sideTxt = side ? ` ${side}` : '';
+      return link
+        ? `שלום ${name}! 🎉\nהוזמנת${sideTxt} לאירוע שלנו.\nנשמח לאישורך:\n👉 ${link}`
+        : `שלום ${name}! 🎉\nהוזמנת${sideTxt} לאירוע שלנו. נשמח לאישורך.`;
+    },
   },
   {
     id: 'reminder',
     label: 'תזכורת',
     emoji: '⏰',
-    build: (name, link) =>
-      link
-        ? `שלום ${name}! 👋\nהאירוע מתקרב — מאשר/ת הגעה?\n👉 ${link}`
-        : `שלום ${name}! 👋\nהאירוע מתקרב, נשמח לראותך!`,
+    build: (name, link, side) => {
+      const sideTxt = side ? ` (${side})` : '';
+      return link
+        ? `שלום ${name}! 👋\nתזכורת — האירוע${sideTxt} מתקרב!\nמאשר/ת הגעה?\n👉 ${link}`
+        : `שלום ${name}! 👋\nהאירוע${sideTxt} מתקרב, נשמח לראותך!`;
+    },
   },
   {
     id: 'thanks',
@@ -142,7 +154,8 @@ export const Messages = ({ guests, userId }: MessagesProps) => {
     }
 
     const link  = token ? rsvpService.buildLink(token) : null;
-    const msg   = activeTpl.build(name, link);
+    const side  = sideLabel[g.category] ?? undefined;
+    const msg   = activeTpl.build(name, link, side);
     const phone = g.phone.replace(/\D/g, '');
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
     setSentIds(prev => new Set(prev).add(g.id));

@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, Users, ArrowUpDown, Download, Upload } from 'lucide-react';
+import { Search, Plus, Users, ArrowUpDown, Download, Upload, BookUser, Layers, List, X, Check } from 'lucide-react';
 import { GuestCard } from '../components/GuestCard';
 import { ImportGuestsModal } from '../components/ImportGuestsModal';
 import { Guest, RsvpStatus, Category } from '../types';
+import { rsvpService, supabase } from '../services/supabase';
 
 interface GuestListProps {
   guests:Guest[];loading:boolean;onAddGuest:()=>void;
@@ -47,12 +49,19 @@ const catLabelFull: Record<string, string> = {
   GROOM:'חתן',BRIDE:'כלה',FAMILY:'משפחה',FRIENDS:'חברים',WORK:'עבודה',OTHER:'אחר',
 };
 
+interface ContactDraft { name: string; phone: string; category: Category; }
+
+const GROUP_ORDER: Category[] = ['GROOM','BRIDE','FAMILY','FRIENDS','WORK','OTHER'];
+
 export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onViewGuest,onGuestsImported,userId}:GuestListProps)=>{
   const [search,        setSearch]        = useState('');
   const [status,        setStatus]        = useState<RsvpStatus|'ALL'>('ALL');
   const [category,      setCategory]      = useState<Category|'ALL'>('ALL');
   const [sort,          setSort]          = useState<SortType>('newest');
   const [importOpen,    setImportOpen]    = useState(false);
+  const [grouped,       setGrouped]       = useState(false);
+  const [contacts,      setContacts]      = useState<ContactDraft[]>([]);
+  const [savingContacts,setSavingContacts]= useState(false);
 
   const usedCategories = useMemo(() => {
     const used = new Set(guests.map(g => g.category));
@@ -97,6 +106,57 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
     setSort(sortCycle[(idx + 1) % sortCycle.length]);
   };
 
+  // Groups: only when grouped mode + no active filters that would confuse context
+  const groupedList = useMemo(() => {
+    if (!grouped) return null;
+    const map = new Map<Category, Guest[]>();
+    GROUP_ORDER.forEach(c => map.set(c, []));
+    filtered.forEach(g => { map.get(g.category as Category)?.push(g); });
+    return GROUP_ORDER.map(c => ({ cat: c, guests: map.get(c) ?? [] })).filter(g => g.guests.length > 0);
+  }, [grouped, filtered]);
+
+  // Contact Picker API
+  const pickContacts = async () => {
+    if (!('contacts' in navigator && 'ContactsManager' in window)) {
+      setImportOpen(true); // fallback to CSV
+      return;
+    }
+    try {
+      const raw = await (navigator as any).contacts.select(['name', 'tel'], { multiple: true });
+      const parsed: ContactDraft[] = raw
+        .filter((c: any) => c.name?.[0] && c.tel?.[0])
+        .map((c: any) => ({
+          name:     c.name[0].trim(),
+          phone:    c.tel[0].replace(/[\s\-\(\)\.]/g, ''),
+          category: 'OTHER' as Category,
+        }));
+      if (parsed.length > 0) setContacts(parsed);
+    } catch { /* user cancelled */ }
+  };
+
+  const saveContacts = async () => {
+    if (!contacts.length) return;
+    setSavingContacts(true);
+    const existingPhones = new Set(guests.map(g => g.phone.replace(/[\s\-\(\)\.]/g, '')));
+    const toInsert = contacts.filter(c => !existingPhones.has(c.phone));
+    try {
+      if (toInsert.length > 0) {
+        const rows = toInsert.map(c => ({
+          user_id:     userId,
+          full_name:   c.name,
+          phone:       c.phone,
+          rsvp_status: 'PENDING',
+          companions:  0,
+          category:    c.category,
+          rsvp_token:  rsvpService.generateToken(),
+        }));
+        await supabase.from('guests').insert(rows);
+      }
+      setContacts([]);
+      onGuestsImported?.();
+    } catch { /* silent */ } finally { setSavingContacts(false); }
+  };
+
   const exportCSV = () => {
     const eventName = localStorage.getItem('luma_event_name') || 'מוזמנים';
     const headers = ['שם', 'טלפון', 'סטטוס', 'קטגוריה', 'מלווים', 'סך אנשים', 'הערות'];
@@ -132,23 +192,32 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* CSV Import */}
-          <button
-            onClick={() => setImportOpen(true)}
+          {/* Contacts import */}
+          <button onClick={pickContacts}
             className="w-9 h-9 rounded-2xl bg-white flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
-            style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }}
-            title="ייבוא CSV"
-          >
+            style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }} title="ייבוא אנשי קשר">
+            <BookUser className="w-4 h-4 text-charcoal-500" strokeWidth={2}/>
+          </button>
+          {/* CSV Import */}
+          <button onClick={() => setImportOpen(true)}
+            className="w-9 h-9 rounded-2xl bg-white flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
+            style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }} title="ייבוא CSV">
             <Upload className="w-4 h-4 text-charcoal-500" strokeWidth={2}/>
+          </button>
+          {/* Group toggle */}
+          <button onClick={() => setGrouped(p => !p)}
+            className="w-9 h-9 rounded-2xl flex items-center justify-center active:scale-90 transition-all flex-shrink-0"
+            style={{ background: grouped ? '#1A1916' : 'white', boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }}
+            title="תצוגה לפי קבוצות">
+            {grouped
+              ? <Layers className="w-4 h-4 text-white" strokeWidth={2}/>
+              : <List className="w-4 h-4 text-charcoal-500" strokeWidth={2}/>}
           </button>
           {/* CSV Export */}
           {guests.length > 0 && (
-            <button
-              onClick={exportCSV}
+            <button onClick={exportCSV}
               className="w-9 h-9 rounded-2xl bg-white flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
-              style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }}
-              title="ייצוא CSV"
-            >
+              style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }} title="ייצוא CSV">
               <Download className="w-4 h-4 text-charcoal-500" strokeWidth={2}/>
             </button>
           )}
@@ -245,6 +314,30 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
             </button>
           )}
         </motion.div>
+      ) : groupedList ? (
+        <div className="space-y-5">
+          {groupedList.map(({ cat, guests: grp }) => {
+            const cf = categoryFilters.find(f => f.value === cat);
+            return (
+              <div key={cat}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: cf?.color }}/>
+                  <span className="text-[12px] font-bold text-charcoal-500 uppercase tracking-widest">{cf?.label}</span>
+                  <span className="text-[11px] text-charcoal-400 mr-1">
+                    {grp.length} · {grp.reduce((a,g)=>a+1+(g.companions||0),0)} אנשים
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {grp.map((g,i) => (
+                    <motion.div key={g.id} initial={{opacity:0,y:4}} animate={{opacity:1,y:0}} transition={{delay:i*0.02}}>
+                      <GuestCard guest={g} onEdit={onEditGuest} onDelete={onDeleteGuest} onView={onViewGuest}/>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
         <AnimatePresence>
           <div className="space-y-2">
@@ -264,6 +357,61 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
         onClose={() => setImportOpen(false)}
         onImported={() => { setImportOpen(false); onGuestsImported?.(); }}
       />
+
+      {/* Contacts review portal */}
+      {contacts.length > 0 && createPortal(
+        <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+          className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
+          style={{backdropFilter:'blur(4px)'}}>
+          <motion.div initial={{y:80,opacity:0}} animate={{y:0,opacity:1}}
+            transition={{type:'spring',stiffness:380,damping:32}}
+            className="bg-white w-full max-w-[430px] rounded-t-3xl flex flex-col"
+            style={{maxHeight:'85dvh',paddingBottom:'max(24px,env(safe-area-inset-bottom))'}}>
+            {/* Header */}
+            <div className="px-5 pt-5 pb-4 border-b border-charcoal-100 flex-shrink-0">
+              <div className="w-10 h-1 bg-charcoal-200 rounded-full mx-auto mb-4"/>
+              <div className="flex items-center justify-between">
+                <h3 className="text-[18px] font-bold text-charcoal-900">אנשי קשר ({contacts.length})</h3>
+                <button onClick={()=>setContacts([])}
+                  className="w-8 h-8 rounded-xl bg-charcoal-100 flex items-center justify-center active:scale-90 transition-transform">
+                  <X className="w-4 h-4 text-charcoal-600"/>
+                </button>
+              </div>
+              <p className="text-[12px] text-charcoal-400 mt-1">בחר קטגוריה לכל איש קשר</p>
+            </div>
+            {/* List */}
+            <div className="overflow-y-auto flex-1">
+              {contacts.map((c,idx) => (
+                <div key={idx} className={`flex items-center gap-3 px-4 py-3 ${idx<contacts.length-1?'border-b border-charcoal-100/60':''}`}>
+                  <div className="w-9 h-9 rounded-xl bg-charcoal-100 flex items-center justify-center text-[12px] font-bold text-charcoal-600 flex-shrink-0">
+                    {c.name.trim().split(/\s+/).map((w:string)=>w[0]).join('').slice(0,2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-semibold text-charcoal-900 truncate">{c.name}</p>
+                    <p className="text-[11px] text-charcoal-400" dir="ltr">{c.phone}</p>
+                  </div>
+                  <select
+                    value={c.category}
+                    onChange={e=>setContacts(prev=>prev.map((x,i)=>i===idx?{...x,category:e.target.value as Category}:x))}
+                    className="text-[12px] font-semibold bg-charcoal-50 px-2.5 py-1.5 rounded-xl focus:outline-none flex-shrink-0">
+                    {categoryFilters.filter(f=>f.value!=='ALL').map(f=>(
+                      <option key={f.value} value={f.value}>{f.label}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+            {/* Footer */}
+            <div className="px-4 pt-3 flex-shrink-0">
+              <button onClick={saveContacts} disabled={savingContacts}
+                className="w-full py-4 rounded-2xl bg-charcoal-900 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+                {savingContacts ? 'שומר...' : <><Check className="w-4 h-4"/> הוסף {contacts.length} אנשי קשר</>}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>,
+        document.body
+      )}
     </div>
   );
 };
