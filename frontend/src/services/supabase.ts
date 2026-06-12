@@ -370,7 +370,8 @@ export const rsvpService = {
       updated_at?: string | null;
     } | null
   ): string => {
-    const link = rsvpService.buildPersonalRsvpLink({ rsvp_token: token }) || `${window.location.origin}/rsvp/${token}`;
+    // Use /share/ so WhatsApp scrapes dynamic OG tags (cover image, event details)
+    const link = rsvpService.buildShareLink(token, ev);
     const eventName = (ev?.event_name && ev.event_name !== 'האירוע שלי') ? ev.event_name : 'האירוע שלנו';
     const lines: string[] = [`היי ${guestName} 👋`, '', `נשמח לראות אותך ב${eventName}`];
     if (ev?.event_date) {

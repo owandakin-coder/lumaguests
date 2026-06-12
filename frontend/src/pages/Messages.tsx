@@ -172,12 +172,13 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
         return;
       }
 
-      const rsvpLink = rsvpService.buildPersonalRsvpLink({ rsvp_token: token });
-      if (!rsvpLink) {
+      // Use /share/ link so WhatsApp preview shows the cover image via Vercel OG function
+      const shareLink = rsvpService.buildShareLink(token, event);
+      if (!shareLink) {
         window.alert('לא הצלחנו ליצור קישור RSVP אישי למוזמן הזה. נסה שוב.');
         return;
       }
-      const msg = buildGuestRsvpMessage(name, event, rsvpLink);
+      const msg = buildGuestRsvpMessage(name, event, shareLink);
       openWhatsAppUrl(buildGuestRsvpWhatsAppUrl(g.phone, msg));
       setSentIds(prev => new Set(prev).add(g.id));
       return;
@@ -195,7 +196,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
       }
     }
 
-    const link  = token ? rsvpService.buildLink(token) : null;
+    const link  = token ? rsvpService.buildShareLink(token, event) : null;
     const side  = sideLabel[g.category] ?? undefined;
     const msg   = activeTpl.build(name, link, side);
     openWhatsAppUrl(`https://wa.me/${toWaPhone(g.phone)}?text=${encodeURIComponent(msg)}`);
