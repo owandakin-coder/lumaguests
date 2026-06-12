@@ -6,7 +6,7 @@ import {
   X, ChevronDown, ChevronUp, Send, Search,
 } from 'lucide-react';
 import { Guest, RsvpStatus } from '../types';
-import { rsvpService, guestService } from '../services/supabase';
+import { rsvpService, guestService, toWaPhone } from '../services/supabase';
 import { useEvent } from '../hooks/useEvent';
 import {
   buildGuestRsvpMessage,
@@ -194,8 +194,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
     const link  = token ? rsvpService.buildLink(token) : null;
     const side  = sideLabel[g.category] ?? undefined;
     const msg   = activeTpl.build(name, link, side);
-    const phone = g.phone.replace(/\D/g, '');
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    window.open(`https://wa.me/${toWaPhone(g.phone)}?text=${encodeURIComponent(msg)}`, '_blank');
     setSentIds(prev => new Set(prev).add(g.id));
   };
 

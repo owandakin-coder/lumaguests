@@ -242,6 +242,15 @@ export const eventService = {
     `${window.location.origin}/event/${slug}`,
 };
 
+// Converts any Israeli phone to international format for wa.me links.
+// 05X-XXXXXXX → 9725XXXXXXX  |  already international → unchanged
+export function toWaPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('972')) return digits;          // already international
+  if (digits.startsWith('0'))   return '972' + digits.slice(1); // local → international
+  return digits;
+}
+
 // ── RSVP Magic Link Service ───────────────────────────────────
 export const rsvpService = {
   generateToken: (): string => crypto.randomUUID(),
@@ -317,7 +326,7 @@ export const rsvpService = {
     }
     if (ev?.venue_name) lines.push(`📍 ${ev.venue_name}`);
     lines.push('', 'לאישור הגעה:', link, '', 'תודה ❤️');
-    return `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(lines.join('\n'))}`;
+    return `https://wa.me/${toWaPhone(phone)}?text=${encodeURIComponent(lines.join('\n'))}`;
   },
 };
 

@@ -1,4 +1,5 @@
 import { Event } from '../types';
+import { toWaPhone } from '../services/supabase';
 
 export const PUBLIC_RSVP_ERROR =
   'יש להפעיל RSVP ציבורי ולהגדיר קישור אירוע לפני שליחת הודעה.';
@@ -68,7 +69,7 @@ export const buildPublicRsvpMessage = (guestName: string, event: Event) => {
 };
 
 export const buildPublicRsvpWhatsAppUrl = (phone: string, message: string) =>
-  `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+  `https://wa.me/${toWaPhone(phone)}?text=${encodeURIComponent(message)}`;
 
 export const buildGuestRsvpMessage = (
   guestName: string,
@@ -94,4 +95,4 @@ export const buildGuestRsvpMessage = (
 };
 
 export const buildGuestRsvpWhatsAppUrl = (phone: string, message: string) =>
-  `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+  `https://wa.me/${toWaPhone(phone)}?text=${encodeURIComponent(message)}`;

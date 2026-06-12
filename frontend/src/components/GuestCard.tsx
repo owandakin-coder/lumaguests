@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Phone, MessageCircle, Link } from 'lucide-react';
 import { Guest, RsvpStatus, Event } from '../types';
-import { rsvpService } from '../services/supabase';
+import { rsvpService, toWaPhone } from '../services/supabase';
 
 interface GuestCardProps {
   guest: Guest;
@@ -89,7 +89,7 @@ export const GuestCard = ({ guest, onView, event }: GuestCardProps) => {
     const token = guest.rsvp_token;
     const url = token
       ? rsvpService.buildWhatsAppUrl(guest.phone, name, token, event)
-      : `https://wa.me/${guest.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`שלום ${name}! רצינו ליצור איתך קשר לגבי האירוע.`)}`;
+      : `https://wa.me/${toWaPhone(guest.phone)}?text=${encodeURIComponent(`שלום ${name}! רצינו ליצור איתך קשר לגבי האירוע.`)}`;
     window.open(url, '_blank');
   };
 
