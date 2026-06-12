@@ -44,7 +44,7 @@ export const Register = ({ onSuccess, onSwitchToLogin, onRegister }: RegisterPro
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.4 }}
           className="mx-auto mb-3"
-          style={{ width: 220, height: 'auto' }}
+          style={{ width: 240, height: 'auto', mixBlendMode: 'screen' }}
         />
         <motion.p
           initial={{ opacity: 0 }}
