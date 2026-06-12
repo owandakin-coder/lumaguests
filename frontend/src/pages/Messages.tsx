@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageCircle, CheckSquare, Square, Users,
@@ -408,7 +409,8 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
       )}
 
       {/* Send queue bottom sheet */}
-      <AnimatePresence>
+      {createPortal(
+        <AnimatePresence>
         {showQueue && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -424,7 +426,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
               className="bg-white w-full max-w-[430px] rounded-t-3xl flex flex-col"
               style={{
                 maxHeight: '85dvh',
-                paddingBottom: 'env(safe-area-inset-bottom)',
+                paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
               }}
             >
               {/* Handle + header */}
@@ -456,7 +458,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
               </div>
 
               {/* Guest list in queue — fills remaining space, scrollable */}
-              <div className="overflow-y-auto flex-1">
+              <div className="overflow-y-auto flex-1 min-h-[180px]">
                 {selectedList.map((g, idx) => {
                   const name  = g.fullName || g.full_name;
                   const sent  = sentIds.has(g.id);
@@ -506,7 +508,9 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };
