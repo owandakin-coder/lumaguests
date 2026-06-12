@@ -17,6 +17,7 @@ import { useToast }           from './hooks/useToast';
 import { useSupabaseAuth }    from './hooks/useSupabaseAuth';
 import { Guest }              from './types';
 import { guestService, authService, supabase } from './services/supabase';
+import { useEvent } from './hooks/useEvent';
 
 type Page     = 'dashboard' | 'guests' | 'add' | 'edit' | 'details' | 'settings' | 'messages';
 type AuthPage = 'login' | 'register';
@@ -31,7 +32,8 @@ function App() {
   const [deletingGuest,setDeletingGuest]= useState<Guest | null>(null);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
-  const auth = useSupabaseAuth();
+  const auth  = useSupabaseAuth();
+  const { event, update: updateEvent } = useEvent();
 
   useEffect(() => {
     if (auth.isAuthenticated && !auth.isLoading && auth.user) {
@@ -196,7 +198,14 @@ function App() {
           />
         ) : null;
       case 'settings':
-        return <Settings onLogout={handleLogout} userEmail={auth.user?.email} />;
+        return (
+          <Settings
+            onLogout={handleLogout}
+            userEmail={auth.user?.email}
+            event={event}
+            onEventUpdate={updateEvent}
+          />
+        );
       default:
         return null;
     }

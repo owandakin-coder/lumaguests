@@ -4,18 +4,23 @@ import {
   Shield, Palette, HelpCircle, FileText,
   LogOut, ChevronLeft, Trash2, Info, Bell, Globe, Star,
   X, Eye, EyeOff, Mail, Lock, MessageCircle, Check, CalendarDays,
+  MapPin, Link2, Share2, ToggleLeft, ToggleRight, AlignLeft,
 } from 'lucide-react';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
-import { guestService, authService } from '../services/supabase';
+import { guestService, authService, eventService } from '../services/supabase';
+import { Event } from '../types';
 
 interface SettingsProps {
   onLogout: () => void;
   userEmail?: string;
+  event?: Event | null;
+  onEventUpdate?: (updates: Partial<Event>) => Promise<Event | undefined>;
 }
 
 type ModalType =
   | 'email' | 'password' | 'notifications' | 'theme' | 'language'
-  | 'eventName' | 'eventDate' | 'help' | 'contact' | 'terms' | 'privacy' | null;
+  | 'eventName' | 'eventDate' | 'eventVenue' | 'eventDesc' | 'eventSlug' | 'eventShare'
+  | 'help' | 'contact' | 'terms' | 'privacy' | null;
 
 const EVENT_KEY      = 'luma_event_name';
 const EVENT_DATE_KEY = 'luma_event_date';
@@ -64,17 +69,25 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
 const inputCls = 'w-full px-4 py-3.5 rounded-2xl bg-charcoal-50 text-[14px] text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-charcoal-200 transition';
 
 // ── Main component ─────────────────────────────────────────────
-export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
+export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: SettingsProps) => {
   const auth = useSupabaseAuth();
 
   const [activeModal, setActiveModal]     = useState<ModalType>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [eventName, setEventName] = useState(() => localStorage.getItem(EVENT_KEY) || 'האירוע שלי');
-  const [eventDate, setEventDate] = useState(() => localStorage.getItem(EVENT_DATE_KEY) || '');
   const [notifPerm, setNotifPerm] = useState<NotificationPermission>('default');
+  const [copied, setCopied]       = useState(false);
 
-  const [f, setF] = useState({ email: '', password: '', confirm: '', event: '', eventDate: '' });
+  // Derive display values from event prop (fall back to localStorage)
+  const eventName = event?.event_name || localStorage.getItem(EVENT_KEY) || 'האירוע שלי';
+  const eventDateRaw = event?.event_date
+    ? event.event_date.split('T')[0]
+    : (localStorage.getItem(EVENT_DATE_KEY) || '');
+
+  const [f, setF] = useState({
+    email: '', password: '', confirm: '',
+    event: '', eventDate: '', venue: '', venueAddr: '', desc: '', slug: '',
+  });
   const [showPass, setShowPass] = useState(false);
   const [busy, setBusy]     = useState(false);
   const [err, setErr]       = useState('');
@@ -85,7 +98,15 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
   }, []);
 
   const open = (m: ModalType) => {
-    setF({ email: '', password: '', confirm: '', event: eventName, eventDate: eventDate });
+    setF({
+      email: '', password: '', confirm: '',
+      event:     eventName,
+      eventDate: eventDateRaw,
+      venue:     event?.venue_name    || '',
+      venueAddr: event?.venue_address || '',
+      desc:      event?.description   || '',
+      slug:      event?.public_slug   || '',
+    });
     setErr(''); setOk(''); setShowPass(false); setActiveModal(m);
   };
   const close = () => setActiveModal(null);
@@ -112,25 +133,55 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
     finally { setBusy(false); }
   };
 
-  const saveEventName = () => {
-    const name = f.event.trim() || 'האירוע שלי';
-    localStorage.setItem(EVENT_KEY, name);
-    setEventName(name);
-    setOk('שם האירוע עודכן');
-    setTimeout(close, 900);
+  const saveField = async (updates: Parameters<NonNullable<typeof onEventUpdate>>[0], msg: string) => {
+    try {
+      setBusy(true); setErr('');
+      if (onEventUpdate) await onEventUpdate(updates);
+      else {
+        // fallback: localStorage only
+        if (updates.event_name !== undefined) localStorage.setItem(EVENT_KEY, updates.event_name || '');
+        if (updates.event_date !== undefined) {
+          if (updates.event_date) localStorage.setItem(EVENT_DATE_KEY, updates.event_date.split('T')[0]);
+          else localStorage.removeItem(EVENT_DATE_KEY);
+        }
+      }
+      setOk(msg);
+      setTimeout(close, 900);
+    } catch (e: any) { setErr(e?.message || 'שגיאה בשמירה'); }
+    finally { setBusy(false); }
   };
 
-  const saveEventDate = () => {
-    if (f.eventDate) {
-      localStorage.setItem(EVENT_DATE_KEY, f.eventDate);
-      setEventDate(f.eventDate);
-      setOk('תאריך האירוע נשמר');
-    } else {
-      localStorage.removeItem(EVENT_DATE_KEY);
-      setEventDate('');
-      setOk('תאריך האירוע נמחק');
-    }
-    setTimeout(close, 900);
+  const saveEventName = () => saveField({ event_name: f.event.trim() || 'האירוע שלי' }, 'שם האירוע עודכן');
+  const saveEventDate = () => saveField({ event_date: f.eventDate || null }, f.eventDate ? 'תאריך האירוע נשמר' : 'תאריך האירוע נמחק');
+  const saveVenue     = () => saveField({ venue_name: f.venue.trim() || null, venue_address: f.venueAddr.trim() || null }, 'מיקום האירוע נשמר');
+  const saveDesc      = () => saveField({ description: f.desc.trim() || null }, 'תיאור נשמר');
+
+  const saveSlug = async () => {
+    const slug = f.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    if (!slug) { setErr('יש להזין כינוי תקין'); return; }
+    await saveField({ public_slug: slug }, 'הקישור עודכן');
+  };
+
+  const togglePublic = async () => {
+    if (!onEventUpdate) return;
+    try {
+      await onEventUpdate({ is_public: !event?.is_public });
+    } catch { /* silent */ }
+  };
+
+  const copyPublicLink = async () => {
+    if (!event?.public_slug) return;
+    const url = eventService.buildPublicUrl(event.public_slug);
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const sharePublicLink = () => {
+    if (!event?.public_slug) return;
+    const url  = eventService.buildPublicUrl(event.public_slug);
+    const msg  = `הוזמנת ל${eventName}! לאישור הגעה:\n${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   const requestNotifications = async () => {
@@ -157,13 +208,17 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
   const email   = userEmail || auth.user?.email || '';
   const initial = email ? email[0].toUpperCase() : 'U';
 
-  const eventDateDisplay = eventDate
-    ? new Date(eventDate).toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' })
+  const eventDateDisplay = eventDateRaw
+    ? new Date(eventDateRaw).toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' })
     : 'לא הוגדר';
 
   const notifLabel =
     notifPerm === 'granted' ? 'פעיל' :
     notifPerm === 'denied'  ? 'חסום' : 'כבוי';
+
+  const publicUrl = event?.public_slug
+    ? eventService.buildPublicUrl(event.public_slug)
+    : null;
 
   const sections = [
     {
@@ -175,11 +230,21 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
       ],
     },
     {
-      title: 'אירוע',
+      title: 'פרטי האירוע',
       rows: [
-        { icon: Star,        label: 'שם האירוע',      value: eventName,         action: () => open('eventName') },
-        { icon: CalendarDays,label: 'תאריך האירוע',   value: eventDateDisplay,  action: () => open('eventDate') },
-        { icon: Info,        label: 'גרסה',            value: '1.0.0',           action: null },
+        { icon: Star,        label: 'שם האירוע',    value: eventName,                     action: () => open('eventName') },
+        { icon: CalendarDays,label: 'תאריך',         value: eventDateDisplay,              action: () => open('eventDate') },
+        { icon: MapPin,      label: 'מיקום',         value: event?.venue_name || 'לא הוגדר', action: () => open('eventVenue') },
+        { icon: AlignLeft,   label: 'תיאור',         value: event?.description ? event.description.substring(0, 22) + (event.description.length > 22 ? '…' : '') : 'לא הוגדר', action: () => open('eventDesc') },
+        { icon: Info,        label: 'גרסה',          value: '1.0.0',                       action: null },
+      ],
+    },
+    {
+      title: 'RSVP ציבורי',
+      rows: [
+        { icon: event?.is_public ? ToggleRight : ToggleLeft, label: 'RSVP ציבורי', value: event?.is_public ? 'פעיל ✓' : 'כבוי', action: togglePublic, activeColor: event?.is_public ? '#10B981' : undefined },
+        { icon: Link2,  label: 'קישור האירוע', value: event?.public_slug || 'לא הוגדר', action: () => open('eventSlug') },
+        { icon: Share2, label: 'שיתוף',        value: null,                            action: () => open('eventShare') },
       ],
     },
     {
@@ -268,11 +333,18 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
                 }`}
               >
                 <div className="w-8 h-8 rounded-xl bg-charcoal-50 flex items-center justify-center flex-shrink-0">
-                  <row.icon className="w-4 h-4 text-charcoal-500" strokeWidth={1.8} />
+                  <row.icon
+                    className="w-4 h-4"
+                    style={{ color: (row as any).activeColor || '#6E6862' }}
+                    strokeWidth={1.8}
+                  />
                 </div>
                 <span className="flex-1 text-[14px] font-semibold text-charcoal-900">{row.label}</span>
                 {row.value && (
-                  <span className="text-[12px] text-charcoal-400 truncate max-w-[130px]">{row.value}</span>
+                  <span
+                    className="text-[12px] truncate max-w-[130px]"
+                    style={{ color: (row as any).activeColor || '#9CA3AF' }}
+                  >{row.value}</span>
                 )}
                 {row.action && <ChevronLeft className="w-4 h-4 text-charcoal-300 flex-shrink-0" />}
               </button>
@@ -550,6 +622,104 @@ export const Settings = ({ onLogout, userEmail }: SettingsProps) => {
           </p>
           <Status />
           <Btn onPress={saveEventDate} label="שמור תאריך" />
+        </div>
+      </Sheet>
+
+      {/* Venue */}
+      <Sheet open={activeModal === 'eventVenue'} onClose={close} title="מיקום האירוע">
+        <div className="space-y-4">
+          <Field label="שם המקום">
+            <input value={f.venue} onChange={e => { setF(p => ({ ...p, venue: e.target.value })); setErr(''); }}
+              placeholder="לדוגמה: אולמי הגן" className={inputCls} />
+          </Field>
+          <Field label="כתובת">
+            <input value={f.venueAddr} onChange={e => { setF(p => ({ ...p, venueAddr: e.target.value })); setErr(''); }}
+              placeholder="לדוגמה: רחוב הפרחים 5, תל אביב" className={inputCls} />
+          </Field>
+          <Status />
+          <Btn onPress={saveVenue} label="שמור מיקום" />
+        </div>
+      </Sheet>
+
+      {/* Description */}
+      <Sheet open={activeModal === 'eventDesc'} onClose={close} title="תיאור האירוע">
+        <div className="space-y-4">
+          <Field label="תיאור">
+            <textarea value={f.desc}
+              onChange={e => { setF(p => ({ ...p, desc: e.target.value })); setErr(''); }}
+              placeholder="תיאור קצר שיופיע בדף ה-RSVP הציבורי..."
+              rows={4}
+              className={`${inputCls} resize-none`}
+            />
+          </Field>
+          <p className="text-[12px] text-charcoal-400">יוצג לאורחים בדף ה-RSVP הציבורי.</p>
+          <Status />
+          <Btn onPress={saveDesc} label="שמור תיאור" />
+        </div>
+      </Sheet>
+
+      {/* Slug / Public link */}
+      <Sheet open={activeModal === 'eventSlug'} onClose={close} title="קישור האירוע">
+        <div className="space-y-4">
+          <Field label="כינוי (באנגלית בלבד)">
+            <div className="flex items-center bg-charcoal-50 rounded-2xl overflow-hidden">
+              <span className="text-[12px] text-charcoal-400 px-3 flex-shrink-0 border-l border-charcoal-200 py-3.5 leading-none" dir="ltr">
+                /event/
+              </span>
+              <input value={f.slug}
+                onChange={e => { setF(p => ({ ...p, slug: e.target.value })); setErr(''); }}
+                placeholder="dan-and-maya"
+                dir="ltr"
+                className="flex-1 px-3 py-3.5 bg-transparent text-[14px] text-charcoal-900 focus:outline-none"
+              />
+            </div>
+          </Field>
+          <p className="text-[12px] text-charcoal-400 leading-relaxed">
+            באנגלית, מספרים ומקפים בלבד. לדוגמה: <span className="font-mono text-charcoal-600">dan-and-maya</span>
+          </p>
+          <Status />
+          <Btn onPress={saveSlug} label="שמור קישור" />
+        </div>
+      </Sheet>
+
+      {/* Share */}
+      <Sheet open={activeModal === 'eventShare'} onClose={close} title="שיתוף האירוע">
+        <div className="space-y-4">
+          {!event?.is_public ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+              <p className="text-[13px] text-amber-800 font-semibold mb-1">RSVP ציבורי כבוי</p>
+              <p className="text-[12px] text-amber-700 leading-relaxed">
+                הפעל את RSVP ציבורי מהגדרות האירוע כדי לאפשר לאורחים להירשם.
+              </p>
+            </div>
+          ) : (
+            <>
+              {publicUrl && (
+                <div className="bg-charcoal-50 rounded-2xl p-3 flex items-center gap-2">
+                  <p className="flex-1 text-[12px] text-charcoal-600 font-mono truncate" dir="ltr">{publicUrl}</p>
+                  <button onClick={copyPublicLink}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-charcoal-900 text-white text-[11px] font-bold flex-shrink-0 active:scale-95 transition-transform">
+                    {copied ? '✓' : <Link2 className="w-3 h-3" />}
+                    {copied ? 'הועתק' : 'העתק'}
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={sharePublicLink}
+                className="w-full flex items-center gap-3 p-4 rounded-2xl active:scale-[0.98] transition-transform"
+                style={{ background: 'rgba(16,185,129,0.1)' }}
+              >
+                <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center flex-shrink-0">
+                  <MessageCircle className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-right">
+                  <p className="text-[14px] font-bold text-charcoal-900">שתף ב-WhatsApp</p>
+                  <p className="text-[12px] text-charcoal-500">שלח קישור לכל הקבוצות</p>
+                </div>
+              </button>
+            </>
+          )}
         </div>
       </Sheet>
 

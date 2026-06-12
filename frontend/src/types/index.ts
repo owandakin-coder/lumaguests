@@ -76,3 +76,32 @@ export interface RsvpResponse {
   status?: string;
   error?: string;
 }
+
+// ── Event ────────────────────────────────────────────────────
+export interface Event {
+  id: string;
+  owner_user_id: string;
+  event_name: string;
+  event_date: string | null;
+  venue_name: string | null;
+  venue_address: string | null;
+  description: string | null;
+  cover_image_url: string | null;
+  public_slug: string | null;
+  is_public: boolean;
+  theme_color: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PublicEventData {
+  id: string;
+  event_name: string;
+  event_date: string | null;
+  venue_name: string | null;
+  venue_address: string | null;
+  description: string | null;
+  cover_image_url: string | null;
+  theme_color: string;
+  owner_user_id: string;
+}

@@ -169,6 +169,69 @@ export const guestService = {
   },
 };
 
+// ── Event Service ────────────────────────────────────────────
+export const eventService = {
+  getOrCreate: async (userId: string) => {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('owner_user_id', userId)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (data) return data as import('../types').Event;
+    if (error && error.code !== 'PGRST116') throw error;
+
+    // No event yet — create one with a random slug
+    const slug = 'event-' + Math.random().toString(36).substring(2, 9);
+    const { data: created, error: ce } = await supabase
+      .from('events')
+      .insert({ owner_user_id: userId, event_name: 'האירוע שלי', public_slug: slug })
+      .select()
+      .single();
+    if (ce) throw ce;
+    return created as import('../types').Event;
+  },
+
+  update: async (id: string, updates: Partial<import('../types').Event>) => {
+    const { data, error } = await supabase
+      .from('events')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as import('../types').Event;
+  },
+
+  getBySlug: async (slug: string): Promise<import('../types').PublicEventData | null> => {
+    const { data, error } = await supabase.rpc('get_public_event', { p_slug: slug });
+    if (error) throw error;
+    if (!data?.success) return null;
+    return data.event as import('../types').PublicEventData;
+  },
+
+  publicRegister: async (
+    slug: string, fullName: string, phone: string,
+    status: string, companions: number, note?: string
+  ) => {
+    const { data, error } = await supabase.rpc('public_rsvp_register', {
+      p_slug:       slug,
+      p_full_name:  fullName,
+      p_phone:      phone,
+      p_status:     status,
+      p_companions: companions,
+      p_note:       note ?? null,
+    });
+    if (error) throw error;
+    return data as { success: boolean; guest_name?: string; status?: string; error?: string };
+  },
+
+  buildPublicUrl: (slug: string): string =>
+    `${window.location.origin}/event/${slug}`,
+};
+
 // ── RSVP Magic Link Service ───────────────────────────────────
 export const rsvpService = {
   generateToken: (): string => crypto.randomUUID(),
