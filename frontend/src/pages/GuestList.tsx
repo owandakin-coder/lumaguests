@@ -291,6 +291,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
       <ImportGuestsModal
         open={importOpen}
         userId={userId}
+        eventId={event?.id || ''}
         onClose={() => setImportOpen(false)}
         onImported={() => { setImportOpen(false); onGuestsImported?.(); }}
       />

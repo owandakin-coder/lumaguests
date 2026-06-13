@@ -3,6 +3,7 @@ import { GuestForm } from '../components/GuestForm';
 import { Guest, CreateGuestInput } from '../types';
 import { guestService } from '../services/supabase';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { useEvent } from '../hooks/useEvent';
 
 interface EditGuestProps {
   guestId: string;
@@ -14,33 +15,51 @@ export const EditGuest = ({ guestId, onSuccess, onCancel }: EditGuestProps) => {
   const [guest, setGuest] = useState<Guest | null>(null);
   const [loading, setLoading] = useState(true);
   const auth = useSupabaseAuth();
+  const { event } = useEvent();
 
   useEffect(() => {
-    if (auth.user) loadGuest();
-  }, [guestId, auth.user?.id]);
+    if (auth.user && event?.id) {
+      void loadGuest();
+    }
+  }, [auth.user, event?.id, guestId]);
 
   const loadGuest = async () => {
-    if (!auth.user) return;
+    if (!auth.user || !event?.id) return;
+
     try {
       setLoading(true);
-      const data = await guestService.getById(guestId, auth.user.id);
+      const data = await guestService.getById(guestId, auth.user.id, event.id);
       setGuest(data);
-    } catch { /* silent */ }
-    finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (data: CreateGuestInput) => {
-    if (!auth.user) throw new Error('לא מחובר');
+    if (!auth.user || !event?.id) {
+      throw new Error('לא מחובר');
+    }
 
-    if (guest && data.phone !== guest.phone) {
-      const hasDuplicate = await guestService.checkDuplicatePhone(data.phone, auth.user.id, guestId);
-      if (hasDuplicate) throw new Error('מוזמן עם מספר טלפון זה כבר קיים');
+    if (guest && data.phone.trim() !== guest.phone) {
+      const hasDuplicate = await guestService.checkDuplicatePhone(data.phone.trim(), auth.user.id, event.id, guestId);
+      if (hasDuplicate) {
+        throw new Error('מוזמן עם מספר טלפון זה כבר קיים');
+      }
     }
 
     await guestService.update(
       guestId,
-      { full_name: data.fullName, phone: data.phone, companions: data.companions, category: data.category, rsvp_status: data.rsvpStatus, notes: data.notes },
-      auth.user.id
+      {
+        full_name: data.fullName.trim(),
+        phone: data.phone.trim(),
+        companions: data.companions,
+        side: data.side ?? null,
+        category: data.category,
+        rsvp_status: data.rsvpStatus,
+        notes: data.notes?.trim() || null,
+      },
+      auth.user.id,
+      event.id
     );
 
     onSuccess();

@@ -16,13 +16,18 @@ interface SettingsProps {
   onLogout: () => void;
   userEmail?: string;
   event?: Event | null;
+  events?: Event[];
+  archivedEvents?: Event[];
   onEventUpdate?: (updates: Partial<Event>) => Promise<Event | undefined>;
+  onCreateEvent?: (name?: string) => Promise<Event>;
+  onActivateEvent?: (eventId: string) => Promise<Event>;
+  onArchiveEvent?: (eventId: string) => Promise<Event>;
 }
 
 type ModalType =
   | 'email' | 'password' | 'notifications' | 'theme' | 'language'
   | 'eventName' | 'eventDate' | 'eventVenue' | 'eventDesc' | 'eventSlug' | 'eventShare' | 'eventCover'
-  | 'help' | 'contact' | 'terms' | 'privacy' | null;
+  | 'events' | 'help' | 'contact' | 'terms' | 'privacy' | null;
 
 const EVENT_KEY      = 'luma_event_name';
 const EVENT_DATE_KEY = 'luma_event_date';
@@ -76,7 +81,17 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
 const inputCls = 'w-full px-4 py-3.5 rounded-2xl bg-charcoal-50 text-[14px] text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-charcoal-200 transition';
 
 // ── Main component ─────────────────────────────────────────────
-export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: SettingsProps) => {
+export const Settings = ({
+  onLogout,
+  userEmail,
+  event,
+  events = [],
+  archivedEvents = [],
+  onEventUpdate,
+  onCreateEvent,
+  onActivateEvent,
+  onArchiveEvent,
+}: SettingsProps) => {
   const auth = useSupabaseAuth();
 
   const [activeModal, setActiveModal]     = useState<ModalType>(null);
@@ -106,6 +121,9 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
   const [busy, setBusy]     = useState(false);
   const [err, setErr]       = useState('');
   const [ok, setOk]         = useState('');
+  const [creatingEvent, setCreatingEvent] = useState(false);
+
+  const activeEvents = events.filter(item => !item.archived_at);
 
   useEffect(() => {
     if ('Notification' in window) setNotifPerm(Notification.permission);
@@ -294,6 +312,51 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
     openWhatsAppUrl(`https://wa.me/?text=${encodeURIComponent(msg)}`);
   };
 
+  const createAnotherEvent = async () => {
+    if (!onCreateEvent) return;
+    try {
+      setCreatingEvent(true);
+      setErr('');
+      await onCreateEvent();
+      setOk('אירוע חדש נוצר והוגדר כאירוע הפעיל');
+      setTimeout(close, 900);
+    } catch (e: any) {
+      setErr(e?.message || 'לא הצלחנו ליצור אירוע חדש');
+    } finally {
+      setCreatingEvent(false);
+    }
+  };
+
+  const switchToEvent = async (eventId: string) => {
+    if (!onActivateEvent) return;
+    try {
+      setBusy(true);
+      setErr('');
+      await onActivateEvent(eventId);
+      setOk('האירוע הפעיל הוחלף');
+      setTimeout(close, 900);
+    } catch (e: any) {
+      setErr(e?.message || 'לא הצלחנו לעבור לאירוע הזה');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const archiveCurrentEvent = async () => {
+    if (!onArchiveEvent || !event?.id) return;
+    try {
+      setBusy(true);
+      setErr('');
+      await onArchiveEvent(event.id);
+      setOk('האירוע הועבר לארכיון');
+      setTimeout(close, 900);
+    } catch (e: any) {
+      setErr(e?.message || 'לא הצלחנו להעביר את האירוע לארכיון');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const requestNotifications = async () => {
     if (!('Notification' in window)) { setErr('הדפדפן לא תומך בהתראות'); return; }
     const perm = await Notification.requestPermission();
@@ -429,6 +492,24 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
           <p className="text-[12px] text-charcoal-400 mt-0.5">{eventName} ✦</p>
         </div>
       </div>
+
+      <button
+        onClick={() => open('events')}
+        className="w-full bg-white rounded-3xl p-4 text-right active:scale-[0.99] transition-transform"
+        style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-charcoal-900/6 flex items-center justify-center flex-shrink-0">
+            <CalendarDays className="w-5 h-5 text-charcoal-700" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[15px] font-bold text-charcoal-900">ניהול אירועים</p>
+            <p className="text-[12px] text-charcoal-400 mt-0.5">אירוע פעיל: {eventName}</p>
+            <p className="text-[12px] text-charcoal-400">{archivedEvents.length} אירועים בארכיון</p>
+          </div>
+          <ChevronLeft className="w-4 h-4 text-charcoal-300 flex-shrink-0" />
+        </div>
+      </button>
 
       {/* Sections */}
       {sections.map((section) => (
@@ -611,6 +692,68 @@ export const Settings = ({ onLogout, userEmail, event, onEventUpdate }: Settings
               {l.active && <Check className="w-5 h-5 text-charcoal-900" />}
             </div>
           ))}
+        </div>
+      </Sheet>
+
+      <Sheet open={activeModal === 'events'} onClose={close} title="ניהול אירועים">
+        <div className="space-y-4">
+          <div className="rounded-2xl bg-charcoal-50 p-4">
+            <p className="text-[12px] font-bold text-charcoal-400 mb-1">האירוע הפעיל</p>
+            <p className="text-[16px] font-bold text-charcoal-900">{eventName}</p>
+            <p className="text-[12px] text-charcoal-500 mt-1">
+              {eventDateDisplay} {event?.venue_name ? `· ${event.venue_name}` : ''}
+            </p>
+          </div>
+
+          <button
+            onClick={createAnotherEvent}
+            disabled={creatingEvent}
+            className="w-full py-4 rounded-2xl bg-charcoal-900 text-white text-[14px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+          >
+            {creatingEvent ? 'יוצר אירוע...' : 'צור אירוע חדש'}
+          </button>
+
+          {activeEvents.length === 1 && (
+            <button
+              onClick={archiveCurrentEvent}
+              disabled={busy}
+              className="w-full py-3 rounded-2xl border border-charcoal-200 text-charcoal-700 text-[13px] font-semibold disabled:opacity-50 active:scale-[0.98] transition-transform"
+            >
+              {busy ? 'מעביר לארכיון...' : 'העבר את האירוע הפעיל לארכיון'}
+            </button>
+          )}
+
+          {archivedEvents.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[12px] font-bold text-charcoal-400">ארכיון אירועים</p>
+              {archivedEvents.map((archivedEvent) => (
+                <div
+                  key={archivedEvent.id}
+                  className="rounded-2xl border border-charcoal-100 bg-white px-4 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-bold text-charcoal-900 truncate">{archivedEvent.event_name}</p>
+                      <p className="text-[12px] text-charcoal-400 mt-1">
+                        {archivedEvent.event_date
+                          ? new Date(archivedEvent.event_date).toLocaleDateString('he-IL')
+                          : 'ללא תאריך'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => switchToEvent(archivedEvent.id)}
+                      disabled={busy}
+                      className="px-3 py-2 rounded-xl bg-charcoal-900 text-white text-[12px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+                    >
+                      הפוך לפעיל
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Status />
         </div>
       </Sheet>
 

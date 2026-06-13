@@ -5,6 +5,7 @@ export type RsvpStatus = 'PENDING' | 'CONFIRMED' | 'DECLINED';
 export interface Guest {
   id: string;
   user_id?: string;
+  event_id?: string;
   fullName?: string;
   full_name: string;
   phone: string;
@@ -67,6 +68,7 @@ export interface Toast {
 
 export interface RsvpPublicGuest {
   id: string;
+  event_id?: string;
   full_name: string;
   rsvp_status: RsvpStatus;
   companions: number;
@@ -99,6 +101,7 @@ export interface Event {
   public_slug: string | null;
   is_public: boolean;
   public_rsvp_enabled?: boolean | null;
+  archived_at?: string | null;
   theme_color: string;
   created_at: string;
   updated_at: string;
@@ -106,6 +109,7 @@ export interface Event {
 
 export interface PublicEventData {
   id: string;
+  owner_user_id: string;
   event_name: string;
   event_date: string | null;
   venue_name: string | null;
@@ -113,5 +117,5 @@ export interface PublicEventData {
   description: string | null;
   cover_image_url: string | null;
   theme_color: string;
-  owner_user_id: string;
+  archived_at?: string | null;
 }

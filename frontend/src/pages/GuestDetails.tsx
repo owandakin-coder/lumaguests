@@ -53,13 +53,13 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
   const [copied, setCopied]   = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const auth = useSupabaseAuth();
-  const { event, loading: eventLoading } = useEvent();
+  const { event } = useEvent();
 
-  useEffect(() => { if (auth.user) load(); }, [guestId, auth.user]);
+  useEffect(() => { if (auth.user && event?.id) load(); }, [guestId, auth.user, event?.id]);
 
   const load = async () => {
-    if (!auth.user) return;
-    try { setLoading(true); setGuest(await guestService.getById(guestId, auth.user.id)); }
+    if (!auth.user || !event?.id) return;
+    try { setLoading(true); setGuest(await guestService.getById(guestId, auth.user.id, event.id)); }
     catch { /* silent */ } finally { setLoading(false); }
   };
 
@@ -104,7 +104,7 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
     const token = rsvpService.generateToken();
 
     try {
-      await guestService.update(guest.id, { rsvp_token: token }, auth.user.id);
+      await guestService.update(guest.id, { rsvp_token: token }, auth.user.id, event?.id);
       setGuest((prev) => (prev ? { ...prev, rsvp_token: token } : prev));
       return token;
     } catch {
@@ -336,7 +336,7 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
         open={shareOpen}
         guest={guest}
         event={event}
-        isLoading={eventLoading}
+        isLoading={false}
         onClose={() => setShareOpen(false)}
       />
 

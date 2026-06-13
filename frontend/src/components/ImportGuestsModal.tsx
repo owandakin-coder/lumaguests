@@ -15,6 +15,7 @@ interface ImportGuestsModalProps {
   onClose: () => void;
   onImported: () => void;
   userId: string;
+  eventId: string;
 }
 
 type ImportStep = 'upload' | 'contacts-review' | 'map' | 'preview' | 'importing' | 'done';
@@ -152,7 +153,7 @@ const sideLabel: Record<Side, string> = {
 };
 
 // ── Component ─────────────────────────────────────────────────
-export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportGuestsModalProps) => {
+export const ImportGuestsModal = ({ open, onClose, onImported, userId, eventId }: ImportGuestsModalProps) => {
 
   const [step, setStep]         = useState<ImportStep>('upload');
   const [dragging, setDragging] = useState(false);
@@ -183,15 +184,16 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
   };
 
   const saveContacts = async () => {
-    if (!contacts.length || !userId) return;
+    if (!contacts.length || !userId || !eventId) return;
     setSavingContacts(true);
     try {
-      const { data: existing } = await supabase.from('guests').select('phone').eq('user_id', userId);
+      const { data: existing } = await supabase.from('guests').select('phone').eq('user_id', userId).eq('event_id', eventId);
       const existingPhones = new Set((existing ?? []).map((g: any) => normalizePhone(g.phone)));
       const toInsert = contacts
         .filter(c => !existingPhones.has(normalizePhone(c.phone)))
         .map(c => ({
           user_id: userId, full_name: c.name, phone: c.phone,
+          event_id: eventId,
           rsvp_status: 'PENDING', companions: 0,
           side: c.side ?? null, category: c.category,
           rsvp_token: rsvpService.generateToken(),
@@ -274,7 +276,7 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
   };
 
   const doImport = async () => {
-    if (!userId) return;
+    if (!userId || !eventId) return;
     setStep('importing');
     setProgress(0);
 
@@ -286,7 +288,8 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
       const { data: existing } = await supabase
         .from('guests')
         .select('phone')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .eq('event_id', eventId);
       const existingPhones = new Set((existing ?? []).map(g => normalizePhone(g.phone)));
 
       const toInsert: object[] = [];
@@ -297,6 +300,7 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId }: ImportG
         existingPhones.add(row.phone); // prevent double within the same import
         toInsert.push({
           user_id:     userId,
+          event_id:    eventId,
           full_name:   row.fullName,
           phone:       row.phone,
           rsvp_status: 'PENDING',

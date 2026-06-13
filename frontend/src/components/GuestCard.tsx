@@ -112,7 +112,7 @@ export const GuestCard = ({ guest, onView, userId, event }: GuestCardProps) => {
     if (!token) {
       token = rsvpService.generateToken();
       try {
-        await guestService.update(guest.id, { rsvp_token: token }, userId);
+        await guestService.update(guest.id, { rsvp_token: token }, userId, guest.event_id);
         guest.rsvp_token = token;
       } catch {
         token = undefined;

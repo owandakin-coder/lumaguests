@@ -54,16 +54,23 @@ export const RsvpPage = ({
   const load = async () => {
     try {
       setStep('loading');
-      const data = await rsvpService.getByToken(token);
+      const result = await rsvpService.getByToken(token);
 
-      if (!data) {
-        setErrorState('not_found');
+      if (!result?.success || !result.guest) {
+        if (result?.error === 'guest_unavailable') {
+          setErrorState('guest_unavailable');
+        } else if (result?.error === 'not_found') {
+          setErrorState('not_found');
+        } else {
+          setErrorState('general');
+        }
         setStep('error');
         return;
       }
 
+      const data = result.guest;
       if (!data.id || !data.full_name) {
-        setErrorState('guest_unavailable');
+        setErrorState('not_found');
         setStep('error');
         return;
       }

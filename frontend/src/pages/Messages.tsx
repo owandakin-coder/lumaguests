@@ -153,7 +153,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
       if (!token) {
         token = rsvpService.generateToken();
         try {
-          await guestService.update(g.id, { rsvp_token: token }, userId);
+          await guestService.update(g.id, { rsvp_token: token }, userId, g.event_id);
           g.rsvp_token = token;
         } catch {
           window.alert('לא הצלחנו ליצור קישור RSVP אישי למוזמן הזה. נסה שוב.');
@@ -187,7 +187,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
     if (!token) {
       token = rsvpService.generateToken();
       try {
-        await guestService.update(g.id, { rsvp_token: token }, userId);
+        await guestService.update(g.id, { rsvp_token: token }, userId, g.event_id);
         // update local ref so queue doesn't re-generate
         g.rsvp_token = token;
       } catch {
