@@ -325,41 +325,36 @@ export const EventManager = ({
           boxShadow: '0 18px 48px rgba(27,22,15,0.18)',
         }}
       >
-        <div className="p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-bold tracking-[0.2em] text-white/45 uppercase">האירוע הפעיל</p>
-              <h2 className="text-[30px] font-black leading-tight mt-2">{form.eventName || 'האירוע שלי'}</h2>
-            </div>
+        <div className="p-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[10px] font-bold tracking-[0.2em] text-white/45 uppercase">האירוע הפעיל</p>
             <button
               onClick={() => setConfirmAction('create')}
               disabled={busyAction === 'create'}
-              className="rounded-2xl bg-white/10 px-4 py-2.5 text-[13px] font-bold text-white backdrop-blur active:scale-[0.98] transition-transform disabled:opacity-50"
+              className="rounded-2xl bg-white/10 px-3 py-1.5 text-[12px] font-bold text-white backdrop-blur active:scale-[0.98] transition-transform disabled:opacity-50"
             >
               {busyAction === 'create' ? 'יוצר...' : 'צור אירוע'}
             </button>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 mt-5">
-            <div className="rounded-2xl bg-white/8 px-4 py-3 backdrop-blur">
-              <div className="flex items-center gap-2 text-white/70 text-[12px] font-semibold">
-                <CalendarDays className="w-4 h-4" />
-                <span>{selectedDateLabel}</span>
-              </div>
+          <h2 className="text-[26px] font-black leading-tight mt-1.5">{form.eventName || 'האירוע שלי'}</h2>
+
+          <div className="flex flex-col gap-1.5 mt-3">
+            <div className="flex items-center gap-2 text-white/70 text-[12px] font-semibold">
+              <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+              <span>{selectedDateLabel}</span>
             </div>
-            <div className="rounded-2xl bg-white/8 px-4 py-3 backdrop-blur">
-              <div className="flex items-center gap-2 text-white/70 text-[12px] font-semibold">
-                <MapPin className="w-4 h-4" />
-                <span>{form.venueName || 'מקום האירוע טרם הוגדר'}</span>
-              </div>
+            <div className="flex items-center gap-2 text-white/70 text-[12px] font-semibold">
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
+              <span>{form.venueName || 'מקום האירוע טרם הוגדר'}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 mt-5">
-            <div className="rounded-full bg-white/10 px-3 py-1.5 text-[12px] font-bold text-white/85">
+          <div className="flex items-center gap-2 mt-3">
+            <div className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/85">
               RSVP {form.publicEnabled ? 'פעיל' : 'כבוי'}
             </div>
-            <div className="rounded-full bg-white/10 px-3 py-1.5 text-[12px] font-bold text-white/85">
+            <div className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/85">
               {publicUrl ? 'קישור מוכן לשיתוף' : 'טרם הוגדר קישור'}
             </div>
           </div>
