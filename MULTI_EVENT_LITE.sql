@@ -33,7 +33,7 @@ select distinct
   concat('event-', substr(md5(random()::text || clock_timestamp()::text), 1, 10)),
   false,
   '#C9A84C',
-  null
+  null::timestamptz
 from public.guests g
 where not exists (
   select 1
@@ -369,7 +369,7 @@ begin
     concat('event-', substr(md5(random()::text || clock_timestamp()::text), 1, 10)),
     false,
     '#C9A84C',
-    null
+    null::timestamptz
   )
   returning * into v_event;
 
@@ -465,7 +465,7 @@ begin
     concat('event-', substr(md5(random()::text || clock_timestamp()::text), 1, 10)),
     false,
     '#C9A84C',
-    null
+    null::timestamptz
   )
   returning * into v_next;
 
