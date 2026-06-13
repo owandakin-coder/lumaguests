@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { createPortal } from 'react-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
+  AlertTriangle,
   CalendarDays,
   ChevronRight,
   Copy,
+  Eye,
   ImagePlus,
   MapPin,
   RefreshCw,
@@ -29,6 +32,7 @@ interface EventManagerProps {
 }
 
 type BusyAction = 'save' | 'create' | 'activate' | 'archive' | 'cover' | null;
+type ConfirmAction = 'create' | 'archive' | null;
 
 const surface = 'rounded-[28px] bg-white shadow-[0_10px_28px_rgba(34,29,21,0.07)]';
 const sectionLabel = 'text-[11px] font-bold tracking-[0.22em] text-[#B49B62] uppercase';
@@ -56,6 +60,7 @@ export const EventManager = ({
 }: EventManagerProps) => {
   const auth = useSupabaseAuth();
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [rawImageUrl, setRawImageUrl] = useState<string | null>(null);
   const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
@@ -109,6 +114,7 @@ export const EventManager = ({
   }, [form.publicEnabled, normalizedSlug]);
 
   const selectedDateLabel = useMemo(() => formatDisplayDate(form.eventDate || null), [form.eventDate]);
+  const slugChanged = !!event?.public_slug && normalizedSlug !== '' && normalizedSlug !== event.public_slug;
 
   const setField = (key: keyof typeof form, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -230,6 +236,11 @@ export const EventManager = ({
     }
   };
 
+  const confirmCreateEvent = async () => {
+    setConfirmAction(null);
+    await createEvent();
+  };
+
   const activateEvent = async (eventId: string) => {
     if (!onActivateEvent) return;
     try {
@@ -256,6 +267,11 @@ export const EventManager = ({
     }
   };
 
+  const confirmArchiveEvent = async () => {
+    setConfirmAction(null);
+    await archiveEvent();
+  };
+
   const copyLink = async () => {
     if (!publicUrl) return;
     await navigator.clipboard.writeText(publicUrl);
@@ -266,6 +282,11 @@ export const EventManager = ({
     if (!publicUrl) return;
     const text = `הוזמנת ל${form.eventName || 'האירוע שלנו'}\nלאישור הגעה:\n${publicUrl}`;
     openWhatsAppUrl(`https://wa.me/?text=${encodeURIComponent(text)}`);
+  };
+
+  const openPreview = () => {
+    if (!publicUrl) return;
+    window.open(publicUrl, '_blank');
   };
 
   return (
@@ -300,7 +321,7 @@ export const EventManager = ({
               <h2 className="text-[30px] font-black leading-tight mt-2">{form.eventName || 'האירוע שלי'}</h2>
             </div>
             <button
-              onClick={createEvent}
+              onClick={() => setConfirmAction('create')}
               disabled={busyAction === 'create'}
               className="rounded-2xl bg-white/10 px-4 py-2.5 text-[13px] font-bold text-white backdrop-blur active:scale-[0.98] transition-transform disabled:opacity-50"
             >
@@ -475,6 +496,12 @@ export const EventManager = ({
             </div>
           </div>
 
+          {slugChanged && (
+            <div className="rounded-[20px] border border-amber-200 bg-amber-50 px-4 py-3 mt-3 text-[12px] text-amber-900">
+              שינוי slug ישבור קישורים ציבוריים ישנים שכבר נשלחו לאורחים.
+            </div>
+          )}
+
           {publicUrl ? (
             <div className="rounded-[24px] border border-[#EEDFB5] bg-[#FFFBEF] p-3.5 mt-3">
               <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-[0.18em] mb-2">קישור מוכן</p>
@@ -495,6 +522,13 @@ export const EventManager = ({
                   שתף בוואטסאפ
                 </button>
               </div>
+              <button
+                onClick={openPreview}
+                className="w-full mt-2 py-3 rounded-[20px] bg-white text-[13px] font-bold text-charcoal-900 border border-[#EFE3C6] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+              >
+                <Eye className="w-4 h-4" />
+                צפה בדף ה-RSVP
+              </button>
             </div>
           ) : (
             <div className="rounded-[24px] border border-dashed border-[#E5D9BE] bg-[#FCF9F0] px-4 py-4 text-center text-[12px] text-charcoal-400 mt-3">
@@ -532,7 +566,7 @@ export const EventManager = ({
               <p className="text-[12px] text-charcoal-400 mt-1">מעבר מהיר בין אירועים קודמים בלי לאבד מידע.</p>
             </div>
             <button
-              onClick={archiveEvent}
+              onClick={() => setConfirmAction('archive')}
               disabled={busyAction === 'archive'}
               className="rounded-2xl border border-[#E9DEC5] px-3 py-2 text-[12px] font-bold text-charcoal-700 disabled:opacity-50 active:scale-[0.98] transition-transform flex items-center gap-2"
             >
@@ -581,6 +615,62 @@ export const EventManager = ({
             }
           }}
         />
+      )}
+
+      {createPortal(
+        <AnimatePresence>
+          {confirmAction && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[90] bg-black/45 flex items-end justify-center"
+              style={{ backdropFilter: 'blur(4px)' }}
+              onClick={() => setConfirmAction(null)}
+            >
+              <motion.div
+                initial={{ y: 32, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 32, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white w-full max-w-[430px] rounded-t-[32px] p-6"
+                style={{ paddingBottom: 'max(36px, env(safe-area-inset-bottom))' }}
+              >
+                <div className="w-10 h-1 bg-charcoal-200 rounded-full mx-auto mb-5" />
+                <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle className="w-7 h-7 text-amber-700" />
+                </div>
+                <h3 className="text-[20px] font-bold text-charcoal-900 text-center mb-2">
+                  {confirmAction === 'create' ? 'ליצור אירוע חדש?' : 'להעביר את האירוע לארכיון?'}
+                </h3>
+                <p className="text-[14px] text-charcoal-500 text-center leading-relaxed mb-6">
+                  {confirmAction === 'create'
+                    ? 'יצירת אירוע חדש תעביר את האירוע הנוכחי לארכיון ותעבוד מעכשיו על האירוע החדש.'
+                    : 'האירוע הפעיל יועבר לארכיון ותעבור אוטומטית לאירוע אחר או לאירוע חדש.'}
+                </p>
+                <div className="space-y-2.5">
+                  <button
+                    onClick={confirmAction === 'create' ? confirmCreateEvent : confirmArchiveEvent}
+                    disabled={busyAction === 'create' || busyAction === 'archive'}
+                    className="w-full py-4 rounded-2xl bg-charcoal-900 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+                  >
+                    {confirmAction === 'create'
+                      ? (busyAction === 'create' ? 'יוצר...' : 'כן, צור אירוע חדש')
+                      : (busyAction === 'archive' ? 'מעביר...' : 'כן, העבר לארכיון')}
+                  </button>
+                  <button
+                    onClick={() => setConfirmAction(null)}
+                    className="w-full py-4 rounded-2xl bg-charcoal-100 text-charcoal-700 text-[15px] font-bold active:scale-[0.98] transition-transform"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
       )}
     </motion.div>
   );
