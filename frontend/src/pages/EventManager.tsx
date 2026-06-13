@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   CalendarDays,
   ChevronRight,
   Copy,
+  ImagePlus,
   MapPin,
   Save,
   Send,
@@ -11,7 +12,9 @@ import {
   ToggleRight,
 } from 'lucide-react';
 import { Event } from '../types';
-import { eventService, openWhatsAppUrl } from '../services/supabase';
+import { eventService, openWhatsAppUrl, storageService } from '../services/supabase';
+import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { ImageCropModal } from '../components/ImageCropModal';
 
 interface EventManagerProps {
   event?: Event | null;
@@ -23,7 +26,7 @@ interface EventManagerProps {
   onArchiveEvent?: (eventId: string) => Promise<Event>;
 }
 
-type BusyAction = 'save' | 'create' | 'activate' | 'archive' | null;
+type BusyAction = 'save' | 'create' | 'activate' | 'archive' | 'cover' | null;
 
 export const EventManager = ({
   event,
@@ -34,8 +37,14 @@ export const EventManager = ({
   onActivateEvent,
   onArchiveEvent,
 }: EventManagerProps) => {
+  const auth = useSupabaseAuth();
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [rawImageUrl, setRawImageUrl] = useState<string | null>(null);
+  const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
+  const [croppedPreview, setCroppedPreview] = useState<string | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     eventName: '',
     eventDate: '',
@@ -72,6 +81,72 @@ export const EventManager = ({
   const setField = (key: keyof typeof form, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setMessage(null);
+  };
+
+  const resetCoverState = () => {
+    setRawImageUrl(null);
+    setCroppedBlob(null);
+    setCroppedPreview(null);
+    setShowCropper(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'ניתן להעלות רק תמונה תקינה מסוג JPG, PNG או WEBP.' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setRawImageUrl(ev.target?.result as string);
+      setShowCropper(true);
+      setMessage(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropDone = (blob: Blob) => {
+    setCroppedBlob(blob);
+    setCroppedPreview(URL.createObjectURL(blob));
+    setShowCropper(false);
+    setMessage({ type: 'success', text: 'התמונה נחתכה ומוכנה לשמירה.' });
+  };
+
+  const uploadCover = async () => {
+    if (!croppedBlob || !event?.id || !auth.user || !onEventUpdate) return;
+    try {
+      setBusyAction('cover');
+      const file = new File([croppedBlob], 'cover.jpg', { type: 'image/jpeg' });
+      const url = await storageService.uploadEventCover(auth.user.id, event.id, file);
+      await onEventUpdate({ cover_image_url: url });
+      resetCoverState();
+      setMessage({ type: 'success', text: 'תמונת האירוע נשמרה.' });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error?.message || 'לא הצלחנו לשמור את תמונת האירוע.' });
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const removeCover = async () => {
+    if (!event?.id || !auth.user || !onEventUpdate) return;
+    try {
+      setBusyAction('cover');
+      await storageService.removeEventCover(auth.user.id, event.id);
+      await onEventUpdate({ cover_image_url: null });
+      resetCoverState();
+      setMessage({ type: 'success', text: 'תמונת האירוע הוסרה.' });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error?.message || 'לא הצלחנו להסיר את תמונת האירוע.' });
+    } finally {
+      setBusyAction(null);
+    }
   };
 
   const saveEvent = async () => {
@@ -241,6 +316,63 @@ export const EventManager = ({
       </div>
 
       <div className={cardClass}>
+        <div className="flex items-center gap-2 mb-4">
+          <ImagePlus className="w-4 h-4 text-gold-600" />
+          <h2 className="text-[16px] font-bold text-charcoal-900">תמונת אירוע</h2>
+        </div>
+
+        {(croppedPreview || event?.cover_image_url) ? (
+          <div className="rounded-2xl overflow-hidden bg-charcoal-100 mb-3" style={{ aspectRatio: '16 / 9' }}>
+            <img
+              src={croppedPreview || event?.cover_image_url || ''}
+              alt={form.eventName || 'תמונת האירוע'}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-charcoal-200 p-5 text-center text-[12px] text-charcoal-400 mb-3">
+            עדיין לא הוגדרה תמונת אירוע.
+          </div>
+        )}
+
+        <label className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl border-2 border-dashed border-charcoal-200 cursor-pointer active:bg-charcoal-50 transition-colors">
+          <ImagePlus className="w-5 h-5 text-charcoal-400" />
+          <span className="text-[14px] font-semibold text-charcoal-600">
+            {croppedBlob ? 'בחר תמונה אחרת' : 'בחר תמונת אירוע'}
+          </span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+        </label>
+
+        <div className="grid grid-cols-1 gap-2 mt-3">
+          {croppedBlob && (
+            <button
+              onClick={uploadCover}
+              disabled={busyAction === 'cover'}
+              className="w-full py-3 rounded-2xl bg-charcoal-900 text-white text-[13px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+            >
+              {busyAction === 'cover' ? 'שומר תמונה...' : 'שמור תמונת אירוע'}
+            </button>
+          )}
+
+          {!croppedBlob && event?.cover_image_url && (
+            <button
+              onClick={removeCover}
+              disabled={busyAction === 'cover'}
+              className="w-full py-3 rounded-2xl border border-charcoal-200 text-charcoal-700 text-[13px] font-semibold disabled:opacity-50 active:scale-[0.98] transition-transform"
+            >
+              {busyAction === 'cover' ? 'מסיר...' : 'הסר תמונת אירוע'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className={cardClass}>
         <div className="flex items-center justify-between gap-3 mb-4">
           <div>
             <h2 className="text-[16px] font-bold text-charcoal-900">RSVP ציבורי</h2>
@@ -356,6 +488,20 @@ export const EventManager = ({
           {busyAction === 'archive' ? 'מעביר לארכיון...' : 'העבר את האירוע הפעיל לארכיון'}
         </button>
       </div>
+
+      {showCropper && rawImageUrl && (
+        <ImageCropModal
+          imageSrc={rawImageUrl}
+          onDone={(blob) => handleCropDone(blob)}
+          onCancel={() => {
+            setShowCropper(false);
+            setRawImageUrl(null);
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
+          }}
+        />
+      )}
     </motion.div>
   );
 };
