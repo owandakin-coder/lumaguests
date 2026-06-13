@@ -35,16 +35,22 @@ declare
   v_result json;
 begin
   select json_build_object(
-    'id', id,
-    'full_name', full_name,
-    'rsvp_status', rsvp_status,
-    'companions', companions,
-    'rsvp_via_link', rsvp_via_link,
-    'rsvp_responded_at', rsvp_responded_at
+    'id', g.id,
+    'full_name', g.full_name,
+    'rsvp_status', g.rsvp_status,
+    'companions', g.companions,
+    'rsvp_via_link', g.rsvp_via_link,
+    'rsvp_responded_at', g.rsvp_responded_at,
+    'event_name', e.event_name,
+    'event_date', e.event_date,
+    'venue_name', e.venue_name,
+    'venue_address', e.venue_address
   )
   into v_result
-  from public.guests
-  where rsvp_token = p_token
+  from public.guests g
+  left join public.events e
+    on e.owner_user_id = g.user_id
+  where g.rsvp_token = p_token
   limit 1;
 
   if v_result is null then

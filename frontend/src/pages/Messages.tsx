@@ -172,7 +172,6 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
         return;
       }
 
-      // Use /share/ link so WhatsApp preview shows the cover image via Vercel OG function
       const personalLink = rsvpService.buildPersonalRsvpLink({ rsvp_token: token });
       if (!personalLink) {
         window.alert('לא הצלחנו ליצור קישור RSVP אישי למוזמן הזה. נסה שוב.');

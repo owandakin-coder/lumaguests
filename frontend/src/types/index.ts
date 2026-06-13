@@ -72,6 +72,10 @@ export interface RsvpPublicGuest {
   companions: number;
   rsvp_via_link: boolean;
   rsvp_responded_at: string | null;
+  event_name?: string | null;
+  event_date?: string | null;
+  venue_name?: string | null;
+  venue_address?: string | null;
 }
 
 export interface RsvpResponse {

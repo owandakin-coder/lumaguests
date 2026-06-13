@@ -323,7 +323,10 @@ export const rsvpService = {
     return data as import('../types').RsvpResponse;
   },
 
-  buildLink: (token: string, ev?: { event_name?: string | null; event_date?: string | null; venue_name?: string | null } | null): string => {
+  buildLink: (
+    token: string,
+    ev?: { event_name?: string | null; event_date?: string | null; venue_name?: string | null; venue_address?: string | null } | null
+  ): string => {
     const base = rsvpService.buildPersonalRsvpLink({ rsvp_token: token });
     if (!base) return `${window.location.origin}/rsvp/${token}`;
     if (!ev) return base;
@@ -331,6 +334,7 @@ export const rsvpService = {
     if (ev.event_name && ev.event_name !== 'האירוע שלי') p.set('en', ev.event_name);
     if (ev.event_date) p.set('ed', ev.event_date.split('T')[0]);
     if (ev.venue_name) p.set('vn', ev.venue_name);
+    if (ev.venue_address) p.set('va', ev.venue_address);
     const qs = p.toString();
     return qs ? `${base}?${qs}` : base;
   },
