@@ -151,8 +151,8 @@ export const RsvpPage = ({
     choice === 'DECLINED'
       ? 'לא אגיע/ה'
       : companions > 0
-        ? `אני מגיע/ה עם ${companions} מלווים`
-        : 'אני מגיע/ה';
+        ? `אגיע עם ${companions} מלווים`
+        : 'אגיע לאירוע';
 
   const hasHeroImage = !!eventInfo.coverImageUrl;
   const heroHeightClass = hasHeroImage ? 'h-[276px] sm:h-[316px]' : '';
@@ -252,7 +252,9 @@ export const RsvpPage = ({
 
                   <h2 className="text-[34px] font-black tracking-tight text-charcoal-900">{guest.full_name}</h2>
                   <p className="mt-2 text-[15px] text-charcoal-500">
-                    {guest.rsvp_status === 'CONFIRMED' ? 'האישור כבר התקבל ואנחנו מחכים לך' : 'קיבלנו את ההודעה שלא תגיע/י'}
+                    {guest.rsvp_status === 'CONFIRMED'
+                      ? 'האישור כבר התקבל ואנחנו מחכים לך'
+                      : 'קיבלנו את ההודעה שלא תגיע/י'}
                   </p>
 
                   <div className="mt-5 rounded-[28px] bg-[#FFFDF8] p-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
@@ -277,7 +279,7 @@ export const RsvpPage = ({
                         {guest.rsvp_status === 'CONFIRMED' ? 'אישרתי הגעה' : 'לא אגיע/ה'}
                       </p>
                       <p className="mt-1 text-[13px] text-charcoal-500">
-                        {guest.companions > 0 ? `${guest.companions + 1} אורחים בסך הכול` : 'רק אני'}
+                        {guest.companions > 0 ? `${guest.companions + 1} אורחים בסך הכל` : 'רק אני'}
                       </p>
                     </div>
                   </div>
@@ -440,12 +442,13 @@ export const RsvpPage = ({
                   className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-[28px]"
                   style={{
                     background: choice === 'CONFIRMED' ? 'rgba(236,253,245,0.92)' : 'rgba(255,241,242,0.92)',
-                    boxShadow: choice === 'CONFIRMED'
-                      ? '0 8px 24px rgba(16,185,129,0.25)'
-                      : '0 8px 24px rgba(248,113,113,0.2)',
+                    boxShadow:
+                      choice === 'CONFIRMED'
+                        ? '0 8px 24px rgba(16,185,129,0.25)'
+                        : '0 8px 24px rgba(248,113,113,0.2)',
                   }}
                 >
-                  <span className="text-4xl">{choice === 'CONFIRMED' ? '🎉' : '💔'}</span>
+                  <span className="text-4xl">{choice === 'CONFIRMED' ? '🎉' : '💛'}</span>
                 </motion.div>
 
                 <div className="rounded-[34px] border border-white/70 bg-white/86 px-5 pb-6 pt-5 shadow-[0_24px_60px_rgba(102,84,50,0.14)] backdrop-blur-xl">
