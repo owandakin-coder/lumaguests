@@ -377,9 +377,10 @@ export const EventManager = ({
               className={inputClass}
             />
 
-            <div className="rounded-[24px] border border-[#EFE8D8] bg-[#FAF7EF] p-3.5 relative cursor-pointer">
-              <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-[0.18em] mb-2">תאריך האירוע</p>
-              <p className={`text-[15px] ${form.eventDate ? 'text-charcoal-900' : 'text-charcoal-400'}`}>{form.eventDate ? selectedDateLabel : 'בחר תאריך'}</p>
+            <div className={`${inputClass} relative cursor-pointer flex items-center`}>
+              <span className={`flex-1 ${form.eventDate ? 'text-charcoal-900' : 'text-charcoal-400'}`}>
+                {form.eventDate ? selectedDateLabel : 'תאריך האירוע'}
+              </span>
               <input
                 type="date"
                 value={form.eventDate}
