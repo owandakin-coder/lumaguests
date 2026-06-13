@@ -428,7 +428,6 @@ export const rsvpService = {
       event_date?: string | null;
       venue_name?: string | null;
       venue_address?: string | null;
-      cover_image_url?: string | null;
       updated_at?: string | null;
     } | null
   ): string => {
@@ -439,7 +438,6 @@ export const rsvpService = {
     if (ev.event_date) params.set('ed', ev.event_date.split('T')[0]);
     if (ev.venue_name) params.set('vn', ev.venue_name);
     if (ev.venue_address) params.set('va', ev.venue_address);
-    if (ev.cover_image_url) params.set('ci', ev.cover_image_url);
     if (ev.updated_at) params.set('v', ev.updated_at);
     const query = params.toString();
     return query ? `${base}?${query}` : base;
@@ -454,7 +452,6 @@ export const rsvpService = {
       event_date?: string | null;
       venue_name?: string | null;
       venue_address?: string | null;
-      cover_image_url?: string | null;
       updated_at?: string | null;
     } | null
   ): string => {

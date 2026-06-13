@@ -18,13 +18,12 @@ const rsvpEventInfo = rsvpMatch ? {
   eventDate:    sp.get('ed') ?? undefined,
   venueName:    sp.get('vn') ?? undefined,
   venueAddress: sp.get('va') ?? undefined,
-  coverImageUrl: sp.get('ci') ?? undefined,
 } : null;
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <SupabaseAuthProvider>
-      {rsvpMatch  ? <RsvpPage token={rsvpMatch[1]} eventName={rsvpEventInfo?.eventName} eventDate={rsvpEventInfo?.eventDate} venueName={rsvpEventInfo?.venueName} venueAddress={rsvpEventInfo?.venueAddress} coverImageUrl={rsvpEventInfo?.coverImageUrl} /> :
+      {rsvpMatch  ? <RsvpPage token={rsvpMatch[1]} eventName={rsvpEventInfo?.eventName} eventDate={rsvpEventInfo?.eventDate} venueName={rsvpEventInfo?.venueName} venueAddress={rsvpEventInfo?.venueAddress} /> :
        eventMatch ? <EventPublicPage slug={eventMatch[1]} /> :
        isResetPassword ? <ResetPasswordPage /> :
        <App />}
