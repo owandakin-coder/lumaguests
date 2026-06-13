@@ -276,6 +276,8 @@ end;
 $$;
 
 -- 6. Personal RSVP token always resolves through guest.event_id
+drop function if exists public.get_guest_by_token(text);
+
 create or replace function public.get_guest_by_token(p_token text)
 returns jsonb
 language plpgsql
