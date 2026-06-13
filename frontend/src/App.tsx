@@ -7,6 +7,7 @@ import { AddGuest } from './pages/AddGuest';
 import { EditGuest } from './pages/EditGuest';
 import { GuestDetails } from './pages/GuestDetails';
 import { Settings } from './pages/Settings';
+import { EventManager } from './pages/EventManager';
 import { Messages } from './pages/Messages';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -20,7 +21,7 @@ import { EventProvider, useEvent } from './hooks/useEvent';
 import { Guest, RsvpStatus } from './types';
 import { guestService, authService, supabase } from './services/supabase';
 
-type Page = 'dashboard' | 'guests' | 'add' | 'edit' | 'details' | 'settings' | 'messages';
+type Page = 'dashboard' | 'guests' | 'add' | 'edit' | 'details' | 'settings' | 'eventManager' | 'messages';
 type AuthPage = 'login' | 'register';
 
 function AuthenticatedApp() {
@@ -263,6 +264,19 @@ function AuthenticatedApp() {
             onCreateEvent={createEvent}
             onActivateEvent={activateEvent}
             onArchiveEvent={archiveEvent}
+            onOpenEventManager={() => setCurrentPage('eventManager')}
+          />
+        );
+      case 'eventManager':
+        return (
+          <EventManager
+            event={event}
+            archivedEvents={archivedEvents}
+            onBack={() => setCurrentPage('settings')}
+            onEventUpdate={updateEvent}
+            onCreateEvent={createEvent}
+            onActivateEvent={activateEvent}
+            onArchiveEvent={archiveEvent}
           />
         );
       default:
@@ -270,7 +284,7 @@ function AuthenticatedApp() {
     }
   };
 
-  const isSubPage = ['add', 'edit', 'details'].includes(currentPage);
+  const isSubPage = ['add', 'edit', 'details', 'eventManager'].includes(currentPage);
 
   return (
     <div dir="rtl" className="bg-ivory-100" style={{ height: '100dvh', overflow: 'hidden' }}>

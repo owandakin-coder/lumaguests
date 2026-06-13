@@ -22,6 +22,7 @@ interface SettingsProps {
   onCreateEvent?: (name?: string) => Promise<Event>;
   onActivateEvent?: (eventId: string) => Promise<Event>;
   onArchiveEvent?: (eventId: string) => Promise<Event>;
+  onOpenEventManager?: () => void;
 }
 
 type ModalType =
@@ -91,6 +92,7 @@ export const Settings = ({
   onCreateEvent,
   onActivateEvent,
   onArchiveEvent,
+  onOpenEventManager,
 }: SettingsProps) => {
   const auth = useSupabaseAuth();
 
@@ -494,7 +496,7 @@ export const Settings = ({
       </div>
 
       <button
-        onClick={() => open('events')}
+        onClick={() => onOpenEventManager?.()}
         className="w-full bg-white rounded-3xl p-4 text-right active:scale-[0.99] transition-transform"
         style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}
       >
@@ -512,7 +514,7 @@ export const Settings = ({
       </button>
 
       {/* Sections */}
-      {sections.map((section) => (
+      {sections.filter((_, idx) => idx !== 1 && idx !== 2).map((section) => (
         <div key={section.title}>
           <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-widest mb-2 mr-1">
             {section.title}
