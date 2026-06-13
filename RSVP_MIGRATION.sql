@@ -44,7 +44,8 @@ begin
     'event_name', e.event_name,
     'event_date', e.event_date,
     'venue_name', e.venue_name,
-    'venue_address', e.venue_address
+    'venue_address', e.venue_address,
+    'cover_image_url', e.cover_image_url
   )
   into v_result
   from public.guests g

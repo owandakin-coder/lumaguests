@@ -39,6 +39,7 @@ export default function handler(req, res) {
   if (ed) p.set('ed', ed);
   if (vn) p.set('vn', vn);
   if (va) p.set('va', va);
+  if (ci) p.set('ci', ci);
   const qs     = p.toString();
   const rsvpUrl = `${origin}/rsvp/${token}${qs ? '?' + qs : ''}`;
 

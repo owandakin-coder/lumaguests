@@ -76,6 +76,7 @@ export interface RsvpPublicGuest {
   event_date?: string | null;
   venue_name?: string | null;
   venue_address?: string | null;
+  cover_image_url?: string | null;
 }
 
 export interface RsvpResponse {

@@ -1,6 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Loader2, RefreshCw, XCircle } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  CalendarDays,
+  CheckCircle,
+  Heart,
+  Loader2,
+  MapPin,
+  Minus,
+  Plus,
+  RefreshCw,
+  Sparkles,
+  UtensilsCrossed,
+  XCircle,
+} from 'lucide-react';
 import { rsvpService } from '../services/supabase';
 import { RsvpPublicGuest } from '../types';
 
@@ -10,6 +22,7 @@ interface RsvpPageProps {
   eventDate?: string;
   venueName?: string;
   venueAddress?: string;
+  coverImageUrl?: string;
 }
 
 type Step = 'loading' | 'form' | 'already' | 'success' | 'error';
@@ -24,6 +37,7 @@ export const RsvpPage = ({
   eventDate: propEventDate,
   venueName: propVenueName,
   venueAddress: propVenueAddress,
+  coverImageUrl: propCoverImageUrl,
 }: RsvpPageProps) => {
   const [guest, setGuest] = useState<RsvpPublicGuest | null>(null);
   const [step, setStep] = useState<Step>('loading');
@@ -91,6 +105,7 @@ export const RsvpPage = ({
     const rawDate = guest?.event_date || propEventDate || null;
     const venueName = guest?.venue_name || propVenueName || fallbackVenue;
     const venueAddress = guest?.venue_address || propVenueAddress || '';
+    const coverImageUrl = guest?.cover_image_url || propCoverImageUrl || '';
 
     const formattedDate = rawDate
       ? new Date(rawDate).toLocaleDateString('he-IL', {
@@ -106,8 +121,9 @@ export const RsvpPage = ({
       formattedDate,
       venueName,
       venueAddress,
+      coverImageUrl,
     };
-  }, [guest, propEventDate, propEventName, propVenueAddress, propVenueName]);
+  }, [guest, propCoverImageUrl, propEventDate, propEventName, propVenueAddress, propVenueName]);
 
   const errorContent = {
     not_found: {
@@ -124,220 +140,344 @@ export const RsvpPage = ({
     },
   } as const;
 
+  const responseLabel =
+    choice === 'DECLINED'
+      ? 'לא אגיע/ה'
+      : companions > 0
+        ? `אני מגיע/ה עם ${companions} מלווים`
+        : 'אני מגיע/ה';
+
+  const hasHeroImage = !!eventInfo.coverImageUrl;
+
   return (
-    <div
-      dir="rtl"
-      className="min-h-screen flex flex-col items-center justify-center px-5 py-10"
-      style={{ background: '#F8F6F2' }}
-    >
-      <AnimatePresence mode="wait">
-        {step === 'loading' && (
-          <motion.div
-            key="loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex flex-col items-center gap-4"
-          >
-            <Loader2 className="w-8 h-8 text-charcoal-400 animate-spin" />
-            <p className="text-charcoal-400 text-sm">טוען...</p>
-          </motion.div>
-        )}
-
-        {step === 'error' && (
-          <motion.div
-            key="error"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-sm"
-          >
-            <div className="w-16 h-16 rounded-3xl bg-red-100 flex items-center justify-center mx-auto mb-4">
-              <XCircle className="w-8 h-8 text-red-400" />
-            </div>
-            <h2 className="text-xl font-bold text-charcoal-900 mb-2">{errorContent[errorState].title}</h2>
-            <p className="text-sm text-charcoal-400 leading-relaxed">{errorContent[errorState].description}</p>
-            <div className="mt-5 flex flex-col gap-2">
-              <button
-                onClick={() => void load()}
-                className="w-full py-3 rounded-2xl bg-charcoal-900 text-white text-sm font-bold flex items-center justify-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                נסה שוב
-              </button>
-            </div>
-          </motion.div>
-        )}
-
-        {step === 'already' && guest && (
-          <motion.div
-            key="already"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-sm text-center"
-          >
-            <div className="w-16 h-16 rounded-3xl bg-gold-100 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-gold-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-charcoal-900 mb-1">{guest.full_name}</h2>
-            <p className="text-sm text-charcoal-500 mb-3">
-              {guest.rsvp_status === 'CONFIRMED' ? 'אישרת הגעה לאירוע' : 'סימנת שלא תגיע/י'}
-            </p>
-            <div className="bg-white rounded-2xl p-4 text-center space-y-2" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-              <p className="text-[11px] text-charcoal-400">{eventInfo.eventName}</p>
-              <p className="text-[13px] text-charcoal-500">📅 {eventInfo.formattedDate}</p>
-              <p className="text-[13px] text-charcoal-500">📍 {eventInfo.venueName}</p>
-              {eventInfo.venueAddress ? <p className="text-[11px] text-charcoal-300">{eventInfo.venueAddress}</p> : null}
-              <div className="pt-2 border-t border-charcoal-100">
-                <p className="text-xs text-charcoal-400">סטטוס נוכחי</p>
-                <p className="text-base font-bold text-charcoal-900">
-                  {guest.rsvp_status === 'CONFIRMED' ? 'אישרתי הגעה' : 'לא אגיע'}
-                </p>
-                {guest.companions > 0 ? (
-                  <p className="text-sm text-charcoal-500">
-                    {guest.companions} מלווים · {guest.companions + 1} אנשים סך הכל
-                  </p>
-                ) : null}
-              </div>
-            </div>
-            <button onClick={() => setStep('form')} className="mt-5 text-sm text-gold-600 font-bold underline">
-              שינוי תשובה
-            </button>
-          </motion.div>
-        )}
-
-        {step === 'form' && guest && (
-          <motion.div
-            key="form"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-sm"
-          >
-            <div className="mb-8">
-              <div className="bg-white rounded-2xl p-4 text-center" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
-                <p className="text-[17px] font-bold text-charcoal-900">{eventInfo.eventName}</p>
-                <p className="text-[13px] text-charcoal-500 mt-0.5">📅 {eventInfo.formattedDate}</p>
-                <p className="text-[12px] text-charcoal-400 mt-0.5">📍 {eventInfo.venueName}</p>
-                {eventInfo.venueAddress ? <p className="text-[11px] text-charcoal-300 mt-0.5">{eventInfo.venueAddress}</p> : null}
-              </div>
-            </div>
-
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-charcoal-900">{guest.full_name}</h1>
-              <p className="text-sm text-charcoal-400 mt-1">נשמח לדעת אם תגיע/י</p>
-            </div>
-
-            <div className="bg-white rounded-2xl p-5 mb-5" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
-              <p className="text-[13px] font-bold text-charcoal-500 text-center mb-4">כמה אנשים מגיעים?</p>
-              <div className="flex items-center justify-center gap-5">
-                <button
-                  onClick={() => setCompanions((current) => Math.max(0, current - 1))}
-                  className="w-12 h-12 rounded-2xl bg-charcoal-100 flex items-center justify-center text-2xl font-bold text-charcoal-700 active:scale-90 transition-transform"
-                >
-                  -
-                </button>
-                <div className="text-center min-w-[64px]">
-                  <span className="text-[48px] font-black text-charcoal-900 leading-none">{companions + 1}</span>
-                  <p className="text-[12px] text-charcoal-400 mt-1">
-                    {companions + 1 === 1 ? 'רק אני' : `${companions + 1} אנשים`}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setCompanions((current) => current + 1)}
-                  className="w-12 h-12 rounded-2xl bg-charcoal-900 flex items-center justify-center text-2xl font-bold text-white active:scale-90 transition-transform"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-3 mb-5">
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                onClick={() => !submitting && handleSubmit('CONFIRMED')}
-                disabled={submitting}
-                className="w-full py-5 rounded-2xl text-white text-lg font-bold flex items-center justify-center gap-3 disabled:opacity-60 transition-all"
-                style={{
-                  background: submitting && choice === 'CONFIRMED' ? '#059669' : '#10B981',
-                  boxShadow: '0 4px 20px rgba(16,185,129,0.35)',
-                }}
-              >
-                {submitting && choice === 'CONFIRMED' ? <Loader2 className="w-5 h-5 animate-spin" /> : <span className="text-xl">✅</span>}
-                אני מגיע/ה
-              </motion.button>
-
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                onClick={() => !submitting && handleSubmit('DECLINED')}
-                disabled={submitting}
-                className="w-full py-5 rounded-2xl text-charcoal-600 text-base font-bold flex items-center justify-center gap-3 disabled:opacity-60 transition-all border border-charcoal-200 bg-white"
-              >
-                {submitting && choice === 'DECLINED' ? <Loader2 className="w-5 h-5 animate-spin" /> : <span className="text-lg">😔</span>}
-                לא אגיע
-              </motion.button>
-            </div>
-
-            <div className="bg-white rounded-2xl p-4" style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.05)' }}>
-              <p className="text-xs font-bold text-charcoal-400 uppercase tracking-wide mb-2">הערות / רגישויות מזון</p>
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="לדוגמה: צמחוני, ללא גלוטן..."
-                rows={2}
-                className="w-full px-3 py-2.5 rounded-xl bg-charcoal-50 text-sm text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-charcoal-200 resize-none transition"
-              />
-            </div>
-
-            <p className="text-center text-xs text-charcoal-400 mt-5">ניתן לשנות את התשובה בכל עת דרך הקישור</p>
-          </motion.div>
-        )}
-
-        {step === 'success' && guest && (
-          <motion.div
-            key="success"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-sm text-center"
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
-              className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-5"
+    <div dir="rtl" className="min-h-screen overflow-hidden bg-[#F7F2E8]">
+      <div className="relative min-h-screen">
+        {hasHeroImage ? (
+          <div className="absolute inset-x-0 top-0 h-[330px] overflow-hidden">
+            <img
+              src={eventInfo.coverImageUrl}
+              alt={eventInfo.eventName}
+              className="h-full w-full object-cover object-center"
+            />
+            <div
+              className="absolute inset-0"
               style={{
-                background: choice === 'CONFIRMED' ? '#ECFDF5' : '#FFF1F2',
-                boxShadow: choice === 'CONFIRMED'
-                  ? '0 8px 24px rgba(16,185,129,0.25)'
-                  : '0 8px 24px rgba(248,113,113,0.2)',
+                background:
+                  'linear-gradient(180deg, rgba(36,27,17,0.08) 0%, rgba(36,27,17,0.34) 44%, rgba(247,242,232,0.95) 100%)',
               }}
-            >
-              <span className="text-4xl">{choice === 'CONFIRMED' ? '🎉' : '💔'}</span>
-            </motion.div>
+            />
+          </div>
+        ) : null}
 
-            <h2 className="text-2xl font-bold text-charcoal-900 mb-2">
-              {choice === 'CONFIRMED' ? 'תודה, מחכים לך!' : 'תודה על ההודעה'}
-            </h2>
-            <p className="text-sm text-charcoal-400 leading-relaxed">
-              {choice === 'CONFIRMED'
-                ? companions > 0
-                  ? `אישרת הגעה לאירוע עם ${companions} מלווים. נשמח לראותך!`
-                  : 'אישרת הגעה לאירוע. נשמח לראותך!'
-                : 'חבל שלא תגיע/י. מקווים לראותך בפעם הבאה!'}
-            </p>
-            <div className="mt-4 bg-white rounded-2xl p-4" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-              <p className="text-[11px] text-charcoal-400">{eventInfo.eventName}</p>
-              <p className="text-[13px] text-charcoal-500 mt-1">📅 {eventInfo.formattedDate}</p>
-              <p className="text-[13px] text-charcoal-500 mt-1">📍 {eventInfo.venueName}</p>
-            </div>
+        <div className="pointer-events-none absolute inset-0">
+          <div
+            className="absolute inset-0"
+            style={{
+              background: hasHeroImage
+                ? 'linear-gradient(180deg, rgba(251,248,241,0.18) 0%, rgba(248,244,236,0.84) 34%, #F7F2E8 64%, #F7F2E8 100%)'
+                : 'linear-gradient(180deg, #FCFAF4 0%, #F7F2E8 56%, #F4EEE2 100%)',
+            }}
+          />
+          <div className="absolute right-[-12%] top-[210px] h-56 w-56 rounded-full bg-[#F3DFA9]/30 blur-3xl" />
+          <div className="absolute left-[-14%] top-[420px] h-64 w-64 rounded-full bg-white/65 blur-3xl" />
+        </div>
 
-            <div className="mt-8 flex flex-col items-center gap-3">
-              <button onClick={() => setStep('form')} className="text-sm text-gold-600 font-bold">
-                שינוי תשובה
-              </button>
-              <p className="text-xs text-charcoal-400">ניתן לסגור חלון זה</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[460px] flex-col px-5 pb-10 pt-8">
+          <AnimatePresence mode="wait">
+            {step === 'loading' && (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex min-h-screen flex-col items-center justify-center gap-4"
+              >
+                <Loader2 className="h-8 w-8 animate-spin text-charcoal-400" />
+                <p className="text-sm text-charcoal-400">טוען...</p>
+              </motion.div>
+            )}
+
+            {step === 'error' && (
+              <motion.div
+                key="error"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="my-auto w-full rounded-[34px] border border-white/70 bg-white/84 px-6 py-8 text-center shadow-[0_20px_60px_rgba(102,84,50,0.12)] backdrop-blur-xl"
+              >
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-red-100">
+                  <XCircle className="h-8 w-8 text-red-400" />
+                </div>
+                <h2 className="mb-2 text-xl font-bold text-charcoal-900">{errorContent[errorState].title}</h2>
+                <p className="text-sm leading-relaxed text-charcoal-400">{errorContent[errorState].description}</p>
+                <button
+                  onClick={() => void load()}
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-charcoal-900 py-3 text-sm font-bold text-white"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  נסה שוב
+                </button>
+              </motion.div>
+            )}
+
+            {step === 'already' && guest && (
+              <motion.div
+                key="already"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="my-auto w-full text-center"
+              >
+                <div className="mx-auto mb-5 flex h-[76px] w-[76px] items-center justify-center rounded-[28px] bg-white/86 shadow-[0_14px_40px_rgba(184,145,62,0.18)] backdrop-blur-xl">
+                  <CheckCircle className="h-9 w-9 text-gold-600" />
+                </div>
+
+                <div className="rounded-[34px] border border-white/70 bg-white/86 px-5 pb-6 pt-5 shadow-[0_24px_60px_rgba(102,84,50,0.14)] backdrop-blur-xl">
+                  <div className="mb-4 flex items-center justify-center gap-3 text-[12px] font-semibold text-gold-700">
+                    <span className="h-px max-w-[72px] flex-1 bg-gradient-to-l from-transparent via-[#D9BC77] to-transparent" />
+                    <Heart className="h-4 w-4" />
+                    <span>התגובה שלך נשמרה</span>
+                    <Heart className="h-4 w-4" />
+                    <span className="h-px max-w-[72px] flex-1 bg-gradient-to-r from-transparent via-[#D9BC77] to-transparent" />
+                  </div>
+
+                  <h2 className="text-[34px] font-black tracking-tight text-charcoal-900">{guest.full_name}</h2>
+                  <p className="mt-2 text-[15px] text-charcoal-500">
+                    {guest.rsvp_status === 'CONFIRMED' ? 'האישור כבר התקבל ואנחנו מחכים לך' : 'קיבלנו את ההודעה שלא תגיע/י'}
+                  </p>
+
+                  <div className="mt-5 rounded-[28px] bg-[#FFFDF8] p-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+                    <p className="text-[12px] font-semibold text-gold-700">{eventInfo.eventName}</p>
+                    <div className="mt-3 space-y-2 text-[14px] text-charcoal-600">
+                      <p className="flex items-center justify-center gap-2">
+                        <CalendarDays className="h-4 w-4 text-gold-600" />
+                        {eventInfo.formattedDate}
+                      </p>
+                      <p className="flex items-center justify-center gap-2">
+                        <MapPin className="h-4 w-4 text-gold-600" />
+                        {eventInfo.venueName}
+                      </p>
+                      {eventInfo.venueAddress ? (
+                        <p className="text-[12px] text-charcoal-400">{eventInfo.venueAddress}</p>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-4 rounded-[22px] border border-[#F2E5BF] bg-white px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.24em] text-charcoal-400">הסטטוס שלך</p>
+                      <p className="mt-1 text-[20px] font-black text-charcoal-900">
+                        {guest.rsvp_status === 'CONFIRMED' ? 'אישרתי הגעה' : 'לא אגיע/ה'}
+                      </p>
+                      <p className="mt-1 text-[13px] text-charcoal-500">
+                        {guest.companions > 0 ? `${guest.companions + 1} אורחים בסך הכול` : 'רק אני'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setStep('form')}
+                  className="mt-5 text-sm font-bold text-gold-700 underline underline-offset-4"
+                >
+                  שינוי תשובה
+                </button>
+              </motion.div>
+            )}
+
+            {step === 'form' && guest && (
+              <motion.div
+                key="form"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full"
+              >
+                <div className={hasHeroImage ? 'pt-[178px]' : 'pt-4'}>
+                  <div className="rounded-[34px] border border-white/75 bg-white/82 p-5 text-center shadow-[0_26px_80px_rgba(89,69,35,0.16)] backdrop-blur-xl">
+                    <div className="mb-3 flex items-center justify-center gap-3 text-[12px] font-semibold text-gold-700">
+                      <span className="h-px max-w-[72px] flex-1 bg-gradient-to-l from-transparent via-[#D9BC77] to-transparent" />
+                      <Heart className="h-4 w-4" />
+                      <span>הזמנה אישית</span>
+                      <Heart className="h-4 w-4" />
+                      <span className="h-px max-w-[72px] flex-1 bg-gradient-to-r from-transparent via-[#D9BC77] to-transparent" />
+                    </div>
+
+                    <p className="text-[29px] font-black leading-tight tracking-tight text-charcoal-900">
+                      {eventInfo.eventName}
+                    </p>
+
+                    <div className="mt-4 space-y-2 text-[15px] text-charcoal-600">
+                      <p className="flex items-center justify-center gap-2">
+                        <CalendarDays className="h-4 w-4 text-gold-600" />
+                        {eventInfo.formattedDate}
+                      </p>
+                      <p className="flex items-center justify-center gap-2">
+                        <MapPin className="h-4 w-4 text-gold-600" />
+                        {eventInfo.venueName}
+                      </p>
+                      {eventInfo.venueAddress ? (
+                        <p className="text-[13px] text-charcoal-400">{eventInfo.venueAddress}</p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="px-2 py-8 text-center">
+                    <div className="mb-3 flex items-center justify-center gap-3 text-[#C5A45B]">
+                      <span className="h-px w-20 bg-gradient-to-l from-transparent via-[#E1C987] to-transparent" />
+                      <Sparkles className="h-4 w-4" />
+                      <span className="h-px w-20 bg-gradient-to-r from-transparent via-[#E1C987] to-transparent" />
+                    </div>
+                    <h1 className="text-[48px] font-black leading-none tracking-tight text-charcoal-900">
+                      {guest.full_name}
+                    </h1>
+                    <p className="mt-3 text-[19px] text-charcoal-600">נשמח לדעת אם תגיע/י</p>
+                  </div>
+
+                  <div className="space-y-5">
+                    <div className="rounded-[30px] border border-white/80 bg-white/88 p-5 shadow-[0_18px_48px_rgba(89,69,35,0.10)] backdrop-blur-xl">
+                      <p className="text-center text-[16px] font-bold text-charcoal-700">כמה אנשים מגיעים?</p>
+                      <div className="mt-5 flex items-center justify-center gap-8">
+                        <button
+                          onClick={() => setCompanions((current) => Math.max(0, current - 1))}
+                          className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D2AB54] text-white shadow-[0_10px_24px_rgba(210,171,84,0.28)] transition-transform active:scale-90"
+                        >
+                          <Minus className="h-6 w-6" />
+                        </button>
+
+                        <div className="min-w-[96px] text-center">
+                          <p className="text-[72px] font-black leading-[0.9] tracking-tight text-charcoal-900">
+                            {companions + 1}
+                          </p>
+                          <p className="mt-2 text-[16px] text-charcoal-500">
+                            {companions + 1 === 1 ? 'רק אני' : `${companions + 1} אנשים`}
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={() => setCompanions((current) => current + 1)}
+                          className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D2AB54] text-white shadow-[0_10px_24px_rgba(210,171,84,0.28)] transition-transform active:scale-90"
+                        >
+                          <Plus className="h-6 w-6" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <motion.button
+                        whileTap={{ scale: 0.985 }}
+                        onClick={() => !submitting && handleSubmit('CONFIRMED')}
+                        disabled={submitting}
+                        className="flex w-full items-center justify-center gap-3 rounded-[28px] px-5 py-5 text-[19px] font-black text-white disabled:opacity-60"
+                        style={{
+                          background: 'linear-gradient(135deg, #148F4A 0%, #26B86B 100%)',
+                          boxShadow: '0 18px 36px rgba(20,143,74,0.26)',
+                        }}
+                      >
+                        {submitting && choice === 'CONFIRMED' ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <CheckCircle className="h-6 w-6" />
+                        )}
+                        אני מגיע/ה
+                      </motion.button>
+
+                      <motion.button
+                        whileTap={{ scale: 0.985 }}
+                        onClick={() => !submitting && handleSubmit('DECLINED')}
+                        disabled={submitting}
+                        className="flex w-full items-center justify-center gap-3 rounded-[28px] border border-[#D5B671] bg-white/92 px-5 py-5 text-[19px] font-black text-charcoal-800 shadow-[0_8px_30px_rgba(130,104,48,0.08)] disabled:opacity-60"
+                      >
+                        {submitting && choice === 'DECLINED' ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <span className="text-[24px]">😔</span>
+                        )}
+                        לא מגיע/ה
+                      </motion.button>
+                    </div>
+
+                    <div className="rounded-[30px] border border-white/80 bg-white/88 p-5 shadow-[0_18px_48px_rgba(89,69,35,0.10)] backdrop-blur-xl">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <p className="text-[16px] font-bold text-charcoal-700">הערות / רגישויות מזון</p>
+                        <UtensilsCrossed className="h-5 w-5 text-[#C49A40]" />
+                      </div>
+                      <textarea
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        placeholder="לדוגמה: צמחוני, ללא גלוטן..."
+                        rows={3}
+                        className="w-full resize-none rounded-[22px] bg-[#FBF8F2] px-4 py-4 text-[15px] text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-[#E5D3A1] transition"
+                      />
+                    </div>
+
+                    <div className="px-4 pt-1 text-center">
+                      <p className="text-[15px] font-medium text-charcoal-500">מחכים לכם באהבה</p>
+                      <Heart className="mx-auto mt-2 h-5 w-5 text-[#C49A40]" />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {step === 'success' && guest && (
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="my-auto w-full text-center"
+              >
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
+                  className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-[28px]"
+                  style={{
+                    background: choice === 'CONFIRMED' ? 'rgba(236,253,245,0.92)' : 'rgba(255,241,242,0.92)',
+                    boxShadow: choice === 'CONFIRMED'
+                      ? '0 8px 24px rgba(16,185,129,0.25)'
+                      : '0 8px 24px rgba(248,113,113,0.2)',
+                  }}
+                >
+                  <span className="text-4xl">{choice === 'CONFIRMED' ? '🎉' : '💔'}</span>
+                </motion.div>
+
+                <div className="rounded-[34px] border border-white/70 bg-white/86 px-5 pb-6 pt-5 shadow-[0_24px_60px_rgba(102,84,50,0.14)] backdrop-blur-xl">
+                  <h2 className="mb-2 text-2xl font-bold text-charcoal-900">
+                    {choice === 'CONFIRMED' ? 'תודה, מחכים לך!' : 'תודה על ההודעה'}
+                  </h2>
+                  <p className="text-sm leading-relaxed text-charcoal-400">
+                    {choice === 'CONFIRMED'
+                      ? companions > 0
+                        ? `אישרת הגעה לאירוע עם ${companions} מלווים. נשמח לראותך!`
+                        : 'אישרת הגעה לאירוע. נשמח לראותך!'
+                      : 'חבל שלא תגיע/י. מקווים לראותך בפעם הבאה!'}
+                  </p>
+
+                  <div className="mt-4 rounded-[28px] bg-[#FFFDF8] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+                    <p className="text-[12px] font-semibold text-gold-700">{eventInfo.eventName}</p>
+                    <p className="mt-2 flex items-center justify-center gap-2 text-[14px] text-charcoal-600">
+                      <CalendarDays className="h-4 w-4 text-gold-600" />
+                      {eventInfo.formattedDate}
+                    </p>
+                    <p className="mt-2 flex items-center justify-center gap-2 text-[14px] text-charcoal-600">
+                      <MapPin className="h-4 w-4 text-gold-600" />
+                      {eventInfo.venueName}
+                    </p>
+
+                    <div className="mt-4 rounded-[22px] border border-[#F2E5BF] bg-white px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.24em] text-charcoal-400">התגובה שנשלחה</p>
+                      <p className="mt-1 text-[18px] font-black text-charcoal-900">{responseLabel}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 flex flex-col items-center gap-3">
+                    <button onClick={() => setStep('form')} className="text-sm font-bold text-gold-700">
+                      שינוי תשובה
+                    </button>
+                    <p className="text-xs text-charcoal-400">ניתן לסגור חלון זה</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 };
