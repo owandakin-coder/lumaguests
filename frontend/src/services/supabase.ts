@@ -482,13 +482,37 @@ export const storageService = {
 
     if (error) throw error;
 
-    const { data } = supabase.storage.from('event-covers').getPublicUrl(path);
-    return `${data.publicUrl}?t=${Date.now()}`;
+    // Store the path only — signed URLs are generated at display time
+    return path;
   },
 
   removeEventCover: async (userId: string, eventId: string): Promise<void> => {
     for (const ext of ['jpg', 'jpeg', 'png', 'webp']) {
       await supabase.storage.from('event-covers').remove([`${userId}/${eventId}.${ext}`]);
+    }
+  },
+
+  // Extract the storage path from either a legacy full URL or a bare path
+  extractCoverPath: (urlOrPath: string): string | null => {
+    if (!urlOrPath) return null;
+    if (!urlOrPath.startsWith('http')) return urlOrPath; // already a path
+    const marker = '/object/public/event-covers/';
+    const idx = urlOrPath.indexOf(marker);
+    return idx >= 0 ? urlOrPath.slice(idx + marker.length).split('?')[0] : null;
+  },
+
+  // Generate a time-limited signed URL (falls back to input on error)
+  getSignedCoverUrl: async (urlOrPath: string, expiresIn = 7200): Promise<string> => {
+    const path = storageService.extractCoverPath(urlOrPath);
+    if (!path) return urlOrPath;
+    try {
+      const { data, error } = await supabase.storage
+        .from('event-covers')
+        .createSignedUrl(path, expiresIn);
+      if (error || !data?.signedUrl) return urlOrPath;
+      return data.signedUrl;
+    } catch {
+      return urlOrPath;
     }
   },
 };

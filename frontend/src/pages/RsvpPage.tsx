@@ -13,7 +13,7 @@ import {
   UtensilsCrossed,
   XCircle,
 } from 'lucide-react';
-import { rsvpService } from '../services/supabase';
+import { rsvpService, storageService } from '../services/supabase';
 import { RsvpPublicGuest } from '../types';
 
 interface RsvpPageProps {
@@ -46,10 +46,21 @@ export const RsvpPage = ({
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [choice, setChoice] = useState<'CONFIRMED' | 'DECLINED' | null>(null);
+  const [signedCoverUrl, setSignedCoverUrl] = useState<string | null>(null);
 
   useEffect(() => {
     void load();
   }, [token]);
+
+  useEffect(() => {
+    const raw = guest?.cover_image_url;
+    if (!raw) { setSignedCoverUrl(null); return; }
+    let cancelled = false;
+    storageService.getSignedCoverUrl(raw)
+      .then(url => { if (!cancelled) setSignedCoverUrl(url); })
+      .catch(() => { if (!cancelled) setSignedCoverUrl(raw); });
+    return () => { cancelled = true; };
+  }, [guest?.cover_image_url]);
 
   const load = async () => {
     try {
@@ -112,7 +123,7 @@ export const RsvpPage = ({
     const rawDate = guest?.event_date || propEventDate || null;
     const venueName = guest?.venue_name || propVenueName || fallbackVenue;
     const venueAddress = guest?.venue_address || propVenueAddress || '';
-    const coverImageUrl = guest?.cover_image_url || propCoverImageUrl || '';
+    const coverImageUrl = signedCoverUrl ?? guest?.cover_image_url ?? propCoverImageUrl ?? '';
 
     const formattedDate = rawDate
       ? new Date(rawDate).toLocaleDateString('he-IL', {
@@ -130,7 +141,7 @@ export const RsvpPage = ({
       venueAddress,
       coverImageUrl,
     };
-  }, [guest, propCoverImageUrl, propEventDate, propEventName, propVenueAddress, propVenueName]);
+  }, [guest, propCoverImageUrl, propEventDate, propEventName, propVenueAddress, propVenueName, signedCoverUrl]);
 
   const errorContent = {
     not_found: {

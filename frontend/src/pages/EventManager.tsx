@@ -65,6 +65,7 @@ export const EventManager = ({
   const [rawImageUrl, setRawImageUrl] = useState<string | null>(null);
   const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
   const [croppedPreview, setCroppedPreview] = useState<string | null>(null);
+  const [signedCoverUrl, setSignedCoverUrl] = useState<string | null>(null);
   const [showCropper, setShowCropper] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
@@ -76,6 +77,16 @@ export const EventManager = ({
     publicSlug: '',
     publicEnabled: false,
   });
+
+  useEffect(() => {
+    const raw = event?.cover_image_url;
+    if (!raw) { setSignedCoverUrl(null); return; }
+    let cancelled = false;
+    storageService.getSignedCoverUrl(raw)
+      .then(url => { if (!cancelled) setSignedCoverUrl(url); })
+      .catch(() => { if (!cancelled) setSignedCoverUrl(raw); });
+    return () => { cancelled = true; };
+  }, [event?.cover_image_url]);
 
   useEffect(() => {
     setForm({
@@ -412,10 +423,10 @@ export const EventManager = ({
           </div>
 
           <div className="mt-4">
-            {(croppedPreview || event?.cover_image_url) ? (
+            {(croppedPreview || signedCoverUrl || event?.cover_image_url) ? (
               <div className="rounded-[24px] overflow-hidden bg-charcoal-100" style={{ aspectRatio: '16 / 9' }}>
                 <img
-                  src={croppedPreview || event?.cover_image_url || ''}
+                  src={croppedPreview || signedCoverUrl || event?.cover_image_url || ''}
                   alt={form.eventName || 'תמונת האירוע'}
                   className="w-full h-full object-cover"
                 />

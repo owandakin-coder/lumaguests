@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Copy, Link2, MessageCircle, X } from 'lucide-react';
 import { Event, Guest } from '../types';
-import { rsvpService } from '../services/supabase';
+import { rsvpService, storageService } from '../services/supabase';
 import {
   buildGuestRsvpMessage,
   buildGuestRsvpWhatsAppUrl,
@@ -26,6 +26,17 @@ export const RsvpShareModal = ({
 }: RsvpShareModalProps) => {
   const [copiedMessage, setCopiedMessage] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [signedCoverUrl, setSignedCoverUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const raw = event?.cover_image_url;
+    if (!raw) { setSignedCoverUrl(null); return; }
+    let cancelled = false;
+    storageService.getSignedCoverUrl(raw)
+      .then(url => { if (!cancelled) setSignedCoverUrl(url); })
+      .catch(() => { if (!cancelled) setSignedCoverUrl(raw); });
+    return () => { cancelled = true; };
+  }, [event?.cover_image_url]);
 
   const guestName = guest ? guest.fullName || guest.full_name : '';
   const rsvpLink = useMemo(
@@ -120,14 +131,14 @@ export const RsvpShareModal = ({
             </div>
 
             <div className="max-h-[75dvh] space-y-4 overflow-y-auto px-5 py-5">
-              {event?.cover_image_url ? (
+              {(signedCoverUrl || event?.cover_image_url) ? (
                 <div
                   className="overflow-hidden rounded-2xl bg-charcoal-100"
                   style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}
                 >
                   <img
-                    src={event.cover_image_url}
-                    alt={event.event_name || 'Event cover'}
+                    src={signedCoverUrl || event?.cover_image_url || ''}
+                    alt={event?.event_name || 'Event cover'}
                     className="h-44 w-full object-cover"
                   />
                 </div>
