@@ -6,10 +6,12 @@ import {
   Copy,
   ImagePlus,
   MapPin,
+  RefreshCw,
   Save,
   Send,
   ToggleLeft,
   ToggleRight,
+  Trash2,
 } from 'lucide-react';
 import { Event } from '../types';
 import { eventService, openWhatsAppUrl, storageService } from '../services/supabase';
@@ -27,6 +29,21 @@ interface EventManagerProps {
 }
 
 type BusyAction = 'save' | 'create' | 'activate' | 'archive' | 'cover' | null;
+
+const surface = 'rounded-[28px] bg-white shadow-[0_10px_28px_rgba(34,29,21,0.07)]';
+const sectionLabel = 'text-[11px] font-bold tracking-[0.22em] text-[#B49B62] uppercase';
+const inputClass =
+  'w-full rounded-[22px] border border-[#EFE8D8] bg-[#FAF7EF] px-4 py-3.5 text-[15px] text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-[#D8C088]';
+
+function formatDisplayDate(date?: string | null) {
+  if (!date) return 'טרם נקבע';
+  return new Date(date).toLocaleDateString('he-IL', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
 
 export const EventManager = ({
   event,
@@ -66,17 +83,32 @@ export const EventManager = ({
       publicEnabled: !!event?.is_public,
     });
     setMessage(null);
-  }, [event?.id, event?.event_name, event?.event_date, event?.venue_name, event?.venue_address, event?.description, event?.public_slug, event?.is_public]);
-
-  const publicUrl = useMemo(() => {
-    if (!form.publicEnabled || !form.publicSlug) return null;
-    return eventService.buildPublicUrl(form.publicSlug);
-  }, [form.publicEnabled, form.publicSlug]);
+    setCroppedBlob(null);
+    setCroppedPreview(null);
+    setRawImageUrl(null);
+    setShowCropper(false);
+  }, [
+    event?.id,
+    event?.event_name,
+    event?.event_date,
+    event?.venue_name,
+    event?.venue_address,
+    event?.description,
+    event?.public_slug,
+    event?.is_public,
+  ]);
 
   const normalizedSlug = useMemo(
     () => form.publicSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, ''),
     [form.publicSlug]
   );
+
+  const publicUrl = useMemo(() => {
+    if (!form.publicEnabled || !normalizedSlug) return null;
+    return eventService.buildPublicUrl(normalizedSlug);
+  }, [form.publicEnabled, normalizedSlug]);
+
+  const selectedDateLabel = useMemo(() => formatDisplayDate(form.eventDate || null), [form.eventDate]);
 
   const setField = (key: keyof typeof form, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -151,10 +183,12 @@ export const EventManager = ({
 
   const saveEvent = async () => {
     if (!onEventUpdate) return;
+
     if (form.publicEnabled && !form.eventDate) {
       setMessage({ type: 'error', text: 'לפני שמפעילים RSVP ציבורי צריך להגדיר תאריך אירוע.' });
       return;
     }
+
     if (form.publicEnabled && !normalizedSlug) {
       setMessage({ type: 'error', text: 'יש להגדיר קישור אירוע תקין לפני הפעלת RSVP ציבורי.' });
       return;
@@ -234,8 +268,6 @@ export const EventManager = ({
     openWhatsAppUrl(`https://wa.me/?text=${encodeURIComponent(text)}`);
   };
 
-  const cardClass = 'rounded-[28px] bg-white p-4 shadow-[0_8px_24px_rgba(26,25,22,0.06)]';
-
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 pt-1 pb-4">
       <div className="flex items-center gap-3">
@@ -247,173 +279,217 @@ export const EventManager = ({
           <ChevronRight className="w-5 h-5 text-charcoal-600" />
         </button>
         <div>
+          <p className="text-[11px] font-bold tracking-[0.18em] text-gold-600 uppercase">Event Studio</p>
           <h1 className="text-[28px] font-bold text-charcoal-900">ניהול אירוע</h1>
-          <p className="text-[12px] text-charcoal-400 mt-0.5">יצירת אירוע, פרטי אירוע ו־RSVP במקום אחד</p>
+          <p className="text-[12px] text-charcoal-400 mt-0.5">פרטי אירוע, תמונה, RSVP ושיתוף במסך אחד נקי</p>
         </div>
       </div>
 
-      <div className={cardClass}>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[12px] font-bold text-charcoal-400 mb-1">האירוע הפעיל</p>
-            <p className="text-[20px] font-bold text-charcoal-900">{event?.event_name || 'האירוע שלי'}</p>
-            <p className="text-[12px] text-charcoal-400 mt-1">
-              {form.eventDate ? new Date(form.eventDate).toLocaleDateString('he-IL') : 'ללא תאריך'}
-              {form.venueName ? ` · ${form.venueName}` : ''}
-            </p>
+      <div
+        className="rounded-[32px] overflow-hidden text-white"
+        style={{
+          background:
+            'radial-gradient(circle at top right, rgba(228,202,134,0.22), transparent 34%), linear-gradient(145deg, #171612 0%, #26231D 100%)',
+          boxShadow: '0 18px 48px rgba(27,22,15,0.18)',
+        }}
+      >
+        <div className="p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold tracking-[0.2em] text-white/45 uppercase">האירוע הפעיל</p>
+              <h2 className="text-[30px] font-black leading-tight mt-2">{form.eventName || 'האירוע שלי'}</h2>
+            </div>
+            <button
+              onClick={createEvent}
+              disabled={busyAction === 'create'}
+              className="rounded-2xl bg-white/10 px-4 py-2.5 text-[13px] font-bold text-white backdrop-blur active:scale-[0.98] transition-transform disabled:opacity-50"
+            >
+              {busyAction === 'create' ? 'יוצר...' : 'צור אירוע'}
+            </button>
           </div>
-          <button
-            onClick={createEvent}
-            disabled={busyAction === 'create'}
-            className="px-4 py-2.5 rounded-2xl bg-charcoal-900 text-white text-[13px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
-          >
-            {busyAction === 'create' ? 'יוצר...' : 'צור אירוע'}
-          </button>
+
+          <div className="grid grid-cols-1 gap-3 mt-5">
+            <div className="rounded-2xl bg-white/8 px-4 py-3 backdrop-blur">
+              <div className="flex items-center gap-2 text-white/70 text-[12px] font-semibold">
+                <CalendarDays className="w-4 h-4" />
+                <span>{selectedDateLabel}</span>
+              </div>
+            </div>
+            <div className="rounded-2xl bg-white/8 px-4 py-3 backdrop-blur">
+              <div className="flex items-center gap-2 text-white/70 text-[12px] font-semibold">
+                <MapPin className="w-4 h-4" />
+                <span>{form.venueName || 'מקום האירוע טרם הוגדר'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 mt-5">
+            <div className="rounded-full bg-white/10 px-3 py-1.5 text-[12px] font-bold text-white/85">
+              RSVP {form.publicEnabled ? 'פעיל' : 'כבוי'}
+            </div>
+            <div className="rounded-full bg-white/10 px-3 py-1.5 text-[12px] font-bold text-white/85">
+              {publicUrl ? 'קישור מוכן לשיתוף' : 'טרם הוגדר קישור'}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className={cardClass}>
-        <div className="flex items-center gap-2 mb-4">
-          <CalendarDays className="w-4 h-4 text-gold-600" />
-          <h2 className="text-[16px] font-bold text-charcoal-900">פרטי האירוע</h2>
-        </div>
+      <div className={surface}>
+        <div className="p-4">
+          <p className={sectionLabel}>פרטי האירוע</p>
+          <div className="space-y-3 mt-4">
+            <input
+              value={form.eventName}
+              onChange={(e) => setField('eventName', e.target.value)}
+              placeholder="שם האירוע"
+              className={inputClass}
+            />
 
-        <div className="space-y-3">
-          <input
-            value={form.eventName}
-            onChange={(e) => setField('eventName', e.target.value)}
-            placeholder="שם האירוע"
-            className="w-full px-4 py-3.5 rounded-2xl bg-charcoal-50 text-[14px] text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-charcoal-200"
-          />
-          <input
-            type="date"
-            value={form.eventDate}
-            onChange={(e) => setField('eventDate', e.target.value)}
-            className="w-full px-4 py-3.5 rounded-2xl bg-charcoal-50 text-[14px] text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-charcoal-200"
-          />
-          <div className="grid grid-cols-1 gap-3">
+            <div className="rounded-[24px] border border-[#EFE8D8] bg-[#FAF7EF] p-3.5">
+              <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-[0.18em] mb-2">תאריך האירוע</p>
+              <input
+                type="date"
+                lang="en-CA"
+                dir="ltr"
+                value={form.eventDate}
+                onChange={(e) => setField('eventDate', e.target.value)}
+                className="w-full bg-transparent text-[15px] text-charcoal-900 focus:outline-none text-left"
+              />
+              <p className="text-[12px] text-charcoal-400 mt-2">{selectedDateLabel}</p>
+            </div>
+
             <input
               value={form.venueName}
               onChange={(e) => setField('venueName', e.target.value)}
               placeholder="מקום האירוע"
-              className="w-full px-4 py-3.5 rounded-2xl bg-charcoal-50 text-[14px] text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-charcoal-200"
+              className={inputClass}
             />
             <input
               value={form.venueAddress}
               onChange={(e) => setField('venueAddress', e.target.value)}
               placeholder="כתובת"
-              className="w-full px-4 py-3.5 rounded-2xl bg-charcoal-50 text-[14px] text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-charcoal-200"
+              className={inputClass}
+            />
+            <textarea
+              value={form.description}
+              onChange={(e) => setField('description', e.target.value)}
+              placeholder="תיאור קצר לאורחים"
+              rows={3}
+              className={`${inputClass} resize-none`}
             />
           </div>
-          <textarea
-            value={form.description}
-            onChange={(e) => setField('description', e.target.value)}
-            placeholder="תיאור קצר לאורחים"
-            rows={3}
-            className="w-full px-4 py-3.5 rounded-2xl bg-charcoal-50 text-[14px] text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-charcoal-200 resize-none"
-          />
         </div>
       </div>
 
-      <div className={cardClass}>
-        <div className="flex items-center gap-2 mb-4">
-          <ImagePlus className="w-4 h-4 text-gold-600" />
-          <h2 className="text-[16px] font-bold text-charcoal-900">תמונת אירוע</h2>
-        </div>
-
-        {(croppedPreview || event?.cover_image_url) ? (
-          <div className="rounded-2xl overflow-hidden bg-charcoal-100 mb-3" style={{ aspectRatio: '16 / 9' }}>
-            <img
-              src={croppedPreview || event?.cover_image_url || ''}
-              alt={form.eventName || 'תמונת האירוע'}
-              className="w-full h-full object-cover"
-            />
+      <div className={surface}>
+        <div className="p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className={sectionLabel}>תמונת אירוע</p>
+              <p className="text-[12px] text-charcoal-400 mt-1">זו התמונה שתופיע בדף האישור ובתצוגות המקדימות.</p>
+            </div>
           </div>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-charcoal-200 p-5 text-center text-[12px] text-charcoal-400 mb-3">
-            עדיין לא הוגדרה תמונת אירוע.
+
+          <div className="mt-4">
+            {(croppedPreview || event?.cover_image_url) ? (
+              <div className="rounded-[24px] overflow-hidden bg-charcoal-100" style={{ aspectRatio: '16 / 9' }}>
+                <img
+                  src={croppedPreview || event?.cover_image_url || ''}
+                  alt={form.eventName || 'תמונת האירוע'}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="rounded-[24px] border border-dashed border-[#E5D9BE] bg-[#FCF9F0] px-4 py-10 text-center">
+                <ImagePlus className="w-6 h-6 text-gold-600 mx-auto mb-3" />
+                <p className="text-[14px] font-semibold text-charcoal-700">עדיין לא הוגדרה תמונת אירוע</p>
+                <p className="text-[12px] text-charcoal-400 mt-1">מומלץ להוסיף תמונה רחבה ונקייה של האירוע</p>
+              </div>
+            )}
           </div>
-        )}
 
-        <label className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl border-2 border-dashed border-charcoal-200 cursor-pointer active:bg-charcoal-50 transition-colors">
-          <ImagePlus className="w-5 h-5 text-charcoal-400" />
-          <span className="text-[14px] font-semibold text-charcoal-600">
-            {croppedBlob ? 'בחר תמונה אחרת' : 'בחר תמונת אירוע'}
-          </span>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFileSelect}
-          />
-        </label>
+          <div className="grid grid-cols-1 gap-2 mt-3">
+            <label className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[22px] border border-[#E9DEC5] bg-[#FAF7EF] cursor-pointer active:scale-[0.98] transition-transform">
+              <ImagePlus className="w-4 h-4 text-charcoal-500" />
+              <span className="text-[13px] font-bold text-charcoal-700">{croppedBlob ? 'בחר תמונה אחרת' : 'בחר תמונת אירוע'}</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+            </label>
 
-        <div className="grid grid-cols-1 gap-2 mt-3">
-          {croppedBlob && (
-            <button
-              onClick={uploadCover}
-              disabled={busyAction === 'cover'}
-              className="w-full py-3 rounded-2xl bg-charcoal-900 text-white text-[13px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
-            >
-              {busyAction === 'cover' ? 'שומר תמונה...' : 'שמור תמונת אירוע'}
-            </button>
-          )}
+            {croppedBlob && (
+              <button
+                onClick={uploadCover}
+                disabled={busyAction === 'cover'}
+                className="w-full py-3.5 rounded-[22px] bg-charcoal-900 text-white text-[13px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+              >
+                {busyAction === 'cover' ? 'שומר תמונה...' : 'שמור תמונת אירוע'}
+              </button>
+            )}
 
-          {!croppedBlob && event?.cover_image_url && (
-            <button
-              onClick={removeCover}
-              disabled={busyAction === 'cover'}
-              className="w-full py-3 rounded-2xl border border-charcoal-200 text-charcoal-700 text-[13px] font-semibold disabled:opacity-50 active:scale-[0.98] transition-transform"
-            >
-              {busyAction === 'cover' ? 'מסיר...' : 'הסר תמונת אירוע'}
-            </button>
-          )}
+            {!croppedBlob && event?.cover_image_url && (
+              <button
+                onClick={removeCover}
+                disabled={busyAction === 'cover'}
+                className="w-full py-3.5 rounded-[22px] border border-[#E9DEC5] text-charcoal-700 text-[13px] font-semibold disabled:opacity-50 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                {busyAction === 'cover' ? 'מסיר...' : 'הסר תמונת אירוע'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className={cardClass}>
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div>
-            <h2 className="text-[16px] font-bold text-charcoal-900">RSVP ציבורי</h2>
-            <p className="text-[12px] text-charcoal-400 mt-1">הגדרת קישור ציבורי וניהול השיתוף לאורחים</p>
+      <div className={surface}>
+        <div className="p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className={sectionLabel}>RSVP ציבורי</p>
+              <h3 className="text-[18px] font-bold text-charcoal-900 mt-2">קישור ושיתוף לאורחים</h3>
+              <p className="text-[12px] text-charcoal-400 mt-1">הפעלת עמוד אישור ציבורי עם קישור קבוע לאירוע.</p>
+            </div>
+            <button
+              onClick={() => setField('publicEnabled', !form.publicEnabled)}
+              className="rounded-2xl bg-[#FAF7EF] px-3 py-2 flex items-center gap-2 active:scale-[0.98] transition-transform"
+            >
+              {form.publicEnabled ? <ToggleRight className="w-5 h-5 text-green-500" /> : <ToggleLeft className="w-5 h-5 text-charcoal-400" />}
+              <span className="text-[13px] font-bold text-charcoal-900">{form.publicEnabled ? 'פעיל' : 'כבוי'}</span>
+            </button>
           </div>
-          <button
-            onClick={() => setField('publicEnabled', !form.publicEnabled)}
-            className="flex items-center gap-2 rounded-2xl px-3 py-2 bg-charcoal-50 active:scale-[0.98] transition-transform"
-          >
-            {form.publicEnabled ? <ToggleRight className="w-5 h-5 text-green-500" /> : <ToggleLeft className="w-5 h-5 text-charcoal-400" />}
-            <span className="text-[13px] font-bold text-charcoal-900">{form.publicEnabled ? 'פעיל' : 'כבוי'}</span>
-          </button>
-        </div>
 
-        <div className="space-y-3">
-          <div className="rounded-2xl bg-charcoal-50 px-3 py-2.5 flex items-center gap-2">
-            <span className="text-[12px] text-charcoal-400 font-mono" dir="ltr">/event/</span>
-            <input
-              value={form.publicSlug}
-              onChange={(e) => setField('publicSlug', e.target.value)}
-              placeholder="your-event-link"
-              dir="ltr"
-              className="flex-1 bg-transparent text-[14px] text-charcoal-900 focus:outline-none"
-            />
+          <div className="rounded-[24px] border border-[#EFE8D8] bg-[#FAF7EF] p-3.5 mt-4">
+            <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-[0.18em] mb-2">קישור האירוע</p>
+            <div className="flex items-center gap-2" dir="ltr">
+              <span className="text-[13px] text-charcoal-400 font-mono flex-shrink-0">/event/</span>
+              <input
+                value={form.publicSlug}
+                onChange={(e) => setField('publicSlug', e.target.value)}
+                placeholder="my-event-link"
+                className="flex-1 bg-transparent text-[15px] text-charcoal-900 focus:outline-none"
+              />
+            </div>
           </div>
 
           {publicUrl ? (
-            <div className="rounded-2xl border border-charcoal-100 bg-[#FFFCF4] p-3">
-              <p className="text-[11px] font-bold text-charcoal-400 mb-1">קישור פעיל</p>
+            <div className="rounded-[24px] border border-[#EEDFB5] bg-[#FFFBEF] p-3.5 mt-3">
+              <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-[0.18em] mb-2">קישור מוכן</p>
               <p className="text-[12px] text-charcoal-700 break-all" dir="ltr">{publicUrl}</p>
               <div className="grid grid-cols-2 gap-2 mt-3">
                 <button
                   onClick={copyLink}
-                  className="py-3 rounded-2xl bg-white text-[13px] font-bold text-charcoal-900 border border-charcoal-100 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                  className="py-3 rounded-[20px] bg-white text-[13px] font-bold text-charcoal-900 border border-[#EFE3C6] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
                 >
                   <Copy className="w-4 h-4" />
                   העתק קישור
                 </button>
                 <button
                   onClick={shareLink}
-                  className="py-3 rounded-2xl bg-charcoal-900 text-[13px] font-bold text-white active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                  className="py-3 rounded-[20px] bg-charcoal-900 text-[13px] font-bold text-white active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
                 >
                   <Send className="w-4 h-4" />
                   שתף בוואטסאפ
@@ -421,8 +497,8 @@ export const EventManager = ({
               </div>
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-charcoal-200 p-4 text-center text-[12px] text-charcoal-400">
-              הקישור הציבורי יופיע כאן אחרי שתשמור את ההגדרות.
+            <div className="rounded-[24px] border border-dashed border-[#E5D9BE] bg-[#FCF9F0] px-4 py-4 text-center text-[12px] text-charcoal-400 mt-3">
+              הקישור הציבורי יופיע כאן אחרי שמירה והפעלת RSVP.
             </div>
           )}
         </div>
@@ -430,7 +506,7 @@ export const EventManager = ({
 
       {message && (
         <div
-          className={`rounded-2xl px-4 py-3 text-[13px] font-medium ${
+          className={`rounded-[22px] px-4 py-3 text-[13px] font-medium ${
             message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
           }`}
         >
@@ -441,52 +517,56 @@ export const EventManager = ({
       <button
         onClick={saveEvent}
         disabled={busyAction === 'save'}
-        className="w-full py-4 rounded-2xl bg-charcoal-900 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-        style={{ boxShadow: '0 10px 28px rgba(26,25,22,0.16)' }}
+        className="w-full py-4 rounded-[24px] bg-charcoal-900 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+        style={{ boxShadow: '0 12px 30px rgba(26,25,22,0.18)' }}
       >
         <Save className="w-4 h-4" />
         {busyAction === 'save' ? 'שומר...' : 'שמור פרטי אירוע'}
       </button>
 
-      <div className={cardClass}>
-        <div className="flex items-center gap-2 mb-3">
-          <MapPin className="w-4 h-4 text-gold-600" />
-          <h2 className="text-[16px] font-bold text-charcoal-900">אירועים קודמים</h2>
-        </div>
-
-        {archivedEvents.length === 0 ? (
-          <p className="text-[13px] text-charcoal-400">עדיין אין אירועים בארכיון.</p>
-        ) : (
-          <div className="space-y-2">
-            {archivedEvents.map((archivedEvent) => (
-              <div key={archivedEvent.id} className="rounded-2xl border border-charcoal-100 px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-bold text-charcoal-900 truncate">{archivedEvent.event_name}</p>
-                    <p className="text-[12px] text-charcoal-400 mt-1">
-                      {archivedEvent.event_date ? new Date(archivedEvent.event_date).toLocaleDateString('he-IL') : 'ללא תאריך'}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => activateEvent(archivedEvent.id)}
-                    disabled={busyAction === 'activate'}
-                    className="px-3 py-2 rounded-xl bg-charcoal-900 text-white text-[12px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
-                  >
-                    הפוך לפעיל
-                  </button>
-                </div>
-              </div>
-            ))}
+      <div className={surface}>
+        <div className="p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className={sectionLabel}>ארכיון אירועים</p>
+              <p className="text-[12px] text-charcoal-400 mt-1">מעבר מהיר בין אירועים קודמים בלי לאבד מידע.</p>
+            </div>
+            <button
+              onClick={archiveEvent}
+              disabled={busyAction === 'archive'}
+              className="rounded-2xl border border-[#E9DEC5] px-3 py-2 text-[12px] font-bold text-charcoal-700 disabled:opacity-50 active:scale-[0.98] transition-transform flex items-center gap-2"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              {busyAction === 'archive' ? 'מעביר...' : 'העבר לארכיון'}
+            </button>
           </div>
-        )}
 
-        <button
-          onClick={archiveEvent}
-          disabled={busyAction === 'archive'}
-          className="w-full mt-3 py-3 rounded-2xl border border-charcoal-200 text-charcoal-700 text-[13px] font-semibold disabled:opacity-50 active:scale-[0.98] transition-transform"
-        >
-          {busyAction === 'archive' ? 'מעביר לארכיון...' : 'העבר את האירוע הפעיל לארכיון'}
-        </button>
+          {archivedEvents.length === 0 ? (
+            <div className="rounded-[24px] bg-[#FAF7EF] px-4 py-5 text-center text-[13px] text-charcoal-400 mt-4">
+              עדיין אין אירועים בארכיון.
+            </div>
+          ) : (
+            <div className="space-y-2 mt-4">
+              {archivedEvents.map((archivedEvent) => (
+                <div key={archivedEvent.id} className="rounded-[22px] border border-[#EFE8D8] bg-[#FCFBF7] px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-bold text-charcoal-900 truncate">{archivedEvent.event_name}</p>
+                      <p className="text-[12px] text-charcoal-400 mt-1">{formatDisplayDate(archivedEvent.event_date)}</p>
+                    </div>
+                    <button
+                      onClick={() => activateEvent(archivedEvent.id)}
+                      disabled={busyAction === 'activate'}
+                      className="px-3 py-2 rounded-xl bg-charcoal-900 text-white text-[12px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+                    >
+                      הפוך לפעיל
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {showCropper && rawImageUrl && (
