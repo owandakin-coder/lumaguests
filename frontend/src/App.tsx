@@ -39,7 +39,6 @@ function AuthenticatedApp() {
   const auth = useSupabaseAuth();
   const {
     event,
-    events,
     archivedEvents,
     loading: eventLoading,
     update: updateEvent,
@@ -258,12 +257,6 @@ function AuthenticatedApp() {
             onLogout={handleLogout}
             userEmail={auth.user?.email}
             event={event}
-            events={events}
-            archivedEvents={archivedEvents}
-            onEventUpdate={updateEvent}
-            onCreateEvent={createEvent}
-            onActivateEvent={activateEvent}
-            onArchiveEvent={archiveEvent}
             onOpenEventManager={() => setCurrentPage('eventManager')}
           />
         );
