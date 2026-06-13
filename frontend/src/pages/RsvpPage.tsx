@@ -335,7 +335,7 @@ export const RsvpPage = ({
 
                   <div className="space-y-4">
                     <div className="rounded-[28px] border border-white/80 bg-white/88 px-4 py-4 shadow-[0_16px_40px_rgba(89,69,35,0.10)] backdrop-blur-xl">
-                      <p className="text-center text-[15px] font-bold text-charcoal-700">כמה אנשים מגיעים?</p>
+                      <p className="text-center text-[15px] font-bold text-charcoal-700">כמה אנשים תגיעו?</p>
                       <div className="mt-4 flex items-center justify-center gap-5">
                         <button
                           onClick={() => setCompanions((current) => Math.max(0, current - 1))}
@@ -345,7 +345,7 @@ export const RsvpPage = ({
                         </button>
 
                         <div className="min-w-[84px] text-center">
-                          <p className="text-[56px] font-black leading-[0.9] tracking-tight text-charcoal-900">
+                          <p className="text-[46px] font-black leading-[0.95] tracking-tight text-charcoal-900">
                             {companions + 1}
                           </p>
                           <p className="mt-1 text-[14px] text-charcoal-500">
@@ -378,7 +378,7 @@ export const RsvpPage = ({
                         ) : (
                           <CheckCircle className="h-5 w-5" />
                         )}
-                        אני מגיע/ה
+                        אגיע לאירוע
                       </motion.button>
 
                       <motion.button
@@ -392,7 +392,7 @@ export const RsvpPage = ({
                         ) : (
                           <span className="text-[20px]">😔</span>
                         )}
-                        לא מגיע/ה
+                        לא אגיע לאירוע
                       </motion.button>
                     </div>
 
