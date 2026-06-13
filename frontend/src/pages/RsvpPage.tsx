@@ -213,19 +213,6 @@ export const RsvpPage = ({
             className="w-full max-w-sm"
           >
             <div className="mb-8">
-              <div
-                className="w-32 h-32 rounded-[32px] mx-auto mb-4 overflow-hidden border border-[#F1E4B8] bg-white"
-                style={{
-                  boxShadow: '0 14px 34px rgba(0,0,0,0.10), 0 0 0 6px rgba(255,248,232,0.9)',
-                }}
-              >
-                <img
-                  src="/logowhite.png"
-                  alt="Luma Guests"
-                  className="w-full h-full object-cover object-center"
-                />
-              </div>
-
               <div className="bg-white rounded-2xl p-4 text-center" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
                 <p className="text-[17px] font-bold text-charcoal-900">{eventInfo.eventName}</p>
                 <p className="text-[13px] text-charcoal-500 mt-0.5">📅 {eventInfo.formattedDate}</p>
