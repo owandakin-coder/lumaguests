@@ -3,6 +3,7 @@
   "outputDirectory": "frontend/dist",
   "routes": [
     { "src": "/share/(.+)", "dest": "/api/share?token=$1" },
+    { "src": "/.well-known/assetlinks.json", "dest": "/.well-known/assetlinks.json" },
     { "src": "/(.*)",       "dest": "/index.html" }
   ]
 }
