@@ -377,17 +377,15 @@ export const EventManager = ({
               className={inputClass}
             />
 
-            <div className="rounded-[24px] border border-[#EFE8D8] bg-[#FAF7EF] p-3.5">
+            <div className="rounded-[24px] border border-[#EFE8D8] bg-[#FAF7EF] p-3.5 relative cursor-pointer">
               <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-[0.18em] mb-2">תאריך האירוע</p>
+              <p className={`text-[15px] ${form.eventDate ? 'text-charcoal-900' : 'text-charcoal-400'}`}>{form.eventDate ? selectedDateLabel : 'בחר תאריך'}</p>
               <input
                 type="date"
-                lang="en-CA"
-                dir="ltr"
                 value={form.eventDate}
                 onChange={(e) => setField('eventDate', e.target.value)}
-                className="w-full bg-transparent text-[15px] text-charcoal-900 focus:outline-none text-left"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
-              <p className="text-[12px] text-charcoal-400 mt-2">{selectedDateLabel}</p>
             </div>
 
             <input
