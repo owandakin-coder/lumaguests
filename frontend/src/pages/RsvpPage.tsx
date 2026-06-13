@@ -148,8 +148,8 @@ export const RsvpPage = ({
         : 'אני מגיע/ה';
 
   const hasHeroImage = !!eventInfo.coverImageUrl;
-  const heroHeightClass = hasHeroImage ? 'h-[280px] sm:h-[320px]' : '';
-  const heroOffsetClass = hasHeroImage ? 'pt-[156px] sm:pt-[178px]' : 'pt-4';
+  const heroHeightClass = hasHeroImage ? 'h-[260px] sm:h-[300px]' : '';
+  const heroOffsetClass = hasHeroImage ? 'pt-[144px] sm:pt-[166px]' : 'pt-3';
 
   return (
     <div dir="rtl" className="min-h-screen overflow-hidden bg-[#F7F2E8]">
@@ -186,7 +186,7 @@ export const RsvpPage = ({
           <div className="absolute left-[-14%] top-[420px] h-64 w-64 rounded-full bg-white/65 blur-3xl" />
         </div>
 
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[460px] flex-col px-5 pb-10 pt-8">
+        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[460px] flex-col px-4 pb-8 pt-6">
           <AnimatePresence mode="wait">
             {step === 'loading' && (
               <motion.div
@@ -293,8 +293,8 @@ export const RsvpPage = ({
                 className="w-full"
               >
                 <div className={heroOffsetClass}>
-                  <div className="rounded-[34px] border border-white/75 bg-white/82 p-5 text-center shadow-[0_26px_80px_rgba(89,69,35,0.16)] backdrop-blur-xl">
-                    <div className="mb-3 flex items-center justify-center gap-3 text-[12px] font-semibold text-gold-700">
+                  <div className="rounded-[30px] border border-white/75 bg-white/82 px-4 py-4 text-center shadow-[0_22px_60px_rgba(89,69,35,0.14)] backdrop-blur-xl">
+                    <div className="mb-2 flex items-center justify-center gap-3 text-[11px] font-semibold text-gold-700">
                       <span className="h-px max-w-[72px] flex-1 bg-gradient-to-l from-transparent via-[#D9BC77] to-transparent" />
                       <Heart className="h-4 w-4" />
                       <span>הזמנה אישית</span>
@@ -302,11 +302,11 @@ export const RsvpPage = ({
                       <span className="h-px max-w-[72px] flex-1 bg-gradient-to-r from-transparent via-[#D9BC77] to-transparent" />
                     </div>
 
-                    <p className="text-[29px] font-black leading-tight tracking-tight text-charcoal-900">
+                    <p className="text-[24px] font-black leading-tight tracking-tight text-charcoal-900 sm:text-[27px]">
                       {eventInfo.eventName}
                     </p>
 
-                    <div className="mt-4 space-y-2 text-[15px] text-charcoal-600">
+                    <div className="mt-3 space-y-1.5 text-[14px] text-charcoal-600">
                       <p className="flex items-center justify-center gap-2">
                         <CalendarDays className="h-4 w-4 text-gold-600" />
                         {eventInfo.formattedDate}
@@ -316,48 +316,48 @@ export const RsvpPage = ({
                         {eventInfo.venueName}
                       </p>
                       {eventInfo.venueAddress ? (
-                        <p className="text-[13px] text-charcoal-400">{eventInfo.venueAddress}</p>
+                        <p className="text-[12px] text-charcoal-400">{eventInfo.venueAddress}</p>
                       ) : null}
                     </div>
                   </div>
 
-                  <div className="px-2 py-8 text-center">
-                    <div className="mb-3 flex items-center justify-center gap-3 text-[#C5A45B]">
-                      <span className="h-px w-20 bg-gradient-to-l from-transparent via-[#E1C987] to-transparent" />
+                  <div className="px-2 py-6 text-center">
+                    <div className="mb-2 flex items-center justify-center gap-3 text-[#C5A45B]">
+                      <span className="h-px w-16 bg-gradient-to-l from-transparent via-[#E1C987] to-transparent" />
                       <Sparkles className="h-4 w-4" />
-                      <span className="h-px w-20 bg-gradient-to-r from-transparent via-[#E1C987] to-transparent" />
+                      <span className="h-px w-16 bg-gradient-to-r from-transparent via-[#E1C987] to-transparent" />
                     </div>
-                    <h1 className="text-[48px] font-black leading-none tracking-tight text-charcoal-900">
+                    <h1 className="text-[40px] font-black leading-none tracking-tight text-charcoal-900 sm:text-[44px]">
                       {guest.full_name}
                     </h1>
-                    <p className="mt-3 text-[19px] text-charcoal-600">נשמח לדעת אם תגיע/י</p>
+                    <p className="mt-2 text-[16px] text-charcoal-600">נשמח לדעת אם תגיע/י</p>
                   </div>
 
-                  <div className="space-y-5">
-                    <div className="rounded-[30px] border border-white/80 bg-white/88 p-5 shadow-[0_18px_48px_rgba(89,69,35,0.10)] backdrop-blur-xl">
-                      <p className="text-center text-[16px] font-bold text-charcoal-700">כמה אנשים מגיעים?</p>
-                      <div className="mt-5 flex items-center justify-center gap-8">
+                  <div className="space-y-4">
+                    <div className="rounded-[28px] border border-white/80 bg-white/88 px-4 py-4 shadow-[0_16px_40px_rgba(89,69,35,0.10)] backdrop-blur-xl">
+                      <p className="text-center text-[15px] font-bold text-charcoal-700">כמה אנשים מגיעים?</p>
+                      <div className="mt-4 flex items-center justify-center gap-5">
                         <button
                           onClick={() => setCompanions((current) => Math.max(0, current - 1))}
-                          className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D2AB54] text-white shadow-[0_10px_24px_rgba(210,171,84,0.28)] transition-transform active:scale-90"
+                          className="flex h-12 w-12 items-center justify-center rounded-full bg-[#D2AB54] text-white shadow-[0_8px_18px_rgba(210,171,84,0.24)] transition-transform active:scale-90"
                         >
-                          <Minus className="h-6 w-6" />
+                          <Minus className="h-5 w-5" />
                         </button>
 
-                        <div className="min-w-[96px] text-center">
-                          <p className="text-[72px] font-black leading-[0.9] tracking-tight text-charcoal-900">
+                        <div className="min-w-[84px] text-center">
+                          <p className="text-[56px] font-black leading-[0.9] tracking-tight text-charcoal-900">
                             {companions + 1}
                           </p>
-                          <p className="mt-2 text-[16px] text-charcoal-500">
+                          <p className="mt-1 text-[14px] text-charcoal-500">
                             {companions + 1 === 1 ? 'רק אני' : `${companions + 1} אנשים`}
                           </p>
                         </div>
 
                         <button
                           onClick={() => setCompanions((current) => current + 1)}
-                          className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D2AB54] text-white shadow-[0_10px_24px_rgba(210,171,84,0.28)] transition-transform active:scale-90"
+                          className="flex h-12 w-12 items-center justify-center rounded-full bg-[#D2AB54] text-white shadow-[0_8px_18px_rgba(210,171,84,0.24)] transition-transform active:scale-90"
                         >
-                          <Plus className="h-6 w-6" />
+                          <Plus className="h-5 w-5" />
                         </button>
                       </div>
                     </div>
@@ -367,16 +367,16 @@ export const RsvpPage = ({
                         whileTap={{ scale: 0.985 }}
                         onClick={() => !submitting && handleSubmit('CONFIRMED')}
                         disabled={submitting}
-                        className="flex w-full items-center justify-center gap-3 rounded-[28px] px-5 py-5 text-[19px] font-black text-white disabled:opacity-60"
+                        className="flex w-full items-center justify-center gap-3 rounded-[24px] px-5 py-4 text-[17px] font-black text-white disabled:opacity-60"
                         style={{
                           background: 'linear-gradient(135deg, #148F4A 0%, #26B86B 100%)',
-                          boxShadow: '0 18px 36px rgba(20,143,74,0.26)',
+                          boxShadow: '0 14px 28px rgba(20,143,74,0.22)',
                         }}
                       >
                         {submitting && choice === 'CONFIRMED' ? (
                           <Loader2 className="h-5 w-5 animate-spin" />
                         ) : (
-                          <CheckCircle className="h-6 w-6" />
+                          <CheckCircle className="h-5 w-5" />
                         )}
                         אני מגיע/ה
                       </motion.button>
@@ -385,28 +385,28 @@ export const RsvpPage = ({
                         whileTap={{ scale: 0.985 }}
                         onClick={() => !submitting && handleSubmit('DECLINED')}
                         disabled={submitting}
-                        className="flex w-full items-center justify-center gap-3 rounded-[28px] border border-[#D5B671] bg-white/92 px-5 py-5 text-[19px] font-black text-charcoal-800 shadow-[0_8px_30px_rgba(130,104,48,0.08)] disabled:opacity-60"
+                        className="flex w-full items-center justify-center gap-3 rounded-[24px] border border-[#D5B671] bg-white/92 px-5 py-4 text-[17px] font-black text-charcoal-800 shadow-[0_6px_22px_rgba(130,104,48,0.08)] disabled:opacity-60"
                       >
                         {submitting && choice === 'DECLINED' ? (
                           <Loader2 className="h-5 w-5 animate-spin" />
                         ) : (
-                          <span className="text-[24px]">😔</span>
+                          <span className="text-[20px]">😔</span>
                         )}
                         לא מגיע/ה
                       </motion.button>
                     </div>
 
-                    <div className="rounded-[30px] border border-white/80 bg-white/88 p-5 shadow-[0_18px_48px_rgba(89,69,35,0.10)] backdrop-blur-xl">
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <p className="text-[16px] font-bold text-charcoal-700">הערות / רגישויות מזון</p>
+                    <div className="rounded-[28px] border border-white/80 bg-white/88 px-4 py-4 shadow-[0_16px_40px_rgba(89,69,35,0.10)] backdrop-blur-xl">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <p className="text-[15px] font-bold text-charcoal-700">הערות / רגישויות מזון</p>
                         <UtensilsCrossed className="h-5 w-5 text-[#C49A40]" />
                       </div>
                       <textarea
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
                         placeholder="לדוגמה: צמחוני, ללא גלוטן..."
-                        rows={3}
-                        className="w-full resize-none rounded-[22px] bg-[#FBF8F2] px-4 py-4 text-[15px] text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-[#E5D3A1] transition"
+                        rows={2}
+                        className="w-full resize-none rounded-[20px] bg-[#FBF8F2] px-4 py-3.5 text-[14px] text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-[#E5D3A1] transition"
                       />
                     </div>
 
