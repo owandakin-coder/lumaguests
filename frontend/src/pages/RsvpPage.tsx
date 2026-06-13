@@ -148,24 +148,28 @@ export const RsvpPage = ({
         : 'אני מגיע/ה';
 
   const hasHeroImage = !!eventInfo.coverImageUrl;
+  const heroHeightClass = hasHeroImage ? 'h-[280px] sm:h-[320px]' : '';
+  const heroOffsetClass = hasHeroImage ? 'pt-[156px] sm:pt-[178px]' : 'pt-4';
 
   return (
     <div dir="rtl" className="min-h-screen overflow-hidden bg-[#F7F2E8]">
       <div className="relative min-h-screen">
         {hasHeroImage ? (
-          <div className="absolute inset-x-0 top-0 h-[330px] overflow-hidden">
+          <div className={`absolute inset-x-0 top-0 overflow-hidden ${heroHeightClass}`}>
             <img
               src={eventInfo.coverImageUrl}
               alt={eventInfo.eventName}
-              className="h-full w-full object-cover object-center"
+              className="h-full w-full object-cover"
+              style={{ objectPosition: 'center 34%' }}
             />
             <div
               className="absolute inset-0"
               style={{
                 background:
-                  'linear-gradient(180deg, rgba(36,27,17,0.08) 0%, rgba(36,27,17,0.34) 44%, rgba(247,242,232,0.95) 100%)',
+                  'linear-gradient(180deg, rgba(36,27,17,0.06) 0%, rgba(36,27,17,0.18) 36%, rgba(36,27,17,0.44) 62%, rgba(247,242,232,0.97) 100%)',
               }}
             />
+            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent via-[#F7F2E8]/35 to-[#F7F2E8]" />
           </div>
         ) : null}
 
@@ -288,7 +292,7 @@ export const RsvpPage = ({
                 animate={{ opacity: 1, y: 0 }}
                 className="w-full"
               >
-                <div className={hasHeroImage ? 'pt-[178px]' : 'pt-4'}>
+                <div className={heroOffsetClass}>
                   <div className="rounded-[34px] border border-white/75 bg-white/82 p-5 text-center shadow-[0_26px_80px_rgba(89,69,35,0.16)] backdrop-blur-xl">
                     <div className="mb-3 flex items-center justify-center gap-3 text-[12px] font-semibold text-gold-700">
                       <span className="h-px max-w-[72px] flex-1 bg-gradient-to-l from-transparent via-[#D9BC77] to-transparent" />
