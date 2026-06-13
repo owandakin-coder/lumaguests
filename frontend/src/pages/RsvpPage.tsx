@@ -148,8 +148,8 @@ export const RsvpPage = ({
         : 'אני מגיע/ה';
 
   const hasHeroImage = !!eventInfo.coverImageUrl;
-  const heroHeightClass = hasHeroImage ? 'h-[260px] sm:h-[300px]' : '';
-  const heroOffsetClass = hasHeroImage ? 'pt-[144px] sm:pt-[166px]' : 'pt-3';
+  const heroHeightClass = hasHeroImage ? 'h-[276px] sm:h-[316px]' : '';
+  const heroOffsetClass = hasHeroImage ? 'pt-[152px] sm:pt-[172px]' : 'pt-3';
 
   return (
     <div dir="rtl" className="min-h-screen overflow-hidden bg-[#F7F2E8]">
@@ -160,16 +160,16 @@ export const RsvpPage = ({
               src={eventInfo.coverImageUrl}
               alt={eventInfo.eventName}
               className="h-full w-full object-cover"
-              style={{ objectPosition: 'center 34%' }}
+              style={{ objectPosition: 'center 30%' }}
             />
             <div
               className="absolute inset-0"
               style={{
                 background:
-                  'linear-gradient(180deg, rgba(36,27,17,0.06) 0%, rgba(36,27,17,0.18) 36%, rgba(36,27,17,0.44) 62%, rgba(247,242,232,0.97) 100%)',
+                  'linear-gradient(180deg, rgba(36,27,17,0.02) 0%, rgba(36,27,17,0.10) 34%, rgba(36,27,17,0.34) 62%, rgba(247,242,232,0.95) 100%)',
               }}
             />
-            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent via-[#F7F2E8]/35 to-[#F7F2E8]" />
+            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent via-[#F7F2E8]/22 to-[#F7F2E8]" />
           </div>
         ) : null}
 
