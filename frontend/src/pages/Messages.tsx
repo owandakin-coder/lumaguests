@@ -412,6 +412,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
 
                 <button
                   onClick={() => void openWhatsApp(guest)}
+                  aria-label={`שלח הודעת WhatsApp ל${name}`}
                   className="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-all flex-shrink-0"
                   style={{ background: sentIds.has(guest.id) ? 'rgba(16,185,129,0.15)' : '#F0FDF4' }}
                 >
@@ -556,6 +557,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
                         ) : (
                           <button
                             onClick={() => void openWhatsApp(guest)}
+                            aria-label={`שלח הודעת WhatsApp ל${name}`}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl active:scale-95 transition-transform"
                             style={{ background: '#1A1916' }}
                           >
