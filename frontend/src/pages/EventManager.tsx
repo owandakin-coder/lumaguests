@@ -3,11 +3,9 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
-  CalendarDays,
   ChevronRight,
   Copy,
   Eye,
-  MapPin,
   RefreshCw,
   Save,
   Send,
@@ -249,99 +247,96 @@ export const EventManager = ({
       </div>
 
       <div
-        className="rounded-[28px] px-4 py-4 text-white"
+        className="rounded-[22px] px-4 py-3.5 text-white"
         style={{
           background:
-            'radial-gradient(circle at top right, rgba(228,202,134,0.18), transparent 32%), linear-gradient(145deg, #171612 0%, #26231D 100%)',
-          boxShadow: '0 14px 34px rgba(27,22,15,0.14)',
+            'radial-gradient(ellipse at top right, rgba(228,202,134,0.15), transparent 50%), linear-gradient(150deg, #1C1A14 0%, #2A2720 100%)',
+          boxShadow: '0 8px 24px rgba(20,18,12,0.18)',
         }}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold tracking-[0.2em] text-white/45 uppercase">האירוע הפעיל</p>
-            <h2 className="mt-1.5 text-[24px] font-black leading-tight truncate">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[9px] font-bold tracking-[0.24em] text-white/38 uppercase mb-0.5">האירוע הפעיל</p>
+            <h2 className="text-[20px] font-black leading-tight truncate">
               {form.eventName || 'האירוע שלי'}
             </h2>
+            <p className="text-[11px] text-white/50 mt-0.5 truncate">
+              {selectedDateLabel}
+              {form.venueName ? ` · ${form.venueName}` : ''}
+            </p>
           </div>
           <button
             onClick={() => setConfirmAction('create')}
             disabled={busyAction === 'create'}
-            className="shrink-0 rounded-2xl bg-white/10 px-3 py-2 text-[12px] font-bold text-white backdrop-blur active:scale-[0.98] transition-transform disabled:opacity-50"
+            className="shrink-0 rounded-xl bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white active:scale-[0.97] transition-transform disabled:opacity-50"
           >
-            {busyAction === 'create' ? 'יוצר...' : 'צור אירוע'}
+            {busyAction === 'create' ? '...' : '+ אירוע'}
           </button>
-        </div>
-
-        <div className="mt-3 space-y-1">
-          <div className="flex items-center gap-2 text-white/70 text-[12px] font-semibold">
-            <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-            <span>{selectedDateLabel}</span>
-          </div>
-          <div className="flex items-center gap-2 text-white/70 text-[12px] font-semibold">
-            <MapPin className="w-3.5 h-3.5 shrink-0" />
-            <span>{form.venueName || 'מקום האירוע טרם הוגדר'}</span>
-          </div>
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <div className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/85">
-            RSVP {form.publicEnabled ? 'פעיל' : 'כבוי'}
-          </div>
-          <div className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/85">
-            {publicUrl ? 'קישור מוכן לשיתוף' : 'טרם הוגדר קישור'}
-          </div>
         </div>
       </div>
 
       <div className={surface}>
-        <div className="p-4">
+        <div className="px-4 pt-4 pb-1">
           <p className={sectionLabel}>פרטי האירוע</p>
-          <div className="space-y-3 mt-4">
-            <input
-              value={form.eventName}
-              onChange={(e) => setField('eventName', e.target.value)}
-              placeholder="שם האירוע"
-              className={inputClass}
-            />
+        </div>
 
-            <div
-              className="rounded-[20px] border border-[#EFE8D8] bg-[#FAF7EF] px-4 py-3 relative cursor-pointer"
-              onClick={() => dateInputRef.current?.showPicker?.()}
-            >
-              <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-[0.18em] mb-1">תאריך האירוע</p>
-              <p className={`text-[15px] font-semibold ${form.eventDate ? 'text-charcoal-900' : 'text-charcoal-400'}`}>
-                {selectedDateLabel}
-              </p>
-              <input
-                ref={dateInputRef}
-                type="date"
-                value={form.eventDate}
-                onChange={(e) => setField('eventDate', e.target.value)}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                tabIndex={-1}
-              />
-            </div>
+        <div className="px-4 py-2.5 border-t border-[#F2EAD8] mt-2">
+          <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">שם האירוע</p>
+          <input
+            value={form.eventName}
+            onChange={(e) => setField('eventName', e.target.value)}
+            placeholder="חתונה, בר-מצווה..."
+            className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
+          />
+        </div>
 
-            <input
-              value={form.venueName}
-              onChange={(e) => setField('venueName', e.target.value)}
-              placeholder="מקום האירוע"
-              className={inputClass}
-            />
-            <input
-              value={form.venueAddress}
-              onChange={(e) => setField('venueAddress', e.target.value)}
-              placeholder="כתובת"
-              className={inputClass}
-            />
-            <textarea
-              value={form.description}
-              onChange={(e) => setField('description', e.target.value)}
-              placeholder="תיאור קצר לאורחים"
-              rows={3}
-              className={`${inputClass} resize-none`}
-            />
-          </div>
+        <div
+          className="px-4 py-2.5 border-t border-[#F2EAD8] relative cursor-pointer"
+          onClick={() => dateInputRef.current?.showPicker?.()}
+        >
+          <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">תאריך</p>
+          <p className={`text-[14px] ${form.eventDate ? 'text-charcoal-900' : 'text-charcoal-300'}`}>
+            {selectedDateLabel}
+          </p>
+          <input
+            ref={dateInputRef}
+            type="date"
+            value={form.eventDate}
+            onChange={(e) => setField('eventDate', e.target.value)}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            tabIndex={-1}
+          />
+        </div>
+
+        <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
+          <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">מקום האירוע</p>
+          <input
+            value={form.venueName}
+            onChange={(e) => setField('venueName', e.target.value)}
+            placeholder="שם האולם"
+            className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
+          />
+        </div>
+
+        <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
+          <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">כתובת</p>
+          <input
+            value={form.venueAddress}
+            onChange={(e) => setField('venueAddress', e.target.value)}
+            placeholder="רחוב ועיר"
+            className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
+          />
+        </div>
+
+        <div className="px-4 py-2.5 border-t border-[#F2EAD8] pb-4">
+          <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">תיאור</p>
+          <textarea
+            value={form.description}
+            onChange={(e) => setField('description', e.target.value)}
+            placeholder="תיאור קצר לאורחים"
+            rows={2}
+            className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none resize-none"
+          />
         </div>
       </div>
 
