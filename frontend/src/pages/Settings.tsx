@@ -63,7 +63,7 @@ type RowItem = {
 };
 
 const inputCls =
-  'w-full px-4 py-3.5 rounded-2xl bg-charcoal-50 text-[14px] text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-charcoal-200 transition';
+  'w-full px-4 py-3 rounded-[20px] bg-charcoal-50 text-[15px] text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-charcoal-200 transition';
 
 const Sheet = ({ open, onClose, title, children }: SheetProps) =>
   createPortal(
@@ -83,15 +83,15 @@ const Sheet = ({ open, onClose, title, children }: SheetProps) =>
             exit={{ y: 80, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 380, damping: 32 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white w-full max-w-[430px] rounded-t-3xl p-6 overflow-y-auto"
-            style={{ maxHeight: '85dvh', paddingBottom: 'max(40px, env(safe-area-inset-bottom))' }}
+            className="bg-white w-full max-w-[430px] rounded-t-[28px] px-5 pt-4 pb-5 overflow-y-auto"
+            style={{ maxHeight: '72dvh', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}
           >
-            <div className="w-10 h-1 bg-charcoal-200 rounded-full mx-auto mb-5" />
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[18px] font-bold text-charcoal-900">{title}</h3>
+            <div className="w-10 h-1 bg-charcoal-200 rounded-full mx-auto mb-4" />
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[17px] font-bold text-charcoal-900">{title}</h3>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-xl bg-charcoal-100 flex items-center justify-center active:scale-90 transition-transform"
+                className="w-7 h-7 rounded-xl bg-charcoal-100 flex items-center justify-center active:scale-90 transition-transform"
               >
                 <X className="w-4 h-4 text-charcoal-600" />
               </button>
@@ -297,7 +297,7 @@ export const Settings = ({
     <button
       onClick={onPress}
       disabled={busy}
-      className="w-full py-4 rounded-2xl bg-charcoal-900 text-white text-[14px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform mt-1"
+      className="w-full py-3.5 rounded-[20px] bg-charcoal-900 text-white text-[14px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform mt-1"
     >
       {busy ? 'שומר...' : label}
     </button>
@@ -334,7 +334,7 @@ export const Settings = ({
             <p className="text-[15px] font-bold text-charcoal-900">ניהול אירוע</p>
             <p className="text-[12px] text-charcoal-400 mt-0.5">{eventName}</p>
             <p className="text-[12px] text-charcoal-400">
-              {eventMeta || 'עריכת פרטי אירוע, תמונת אירוע וקישור RSVP'}
+              {eventMeta || 'עריכת פרטי אירוע וקישור RSVP'}
             </p>
           </div>
           <ChevronLeft className="w-4 h-4 text-charcoal-300 flex-shrink-0" />
@@ -399,8 +399,8 @@ export const Settings = ({
       </div>
 
       <Sheet open={activeModal === 'email'} onClose={close} title="שינוי אימייל">
-        <div className="space-y-4">
-          <p className="text-[13px] text-charcoal-500">
+        <div className="space-y-3">
+          <p className="text-[12px] text-charcoal-500">
             אימייל נוכחי: <span className="font-semibold text-charcoal-800">{email}</span>
           </p>
           <Field label="אימייל חדש">
@@ -425,7 +425,7 @@ export const Settings = ({
       </Sheet>
 
       <Sheet open={activeModal === 'password'} onClose={close} title="שינוי סיסמה">
-        <div className="space-y-4">
+        <div className="space-y-3">
           <Field label="סיסמה חדשה">
             <div className="relative">
               <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
