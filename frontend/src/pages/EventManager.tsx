@@ -67,6 +67,7 @@ export const EventManager = ({
     description: '',
     publicSlug: '',
     publicEnabled: false,
+    rsvpOpen: true,
   });
   const dateInputRef = useRef<HTMLInputElement>(null);
 
@@ -79,6 +80,7 @@ export const EventManager = ({
       description: event?.description || '',
       publicSlug: event?.public_slug || '',
       publicEnabled: !!event?.is_public,
+      rsvpOpen: event?.public_rsvp_enabled ?? true,
     });
     setMessage(null);
     setNewEventName('');
@@ -91,6 +93,7 @@ export const EventManager = ({
     event?.description,
     event?.public_slug,
     event?.is_public,
+    event?.public_rsvp_enabled,
   ]);
 
   const normalizedSlug = useMemo(
@@ -143,6 +146,7 @@ export const EventManager = ({
         description: form.description.trim() || null,
         public_slug: normalizedSlug || null,
         is_public: form.publicEnabled,
+        public_rsvp_enabled: form.rsvpOpen,
       });
       setMessage({ type: 'success', text: 'פרטי האירוע נשמרו.' });
     } catch (error: any) {
@@ -373,6 +377,28 @@ export const EventManager = ({
               />
             </div>
           </div>
+
+          {form.publicEnabled && (
+            <div className="flex items-center justify-between mt-3 px-1">
+              <div>
+                <p className="text-[13px] font-bold text-charcoal-900">קבלת הרשמות</p>
+                <p className="text-[11px] text-charcoal-400 mt-0.5">כשסגור — אורחים לא יוכלו להירשם</p>
+              </div>
+              <button
+                onClick={() => setField('rsvpOpen', !form.rsvpOpen)}
+                className="rounded-2xl bg-[#FAF7EF] px-3 py-2 flex items-center gap-2 active:scale-[0.98] transition-transform"
+              >
+                {form.rsvpOpen ? (
+                  <ToggleRight className="w-5 h-5 text-green-500" />
+                ) : (
+                  <ToggleLeft className="w-5 h-5 text-red-400" />
+                )}
+                <span className="text-[13px] font-bold text-charcoal-900">
+                  {form.rsvpOpen ? 'פתוח' : 'סגור'}
+                </span>
+              </button>
+            </div>
+          )}
 
           {slugChanged ? (
             <div className="rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 mt-3 text-[12px] text-amber-900">

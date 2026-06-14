@@ -17,7 +17,7 @@ interface EventPublicPageProps {
   slug: string;
 }
 
-type Step = 'loading' | 'form' | 'success' | 'declined' | 'error' | 'not_public' | 'event_closed';
+type Step = 'loading' | 'form' | 'success' | 'declined' | 'error' | 'not_public' | 'event_closed' | 'rsvp_closed';
 
 function useCountdown(eventDate: string | null) {
   const [now, setNow] = useState(() => new Date());
@@ -119,6 +119,10 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
           setStep('event_closed');
           return;
         }
+        if (res.error === 'rsvp_closed') {
+          setStep('rsvp_closed');
+          return;
+        }
         if (res.error === 'rate_limited') {
           setErrors({ submit: 'יותר מדי ניסיונות — נסה שוב בעוד מספר דקות' });
           return;
@@ -218,6 +222,23 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
             <h2 className="text-xl font-bold text-charcoal-900 mb-2">תקופת ההרשמה הסתיימה</h2>
             <p className="text-sm text-charcoal-400 leading-relaxed max-w-xs">
               תאריך האירוע עבר ולא ניתן עוד לאשר הגעה.
+            </p>
+          </motion.div>
+        )}
+
+        {step === 'rsvp_closed' && (
+          <motion.div
+            key="rsvp_closed"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="min-h-screen flex flex-col items-center justify-center px-6 text-center"
+          >
+            <div className="w-16 h-16 rounded-3xl bg-charcoal-100 flex items-center justify-center mb-4">
+              <span className="text-3xl">🔒</span>
+            </div>
+            <h2 className="text-xl font-bold text-charcoal-900 mb-2">ההרשמה סגורה</h2>
+            <p className="text-sm text-charcoal-400 leading-relaxed max-w-xs">
+              ההרשמה לאירוע הזה הסתיימה. אם קיבלת הזמנה אישית, ניתן להגיב דרך הקישור האישי שקיבלת.
             </p>
           </motion.div>
         )}
