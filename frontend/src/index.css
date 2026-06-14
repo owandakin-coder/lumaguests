@@ -27,6 +27,9 @@ button {
   cursor: pointer;
 }
 
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
 input, textarea, select {
   @apply transition-colors duration-200;
   font-family: inherit;

@@ -193,6 +193,7 @@ function AuthenticatedApp() {
             guests={guests}
             loading={loading}
             event={event}
+            events={archivedEvents.length > 0 ? [event, ...archivedEvents].filter(Boolean) as import('./types').Event[] : undefined}
             onAddGuest={() => setCurrentPage('add')}
             onViewGuests={() => setCurrentPage('guests')}
             onViewGuest={(guest) => {
@@ -204,6 +205,7 @@ function AuthenticatedApp() {
               setCurrentPage('guests');
             }}
             onSetupEvent={() => setCurrentPage('settings')}
+            onSwitchEvent={activateEvent}
           />
         );
       case 'guests':

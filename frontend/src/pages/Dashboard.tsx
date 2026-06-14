@@ -12,7 +12,9 @@ interface DashboardProps {
   onViewGuest: (guest: Guest) => void;
   onViewGuestsFiltered?: (status: RsvpStatus | 'ALL') => void;
   onSetupEvent?: () => void;
+  onSwitchEvent?: (eventId: string) => void;
   event?: Event | null;
+  events?: Event[];
 }
 
 const EVENT_KEY      = 'luma_event_name';
@@ -67,7 +69,7 @@ function Ring({pct,total,loading}:{pct:number;total:number;loading:boolean}){
 const fade={hidden:{opacity:0,y:6},show:{opacity:1,y:0,transition:{duration:0.2}}};
 const stagger={hidden:{},show:{transition:{staggerChildren:0.055}}};
 
-export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onViewGuestsFiltered,onSetupEvent,event}:DashboardProps)=>{
+export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onViewGuestsFiltered,onSetupEvent,onSwitchEvent,event,events}:DashboardProps)=>{
   const auth=useSupabaseAuth();
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
@@ -201,6 +203,28 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
           ערוך אירוע
         </button>
       </motion.div>
+
+      {/* Event switcher — shown only when multiple events exist */}
+      {events && events.length > 1 && (
+        <motion.div variants={fade} className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
+          {events.map(ev => {
+            const isActive = ev.id === event?.id;
+            return (
+              <button
+                key={ev.id}
+                onClick={() => { if (!isActive && onSwitchEvent) onSwitchEvent(ev.id); }}
+                className={`shrink-0 px-3 py-1.5 rounded-2xl text-[12px] font-bold transition-all active:scale-95 ${
+                  isActive
+                    ? 'bg-charcoal-900 text-white'
+                    : 'bg-white border border-charcoal-200 text-charcoal-600'
+                }`}
+              >
+                {ev.event_name || 'אירוע'}
+              </button>
+            );
+          })}
+        </motion.div>
+      )}
 
       {false && safeCountdownDays > 0 && (
         <motion.div variants={fade}
