@@ -305,6 +305,18 @@ export const eventService = {
     return data as EventRecord;
   },
 
+  delete: async (userId: string, eventId: string): Promise<void> => {
+    // Delete all guests first
+    await supabase.from('guests').delete().eq('event_id', eventId).eq('user_id', userId);
+    // Delete the event
+    const { error } = await supabase
+      .from('events')
+      .delete()
+      .eq('id', eventId)
+      .eq('owner_user_id', userId);
+    if (error) throw error;
+  },
+
   getBySlug: async (slug: string): Promise<{
     event: PublicEventRecord | null;
     error?: 'not_found' | 'not_public';

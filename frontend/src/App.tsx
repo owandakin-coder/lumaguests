@@ -45,6 +45,7 @@ function AuthenticatedApp() {
     createEvent,
     activateEvent,
     archiveEvent,
+    deleteEvent,
   } = useEvent();
 
   const loadGuests = useCallback(async () => {
@@ -272,6 +273,7 @@ function AuthenticatedApp() {
             onCreateEvent={createEvent}
             onActivateEvent={activateEvent}
             onArchiveEvent={archiveEvent}
+            onDeleteEvent={deleteEvent}
           />
         );
       default:

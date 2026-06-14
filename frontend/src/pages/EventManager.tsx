@@ -29,10 +29,11 @@ interface EventManagerProps {
   onCreateEvent?: (name?: string) => Promise<Event>;
   onActivateEvent?: (eventId: string) => Promise<Event>;
   onArchiveEvent?: (eventId: string) => Promise<Event>;
+  onDeleteEvent?: (eventId: string) => Promise<void>;
 }
 
-type BusyAction = 'save' | 'create' | 'activate' | 'archive' | 'cover' | null;
-type ConfirmAction = 'create' | 'archive' | null;
+type BusyAction = 'save' | 'create' | 'activate' | 'archive' | 'delete' | 'cover' | null;
+type ConfirmAction = 'create' | 'archive' | { type: 'delete'; eventId: string; name: string } | null;
 
 const surface = 'rounded-[28px] bg-white shadow-[0_10px_28px_rgba(34,29,21,0.07)]';
 const sectionLabel = 'text-[11px] font-bold tracking-[0.22em] text-[#B49B62] uppercase';
@@ -52,6 +53,7 @@ function formatDisplayDate(date?: string | null) {
 export const EventManager = ({
   event,
   archivedEvents = [],
+  onDeleteEvent,
   onBack,
   onEventUpdate,
   onCreateEvent,
@@ -61,6 +63,7 @@ export const EventManager = ({
   const auth = useSupabaseAuth();
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+  const [newEventName, setNewEventName] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [rawImageUrl, setRawImageUrl] = useState<string | null>(null);
   const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
@@ -234,11 +237,12 @@ export const EventManager = ({
     }
   };
 
-  const createEvent = async () => {
+  const createEvent = async (name: string) => {
     if (!onCreateEvent) return;
     try {
       setBusyAction('create');
-      await onCreateEvent();
+      await onCreateEvent(name.trim() || undefined);
+      setNewEventName('');
       setMessage({ type: 'success', text: 'אירוע חדש נוצר. עכשיו אפשר להגדיר אותו כאן.' });
     } catch (error: any) {
       setMessage({ type: 'error', text: error?.message || 'לא הצלחנו ליצור אירוע חדש.' });
@@ -248,8 +252,29 @@ export const EventManager = ({
   };
 
   const confirmCreateEvent = async () => {
+    const name = newEventName;
     setConfirmAction(null);
-    await createEvent();
+    await createEvent(name);
+  };
+
+  const deleteEventById = async (eventId: string) => {
+    if (!onDeleteEvent) return;
+    try {
+      setBusyAction('delete');
+      await onDeleteEvent(eventId);
+      setMessage({ type: 'success', text: 'האירוע נמחק.' });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error?.message || 'לא הצלחנו למחוק את האירוע.' });
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const confirmDeleteEvent = async () => {
+    if (!confirmAction || typeof confirmAction === 'string') return;
+    const { eventId } = confirmAction;
+    setConfirmAction(null);
+    await deleteEventById(eventId);
   };
 
   const activateEvent = async (eventId: string) => {
@@ -595,10 +620,17 @@ export const EventManager = ({
                     </div>
                     <button
                       onClick={() => activateEvent(archivedEvent.id)}
-                      disabled={busyAction === 'activate'}
+                      disabled={busyAction === 'activate' || busyAction === 'delete'}
                       className="px-3 py-2 rounded-xl bg-charcoal-900 text-white text-[12px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
                     >
                       הפוך לפעיל
+                    </button>
+                    <button
+                      onClick={() => setConfirmAction({ type: 'delete', eventId: archivedEvent.id, name: archivedEvent.event_name })}
+                      disabled={busyAction === 'delete'}
+                      className="w-8 h-8 rounded-xl border border-red-200 bg-red-50 flex items-center justify-center disabled:opacity-50 active:scale-[0.98] transition-transform"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-500" />
                     </button>
                   </div>
                 </div>
@@ -643,34 +675,68 @@ export const EventManager = ({
                 style={{ paddingBottom: 'max(36px, env(safe-area-inset-bottom))' }}
               >
                 <div className="w-10 h-1 bg-charcoal-200 rounded-full mx-auto mb-5" />
-                <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
-                  <AlertTriangle className="w-7 h-7 text-amber-700" />
-                </div>
-                <h3 className="text-[20px] font-bold text-charcoal-900 text-center mb-2">
-                  {confirmAction === 'create' ? 'ליצור אירוע חדש?' : 'להעביר את האירוע לארכיון?'}
-                </h3>
-                <p className="text-[14px] text-charcoal-500 text-center leading-relaxed mb-6">
-                  {confirmAction === 'create'
-                    ? 'יצירת אירוע חדש תעביר את האירוע הנוכחי לארכיון ותעבוד מעכשיו על האירוע החדש.'
-                    : 'האירוע הפעיל יועבר לארכיון ותעבור אוטומטית לאירוע אחר או לאירוע חדש.'}
-                </p>
-                <div className="space-y-2.5">
-                  <button
-                    onClick={confirmAction === 'create' ? confirmCreateEvent : confirmArchiveEvent}
-                    disabled={busyAction === 'create' || busyAction === 'archive'}
-                    className="w-full py-4 rounded-2xl bg-charcoal-900 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
-                  >
-                    {confirmAction === 'create'
-                      ? (busyAction === 'create' ? 'יוצר...' : 'כן, צור אירוע חדש')
-                      : (busyAction === 'archive' ? 'מעביר...' : 'כן, העבר לארכיון')}
-                  </button>
-                  <button
-                    onClick={() => setConfirmAction(null)}
-                    className="w-full py-4 rounded-2xl bg-charcoal-100 text-charcoal-700 text-[15px] font-bold active:scale-[0.98] transition-transform"
-                  >
-                    ביטול
-                  </button>
-                </div>
+
+                {/* DELETE confirm */}
+                {confirmAction && typeof confirmAction === 'object' && confirmAction.type === 'delete' ? (
+                  <>
+                    <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
+                      <Trash2 className="w-7 h-7 text-red-600" />
+                    </div>
+                    <h3 className="text-[20px] font-bold text-charcoal-900 text-center mb-2">למחוק את האירוע?</h3>
+                    <p className="text-[14px] text-charcoal-500 text-center leading-relaxed mb-6">
+                      האירוע <span className="font-bold text-charcoal-700">"{confirmAction.name}"</span> וכל המוזמנים שלו יימחקו לצמיתות. פעולה זו אינה ניתנת לביטול.
+                    </p>
+                    <div className="space-y-2.5">
+                      <button
+                        onClick={confirmDeleteEvent}
+                        disabled={busyAction === 'delete'}
+                        className="w-full py-4 rounded-2xl bg-red-600 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+                      >
+                        {busyAction === 'delete' ? 'מוחק...' : 'כן, מחק לצמיתות'}
+                      </button>
+                      <button onClick={() => setConfirmAction(null)} className="w-full py-4 rounded-2xl bg-charcoal-100 text-charcoal-700 text-[15px] font-bold active:scale-[0.98] transition-transform">
+                        ביטול
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
+                      <AlertTriangle className="w-7 h-7 text-amber-700" />
+                    </div>
+                    <h3 className="text-[20px] font-bold text-charcoal-900 text-center mb-2">
+                      {confirmAction === 'create' ? 'יצירת אירוע חדש' : 'להעביר את האירוע לארכיון?'}
+                    </h3>
+                    <p className="text-[14px] text-charcoal-500 text-center leading-relaxed mb-4">
+                      {confirmAction === 'create'
+                        ? 'האירוע הנוכחי יועבר לארכיון. תן שם לאירוע החדש:'
+                        : 'האירוע הפעיל יועבר לארכיון ותעבור אוטומטית לאירוע אחר או לאירוע חדש.'}
+                    </p>
+                    {confirmAction === 'create' && (
+                      <input
+                        value={newEventName}
+                        onChange={(e) => setNewEventName(e.target.value)}
+                        placeholder="שם האירוע (למשל: חתונה, בר-מצווה...)"
+                        className="w-full rounded-[18px] border border-[#EFE8D8] bg-[#FAF7EF] px-4 py-3 text-[15px] text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-[#D8C088] mb-4"
+                        autoFocus
+                      />
+                    )}
+                    <div className="space-y-2.5">
+                      <button
+                        onClick={confirmAction === 'create' ? confirmCreateEvent : confirmArchiveEvent}
+                        disabled={busyAction === 'create' || busyAction === 'archive'}
+                        className="w-full py-4 rounded-2xl bg-charcoal-900 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+                      >
+                        {confirmAction === 'create'
+                          ? (busyAction === 'create' ? 'יוצר...' : 'צור אירוע')
+                          : (busyAction === 'archive' ? 'מעביר...' : 'כן, העבר לארכיון')}
+                      </button>
+                      <button onClick={() => setConfirmAction(null)} className="w-full py-4 rounded-2xl bg-charcoal-100 text-charcoal-700 text-[15px] font-bold active:scale-[0.98] transition-transform">
+                        ביטול
+                      </button>
+                    </div>
+                  </>
+                )}
               </motion.div>
             </motion.div>
           )}

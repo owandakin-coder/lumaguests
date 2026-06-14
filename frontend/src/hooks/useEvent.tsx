@@ -23,6 +23,7 @@ type EventContextValue = {
   createEvent: (name?: string) => Promise<Event>;
   activateEvent: (eventId: string) => Promise<Event>;
   archiveEvent: (eventId: string) => Promise<Event>;
+  deleteEvent: (eventId: string) => Promise<void>;
 };
 
 const EventContext = createContext<EventContextValue | null>(null);
@@ -130,6 +131,15 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
     return nextActive;
   }, [auth.user, reload]);
 
+  const deleteEvent = useCallback(async (eventId: string) => {
+    if (!auth.user) {
+      throw new Error('לא מחובר');
+    }
+
+    await eventService.delete(auth.user.id, eventId);
+    await reload();
+  }, [auth.user, reload]);
+
   const value = useMemo<EventContextValue>(() => ({
     event,
     events,
@@ -140,7 +150,8 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
     createEvent,
     activateEvent,
     archiveEvent,
-  }), [archiveEvent, createEvent, event, events, loading, reload, update]);
+    deleteEvent,
+  }), [archiveEvent, createEvent, deleteEvent, event, events, loading, reload, update]);
 
   return <EventContext.Provider value={value}>{children}</EventContext.Provider>;
 };
