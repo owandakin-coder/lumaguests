@@ -119,6 +119,10 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
           setStep('event_closed');
           return;
         }
+        if (res.error === 'rate_limited') {
+          setErrors({ submit: 'יותר מדי ניסיונות — נסה שוב בעוד מספר דקות' });
+          return;
+        }
         setErrors({ submit: 'אירעה שגיאה, נסה שוב' });
         return;
       }
