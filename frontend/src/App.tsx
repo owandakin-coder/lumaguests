@@ -272,7 +272,6 @@ function AuthenticatedApp() {
             onCreateEvent={createEvent}
             onActivateEvent={activateEvent}
             onArchiveEvent={archiveEvent}
-            onDeleteEvent={deleteEvent}
           />
         );
       default:
