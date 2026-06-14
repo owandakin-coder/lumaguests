@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, Users, ArrowUpDown, Download, Upload, Layers, List } from 'lucide-react';
+import { Search, Plus, Users, ArrowUpDown, Download, Upload, Layers, List, FileText } from 'lucide-react';
 import { GuestCard } from '../components/GuestCard';
 import { ImportGuestsModal } from '../components/ImportGuestsModal';
 import { FilterSheet, FilterButton } from '../components/FilterSheet';
@@ -63,8 +63,9 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
   const [importOpen,  setImportOpen]  = useState(false);
   const [filterOpen,  setFilterOpen]  = useState(false);
   const [grouped,     setGrouped]     = useState(false);
+  const [hasNote,     setHasNote]     = useState(false);
 
-  const activeFilterCount = (side !== 'ALL' ? 1 : 0) + (category !== 'ALL' ? 1 : 0);
+  const activeFilterCount = (side !== 'ALL' ? 1 : 0) + (category !== 'ALL' ? 1 : 0) + (hasNote ? 1 : 0);
 
   const filtered = useMemo(() => {
     let list = guests.filter(g => {
@@ -73,7 +74,8 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
       return (name.toLowerCase().includes(search.toLowerCase())||g.phone.includes(search))
         &&(status==='ALL'||rsvp===status)
         &&(side==='ALL'||g.side===side)
-        &&(category==='ALL'||g.category===category);
+        &&(category==='ALL'||g.category===category)
+        &&(!hasNote||!!(g.notes||g.rsvp_public_note));
     });
 
     const statusOrder: Record<RsvpStatus, number> = { CONFIRMED: 0, PENDING: 1, DECLINED: 2 };
@@ -98,7 +100,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
     }
 
     return list;
-  }, [guests, search, status, side, category, sort]);
+  }, [guests, search, status, side, category, sort, hasNote]);
 
   const cycleSort = () => {
     const idx = sortCycle.indexOf(sort);
@@ -115,7 +117,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
 
   const exportCSV = () => {
     const eventName = localStorage.getItem('luma_event_name') || 'מוזמנים';
-    const headers = ['שם', 'טלפון', 'סטטוס', 'צד', 'קטגוריה', 'מלווים', 'סך אנשים', 'הערות'];
+    const headers = ['שם', 'טלפון', 'סטטוס', 'צד', 'קטגוריה', 'מלווים', 'סך אנשים', 'הערות', 'הערת מוזמן'];
     const rows = filtered.map(g => [
       g.fullName||g.full_name,
       g.phone,
@@ -125,6 +127,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
       g.companions,
       1 + g.companions,
       g.notes || '',
+      g.rsvp_public_note || '',
     ]);
     const csv = [headers, ...rows]
       .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
@@ -161,6 +164,12 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
             {grouped
               ? <Layers className="w-4 h-4 text-white" strokeWidth={2}/>
               : <List className="w-4 h-4 text-charcoal-500" strokeWidth={2}/>}
+          </button>
+          <button onClick={() => setHasNote(p => !p)}
+            className="w-9 h-9 rounded-2xl flex items-center justify-center active:scale-90 transition-all flex-shrink-0"
+            style={{ background: hasNote ? '#F59E0B' : 'white', boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }}
+            title="הצג רק מוזמנים עם הערות">
+            <FileText className="w-4 h-4" style={{ color: hasNote ? 'white' : '#6B7280' }} strokeWidth={2}/>
           </button>
           {guests.length > 0 && (
             <button onClick={exportCSV}
@@ -213,12 +222,22 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
         </button>
       </div>
 
+      {/* Catering notes banner */}
+      {hasNote && (
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl" style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A' }}>
+          <FileText className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" strokeWidth={2}/>
+          <span className="text-[12px] font-bold text-amber-700">הערות לקייטרינג</span>
+          <span className="text-[12px] text-amber-600">· {filtered.length} מוזמנים עם הערות</span>
+          <button onClick={() => setHasNote(false)} className="mr-auto text-[11px] text-amber-600 font-bold underline">סגור</button>
+        </div>
+      )}
+
       {/* Active filter summary pill */}
       {activeFilterCount > 0 && (
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-charcoal-400">{filtered.length} תוצאות</span>
           <button
-            onClick={() => { setSide('ALL'); setCategory('ALL'); }}
+            onClick={() => { setSide('ALL'); setCategory('ALL'); setHasNote(false); }}
             className="text-[11px] text-gold-600 font-bold underline">
             נקה פילטרים
           </button>

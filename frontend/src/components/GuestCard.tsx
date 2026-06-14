@@ -180,6 +180,9 @@ export const GuestCard = ({ guest, onView, userId, event }: GuestCardProps) => {
             {guest.notes ? (
               <p className="text-[11px] text-charcoal-400 truncate mt-1.5 italic">{guest.notes}</p>
             ) : null}
+            {guest.rsvp_public_note ? (
+              <p className="text-[11px] text-purple-500 truncate mt-0.5 italic">"{guest.rsvp_public_note}"</p>
+            ) : null}
           </div>
 
           <div className="flex flex-col gap-1.5 flex-shrink-0">
