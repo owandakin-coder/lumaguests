@@ -450,17 +450,23 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
                   WebkitMaskImage: 'linear-gradient(to top, black 40%, transparent 100%)',
                 }}
               />
-              <button
-                onClick={handleSendAll}
-                className="relative w-full max-w-[390px] py-4 rounded-2xl text-white text-[15px] font-bold flex items-center justify-center gap-2.5 active:scale-[0.98] transition-transform"
-                style={{
-                  background: '#1A1916',
-                  boxShadow: '0 4px 24px rgba(26,25,22,0.35)',
-                }}
-              >
-                <Send className="w-4 h-4" />
-                שלח ל-{selected.size} נבחרים
-              </button>
+              <div className="relative w-full max-w-[390px] flex gap-2">
+                <button
+                  onClick={() => setSelected(new Set())}
+                  className="py-4 px-5 rounded-2xl text-charcoal-700 text-[14px] font-bold active:scale-[0.98] transition-transform flex-shrink-0"
+                  style={{ background: 'rgba(255,255,255,0.9)', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}
+                >
+                  בטל
+                </button>
+                <button
+                  onClick={handleSendAll}
+                  className="flex-1 py-4 rounded-2xl text-white text-[15px] font-bold flex items-center justify-center gap-2.5 active:scale-[0.98] transition-transform"
+                  style={{ background: '#1A1916', boxShadow: '0 4px 24px rgba(26,25,22,0.35)' }}
+                >
+                  <Send className="w-4 h-4" />
+                  שלח ל-{selected.size} נבחרים
+                </button>
+              </div>
             </motion.div>,
             document.body
           )
