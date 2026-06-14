@@ -26,7 +26,7 @@ interface RsvpPageProps {
 }
 
 type Step = 'loading' | 'form' | 'already' | 'success' | 'error';
-type ErrorState = 'not_found' | 'guest_unavailable' | 'general';
+type ErrorState = 'not_found' | 'guest_unavailable' | 'event_passed' | 'general';
 
 const fallbackDate = 'טרם נקבע';
 const fallbackVenue = 'טרם נקבע';
@@ -104,7 +104,13 @@ export const RsvpPage = ({
       const response = await rsvpService.respond(token, status, companions, note || undefined);
 
       if (!response?.success) {
-        setErrorState(response?.error ? 'guest_unavailable' : 'general');
+        if (response?.error === 'event_passed') {
+          setErrorState('event_passed');
+        } else if (response?.error) {
+          setErrorState('guest_unavailable');
+        } else {
+          setErrorState('general');
+        }
         setStep('error');
         return;
       }
@@ -151,6 +157,10 @@ export const RsvpPage = ({
     guest_unavailable: {
       title: 'המוזמן אינו זמין יותר',
       description: 'ייתכן שהמוזמן הוסר או שהקישור כבר אינו פעיל.',
+    },
+    event_passed: {
+      title: 'תקופת ההרשמה הסתיימה',
+      description: 'תאריך האירוע עבר ולא ניתן עוד לעדכן את התשובה.',
     },
     general: {
       title: 'לא הצלחנו לטעון את אישור ההגעה',
@@ -374,7 +384,7 @@ export const RsvpPage = ({
                         </div>
 
                         <button
-                          onClick={() => setCompanions((current) => current + 1)}
+                          onClick={() => setCompanions((current) => Math.min(20, current + 1))}
                           className="flex h-12 w-12 items-center justify-center rounded-full bg-[#D2AB54] text-white shadow-[0_8px_18px_rgba(210,171,84,0.24)] transition-transform active:scale-90"
                         >
                           <Plus className="h-5 w-5" />

@@ -17,7 +17,7 @@ interface EventPublicPageProps {
   slug: string;
 }
 
-type Step = 'loading' | 'form' | 'success' | 'declined' | 'error' | 'not_public';
+type Step = 'loading' | 'form' | 'success' | 'declined' | 'error' | 'not_public' | 'event_closed';
 
 function useCountdown(eventDate: string | null) {
   const [now, setNow] = useState(() => new Date());
@@ -54,6 +54,7 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [choice, setChoice] = useState<'CONFIRMED' | 'DECLINED' | null>(null);
+  const [honeypot, setHoneypot] = useState('');
 
   const countdown = useCountdown(event?.event_date ?? null);
 
@@ -95,6 +96,10 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
   const handleSubmit = async (status: 'CONFIRMED' | 'DECLINED') => {
     if (!event || submitting) return;
     if (!validate()) return;
+    if (honeypot) {
+      setStep(status === 'CONFIRMED' ? 'success' : 'declined');
+      return;
+    }
     const normalizedPhone = normalizePhone(phone);
 
     try {
@@ -110,6 +115,10 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
       );
 
       if (!res.success) {
+        if (res.error === 'event_passed') {
+          setStep('event_closed');
+          return;
+        }
         setErrors({ submit: 'אירעה שגיאה, נסה שוב' });
         return;
       }
@@ -188,6 +197,23 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
             </p>
             <p className="text-[13px] text-charcoal-400 leading-relaxed max-w-xs">
               בעל האירוע טרם פתח את הרישום. נסה שוב מאוחר יותר.
+            </p>
+          </motion.div>
+        )}
+
+        {step === 'event_closed' && (
+          <motion.div
+            key="event_closed"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="min-h-screen flex flex-col items-center justify-center px-6 text-center"
+          >
+            <div className="w-16 h-16 rounded-3xl bg-charcoal-100 flex items-center justify-center mb-4">
+              <span className="text-3xl">📅</span>
+            </div>
+            <h2 className="text-xl font-bold text-charcoal-900 mb-2">תקופת ההרשמה הסתיימה</h2>
+            <p className="text-sm text-charcoal-400 leading-relaxed max-w-xs">
+              תאריך האירוע עבר ולא ניתן עוד לאשר הגעה.
             </p>
           </motion.div>
         )}
@@ -358,9 +384,22 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
             <div className="px-5 py-6 space-y-4 max-w-[430px] mx-auto">
               <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-widest">אישור הגעה</p>
 
+              {/* honeypot — hidden from humans, bots fill it */}
+              <input
+                type="text"
+                name="website"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+                style={{ display: 'none' }}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+              />
+
               <div>
                 <input
                   value={fullName}
+                  maxLength={100}
                   onChange={(e) => {
                     setFullName(e.target.value);
                     setErrors((prev) => ({ ...prev, fullName: '' }));
@@ -421,7 +460,7 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setCompanions((current) => current + 1)}
+                    onClick={() => setCompanions((current) => Math.min(20, current + 1))}
                     className="w-9 h-9 rounded-xl flex items-center justify-center text-lg font-bold text-white active:scale-90 transition-transform"
                     style={{ background: accent }}
                   >
@@ -440,6 +479,7 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="הערות / רגישויות מזון (אופציונלי)"
                   rows={2}
+                  maxLength={500}
                   className="w-full pr-11 pl-4 py-4 rounded-2xl bg-white text-[14px] text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-charcoal-200 resize-none transition"
                   style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}
                 />
