@@ -401,20 +401,17 @@ export const Settings = ({
             אימייל נוכחי: <span className="font-semibold text-charcoal-800">{email}</span>
           </p>
           <Field label="אימייל חדש">
-            <div className="relative">
-              <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => {
-                  setForm((p) => ({ ...p, email: e.target.value }));
-                  setErr('');
-                }}
-                placeholder="new@example.com"
-                dir="ltr"
-                className={`${inputCls} pr-10 text-right`}
-              />
-            </div>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => {
+                setForm((p) => ({ ...p, email: e.target.value }));
+                setErr('');
+              }}
+              placeholder="new@example.com"
+              dir="ltr"
+              className={inputCls}
+            />
           </Field>
           <Status />
           <Btn onPress={changeEmail} label="שמור אימייל" />
@@ -425,7 +422,6 @@ export const Settings = ({
         <div className="space-y-3">
           <Field label="סיסמה חדשה">
             <div className="relative">
-              <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
               <input
                 type={showPass ? 'text' : 'password'}
                 value={form.password}
@@ -434,8 +430,7 @@ export const Settings = ({
                   setErr('');
                 }}
                 placeholder="לפחות 6 תווים"
-                dir="ltr"
-                className={`${inputCls} pr-10 pl-10 text-right`}
+                className={`${inputCls} pl-10`}
               />
               <button
                 type="button"
