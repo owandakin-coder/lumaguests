@@ -386,9 +386,6 @@ export const Settings = ({
       </button>
 
       <div>
-        <p className="text-[11px] font-bold text-red-400 uppercase tracking-widest mb-2 mr-1">
-          מסוכן
-        </p>
         <button
           onClick={() => setShowDeleteConfirm(true)}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border border-red-200 bg-red-50 text-red-500 text-[14px] font-bold active:scale-[0.98] transition-transform"
