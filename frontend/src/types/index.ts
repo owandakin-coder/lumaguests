@@ -23,6 +23,7 @@ export interface Guest {
   created_at?: string;
   updatedAt?: string;
   updated_at?: string;
+  whatsapp_sent_at?: string | null;
 }
 
 export interface Stats {

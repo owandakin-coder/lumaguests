@@ -119,7 +119,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
   const [templateId, setTemplateId] = useState('rsvp');
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
-  const [sentIds, setSentIds] = useState<Set<string>>(new Set());
+  const [optimisticSentIds, setOptimisticSentIds] = useState<Set<string>>(new Set());
   const { event } = useEvent();
 
   const filtered = useMemo(
@@ -143,10 +143,21 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
     [guests]
   );
 
+  const sentIds = useMemo(
+    () => {
+      const set = new Set(guests.filter(g => g.whatsapp_sent_at).map(g => g.id));
+      optimisticSentIds.forEach(id => set.add(id));
+      return set;
+    },
+    [guests, optimisticSentIds]
+  );
+
   const activeTemplate = TEMPLATES.find((template) => template.id === templateId) ?? TEMPLATES[0];
   const selectedGuests = guests.filter((guest) => selected.has(guest.id));
   const allSelected = filtered.length > 0 && selected.size === filtered.length;
   const allSent = selectedGuests.length > 0 && selectedGuests.every((guest) => sentIds.has(guest.id));
+  const sentSelectedCount = selectedGuests.filter(g => sentIds.has(g.id)).length;
+  const pendingUnsentCount = filter === 'PENDING' ? filtered.filter(g => !sentIds.has(g.id)).length : 0;
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
@@ -198,7 +209,8 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
 
         const message = buildGuestRsvpMessage(name, event, personalLink);
         openWhatsAppUrl(buildGuestRsvpWhatsAppUrl(guest.phone, message));
-        setSentIds((prev) => new Set(prev).add(guest.id));
+        setOptimisticSentIds((prev) => new Set(prev).add(guest.id));
+        void guestService.update(guest.id, { whatsapp_sent_at: new Date().toISOString() }, userId, guest.event_id).catch(() => {});
       } catch {
         window.alert('לא הצלחנו ליצור קישור RSVP אישי למוזמן הזה. נסה שוב.');
       }
@@ -216,11 +228,11 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
     const side = sideLabel[guest.category] ?? undefined;
     const message = activeTemplate.build(name, link, side);
     openWhatsAppUrl(`https://wa.me/${toWaPhone(guest.phone)}?text=${encodeURIComponent(message)}`);
-    setSentIds((prev) => new Set(prev).add(guest.id));
+    setOptimisticSentIds((prev) => new Set(prev).add(guest.id));
+    void guestService.update(guest.id, { whatsapp_sent_at: new Date().toISOString() }, userId, guest.event_id).catch(() => {});
   };
 
   const handleSendAll = () => {
-    setSentIds(new Set());
     setShowQueue(true);
   };
 
@@ -347,20 +359,22 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
         </div>
       ) : null}
 
-      {filter === 'PENDING' && filtered.length > 0 && selected.size === 0 ? (
+      {filter === 'PENDING' && pendingUnsentCount > 0 && selected.size === 0 ? (
         <motion.button
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           onClick={() => {
-            setSelected(new Set(filtered.map((guest) => guest.id)));
-            setSentIds(new Set());
+            const unsent = filtered.filter((guest) => !sentIds.has(guest.id));
+            setSelected(new Set(unsent.map((guest) => guest.id)));
             setShowQueue(true);
           }}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-[13px] font-bold active:scale-[0.98] transition-transform"
           style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A', color: '#92400E' }}
         >
           <Send className="w-4 h-4" />
-          שלח תזכורת לכל {filtered.length} הממתינים
+          {pendingUnsentCount === filtered.length
+            ? `שלח תזכורת לכל ${pendingUnsentCount} הממתינים`
+            : `שלח תזכורת ל-${pendingUnsentCount} שטרם קיבלו`}
         </motion.button>
       ) : null}
 
@@ -514,14 +528,14 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
                     <div className="flex justify-between mb-1">
                       <span className="text-[11px] text-charcoal-400">נשלח</span>
                       <span className="text-[11px] font-bold text-charcoal-700">
-                        {sentIds.size} / {selectedGuests.length}
+                        {sentSelectedCount} / {selectedGuests.length}
                       </span>
                     </div>
                     <div className="h-1.5 bg-charcoal-100 rounded-full overflow-hidden">
                       <motion.div
                         className="h-full bg-green-500 rounded-full transition-all duration-300"
                         style={{
-                          width: selectedGuests.length > 0 ? `${(sentIds.size / selectedGuests.length) * 100}%` : '0%',
+                          width: selectedGuests.length > 0 ? `${(sentSelectedCount / selectedGuests.length) * 100}%` : '0%',
                         }}
                       />
                     </div>
@@ -535,14 +549,15 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
                   {selectedGuests.map((guest, index) => {
                     const name = guest.fullName || guest.full_name;
                     const [bg, fg] = avatarBg(name);
-                    const sent = sentIds.has(guest.id);
+                    const sentThisSession = optimisticSentIds.has(guest.id);
+                    const wasPreviouslySent = !!guest.whatsapp_sent_at && !sentThisSession;
 
                     return (
                       <div
                         key={guest.id}
                         className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${
                           index < selectedGuests.length - 1 ? 'border-b border-charcoal-100/60' : ''
-                        } ${sent ? 'bg-green-50/50' : ''}`}
+                        } ${sentThisSession ? 'bg-green-50/50' : ''}`}
                       >
                         <div
                           className="w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-bold flex-shrink-0"
@@ -556,10 +571,19 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
                             {guest.phone}
                           </p>
                         </div>
-                        {sent ? (
+                        {sentThisSession ? (
                           <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-green-100">
                             <span className="text-[11px] font-bold text-green-700">נשלח ✓</span>
                           </div>
+                        ) : wasPreviouslySent ? (
+                          <button
+                            onClick={() => void openWhatsApp(guest)}
+                            aria-label={`שלח הודעת WhatsApp ל${name}`}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl active:scale-95 transition-transform border border-charcoal-200"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 text-charcoal-500" />
+                            <span className="text-[11px] font-bold text-charcoal-500">שלח שוב</span>
+                          </button>
                         ) : (
                           <button
                             onClick={() => void openWhatsApp(guest)}

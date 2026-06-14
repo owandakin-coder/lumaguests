@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Users, CheckCircle, Clock, XCircle, ChevronLeft, CalendarDays, Settings, MapPin, PencilLine } from 'lucide-react';
+import { Plus, Users, CheckCircle, Clock, XCircle, ChevronLeft, CalendarDays, Settings, MapPin, PencilLine, MessageCircle } from 'lucide-react';
 import { Guest, RsvpStatus, Category, Side, Event } from '../types';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
@@ -88,7 +88,8 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
     // Only count people who are actually coming: confirmed guests + their companions
     const peopleArriving=confirmedGuests.reduce((a,g)=>a+1+(g.companions||0),0);
     const pct=total>0?Math.round((confirmed/total)*100):0;
-    return{confirmed,pending,declined,total,peopleArriving,pct};
+    const whatsappSent=guests.filter(g=>g.whatsapp_sent_at).length;
+    return{confirmed,pending,declined,total,peopleArriving,pct,whatsappSent};
   },[guests]);
 
   const countdownDays = useMemo(() => {
@@ -315,6 +316,24 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
             </button>
           ))}
         </div>
+
+        {!loading && s.whatsappSent > 0 && (
+          <div className="mt-3 flex items-center gap-2 pt-3 border-t border-charcoal-100">
+            <MessageCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" strokeWidth={2} />
+            <span className="text-[11px] text-charcoal-500 flex-shrink-0">WhatsApp נשלח</span>
+            <div className="flex-1 h-1.5 bg-charcoal-100 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-green-500 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: s.total > 0 ? `${(s.whatsappSent / s.total) * 100}%` : '0%' }}
+                transition={{ duration: 0.9, ease: 'easeOut', delay: 0.7 }}
+              />
+            </div>
+            <span className="text-[11px] font-bold text-charcoal-700 flex-shrink-0">
+              {s.whatsappSent}/{s.total}
+            </span>
+          </div>
+        )}
       </motion.div>
 
       {/* Side breakdown — always show bride + groom side by side */}
