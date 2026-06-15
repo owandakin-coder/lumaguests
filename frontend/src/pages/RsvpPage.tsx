@@ -403,7 +403,7 @@ export const RsvpPage = ({
                         </button>
 
                         <div className="min-w-[84px] text-center">
-                          <p className="text-[46px] font-black leading-[0.95] tracking-tight text-charcoal-900">
+                          <p className="text-[32px] font-black leading-[0.95] tracking-tight text-charcoal-900">
                             {companions + 1}
                           </p>
                           <p className="mt-1 text-[14px] text-charcoal-500">
