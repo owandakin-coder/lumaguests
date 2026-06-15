@@ -59,11 +59,24 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
 
     try {
       setLoading(true);
-      let allEvents = await eventService.list(auth.user.id);
+      let allEvents: Event[] = [];
+
+      try {
+        allEvents = await eventService.list(auth.user.id);
+      } catch (error) {
+        console.error('Failed to list events, attempting recovery:', error);
+      }
 
       if (!allEvents.some((item) => !item.archived_at)) {
-        const created = await eventService.getActiveOrCreate(auth.user.id);
-        allEvents = [created, ...allEvents];
+        try {
+          const recovered = await eventService.getActiveOrCreate(auth.user.id);
+          allEvents = [
+            recovered,
+            ...allEvents.filter((item) => item.id !== recovered.id),
+          ];
+        } catch (error) {
+          console.error('Failed to recover active event:', error);
+        }
       }
 
       const activeEvent = allEvents.find((item) => !item.archived_at) || null;
