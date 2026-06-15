@@ -182,8 +182,8 @@ export const EventManager = ({
     try {
       setBusyAction('create');
       await onCreateEvent(newEventName.trim() || undefined);
-      setMessage({ type: 'success', text: 'אירוע חדש נוצר. עכשיו אפשר להגדיר אותו כאן.' });
       setNewEventName('');
+      onBack();
     } catch (error: any) {
       setMessage({ type: 'error', text: error?.message || 'לא הצלחנו ליצור אירוע חדש.' });
     } finally {
