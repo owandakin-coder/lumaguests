@@ -21,7 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { Collaborator, Event } from '../types';
-import { collaboratorService, eventService, openWhatsAppUrl, storageService } from '../services/supabase';
+import { collaboratorService, eventService, openWhatsAppUrl, storageService, supabase } from '../services/supabase';
 import { ImageCropModal } from '../components/ImageCropModal';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
@@ -127,14 +127,43 @@ export const EventManager = ({
   }, [event?.id, isOwner]);
 
   useEffect(() => {
-    const raw = event?.cover_image_url;
-    if (!raw) { setSignedCoverUrl(null); return; }
+    if (!event?.id) return;
     let cancelled = false;
-    storageService.getSignedCoverUrl(raw)
-      .then(url => { if (!cancelled) setSignedCoverUrl(url); })
-      .catch(() => { if (!cancelled) setSignedCoverUrl(raw); });
+
+    const resolveUrl = async (path: string) => {
+      try {
+        const url = await storageService.getSignedCoverUrl(path);
+        if (!cancelled) setSignedCoverUrl(url);
+      } catch {
+        if (!cancelled) setSignedCoverUrl(path);
+      }
+    };
+
+    const raw = event.cover_image_url;
+    if (raw) {
+      void resolveUrl(raw);
+    } else {
+      // Fallback: fetch directly from DB in case the event prop is stale
+      void (async () => {
+        try {
+          const { data } = await supabase
+            .from('events')
+            .select('cover_image_url')
+            .eq('id', event.id)
+            .single();
+          if (!cancelled && data?.cover_image_url) {
+            await resolveUrl(data.cover_image_url);
+          } else if (!cancelled) {
+            setSignedCoverUrl(null);
+          }
+        } catch {
+          if (!cancelled) setSignedCoverUrl(null);
+        }
+      })();
+    }
+
     return () => { cancelled = true; };
-  }, [event?.cover_image_url]);
+  }, [event?.id, event?.cover_image_url]);
 
   const normalizedSlug = useMemo(
     () =>
