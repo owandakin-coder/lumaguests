@@ -225,7 +225,12 @@ export const Settings = ({
         await Promise.allSettled(
           userEvents
             .filter(e => e.cover_image_url)
-            .map(e => storageService.removeEventCover(auth.user!.id, e.id))
+            .map(async (e) => {
+              const path = storageService.extractCoverPath(e.cover_image_url);
+              if (path) {
+                await supabase.storage.from('event-covers').remove([path]);
+              }
+            })
         );
       }
 
