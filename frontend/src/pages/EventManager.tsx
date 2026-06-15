@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
+  ChevronDown,
   ChevronRight,
   Copy,
   Eye,
@@ -12,7 +13,6 @@ import {
   ToggleLeft,
   ToggleRight,
   Trash2,
-  UserPlus,
   X,
 } from 'lucide-react';
 import { Collaborator, Event } from '../types';
@@ -32,6 +32,7 @@ interface EventManagerProps {
 
 type BusyAction = 'save' | 'create' | 'activate' | 'archive' | 'delete' | 'invite' | 'removeCollab' | null;
 type ConfirmAction = 'create' | 'archive' | { type: 'delete'; eventId: string; name: string } | null;
+type AccordionSection = 'details' | 'rsvp' | 'sharing' | 'archive';
 
 const surface = 'rounded-[28px] bg-white shadow-[0_10px_28px_rgba(34,29,21,0.07)]';
 const sectionLabel = 'text-[11px] font-bold tracking-[0.22em] text-[#B49B62] uppercase';
@@ -63,6 +64,7 @@ export const EventManager = ({
 
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+  const [openSection, setOpenSection] = useState<AccordionSection | null>(null);
   const [newEventName, setNewEventName] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -193,6 +195,11 @@ export const EventManager = ({
     });
     setMessage(null);
     setIsEditing(false);
+  };
+
+  const toggleSection = (section: AccordionSection) => {
+    if (isEditing && section === 'details') return;
+    setOpenSection((prev) => (prev === section ? null : section));
   };
 
   const createEvent = async () => {
@@ -455,224 +462,6 @@ export const EventManager = ({
         </div>
       </div>
 
-      <div className={surface}>
-        <div className="px-4 pt-4 pb-1 flex items-center justify-between">
-          <p className={sectionLabel}>פרטי האירוע</p>
-          {isOwner && !isEditing && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="w-8 h-8 rounded-xl bg-[#FAF7EF] flex items-center justify-center active:scale-90 transition-transform"
-            >
-              <Pencil className="w-3.5 h-3.5 text-charcoal-500" />
-            </button>
-          )}
-        </div>
-
-        {/* שם האירוע */}
-        <div className="px-4 py-2.5 border-t border-[#F2EAD8] mt-2">
-          <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">שם האירוע</p>
-          {isEditing ? (
-            <input
-              value={form.eventName}
-              onChange={(e) => setField('eventName', e.target.value)}
-              placeholder="חתונה, בר-מצווה..."
-              autoFocus
-              className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
-            />
-          ) : (
-            <p className="text-[14px] text-charcoal-900">{form.eventName || <span className="text-charcoal-300">לא הוגדר</span>}</p>
-          )}
-        </div>
-
-        {/* תאריך */}
-        <div
-          className={`px-4 py-2.5 border-t border-[#F2EAD8] relative${isEditing ? ' cursor-pointer' : ''}`}
-          onClick={isEditing ? () => dateInputRef.current?.showPicker?.() : undefined}
-        >
-          <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">תאריך</p>
-          <p className={`text-[14px] ${form.eventDate ? 'text-charcoal-900' : 'text-charcoal-300'}`}>
-            {selectedDateLabel}
-            {isEditing && <span className="text-[11px] text-gold-500 mr-2">← לחץ לשינוי</span>}
-          </p>
-          <input
-            ref={dateInputRef}
-            type="date"
-            value={form.eventDate}
-            onChange={(e) => setField('eventDate', e.target.value)}
-            className={`absolute inset-0 w-full h-full opacity-0${isEditing ? ' cursor-pointer' : ' pointer-events-none'}`}
-            tabIndex={-1}
-          />
-        </div>
-
-        {/* מקום האירוע */}
-        <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
-          <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">מקום האירוע</p>
-          {isEditing ? (
-            <input
-              value={form.venueName}
-              onChange={(e) => setField('venueName', e.target.value)}
-              placeholder="שם האולם"
-              className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
-            />
-          ) : (
-            <p className="text-[14px] text-charcoal-900">{form.venueName || <span className="text-charcoal-300">לא הוגדר</span>}</p>
-          )}
-        </div>
-
-        {/* כתובת */}
-        <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
-          <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">כתובת</p>
-          {isEditing ? (
-            <input
-              value={form.venueAddress}
-              onChange={(e) => setField('venueAddress', e.target.value)}
-              placeholder="רחוב ועיר"
-              className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
-            />
-          ) : (
-            <p className="text-[14px] text-charcoal-900">{form.venueAddress || <span className="text-charcoal-300">לא הוגדר</span>}</p>
-          )}
-        </div>
-
-        {/* תיאור */}
-        <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
-          <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">תיאור</p>
-          {isEditing ? (
-            <textarea
-              value={form.description}
-              onChange={(e) => setField('description', e.target.value)}
-              placeholder="תיאור קצר לאורחים"
-              rows={2}
-              className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none resize-none"
-            />
-          ) : (
-            <p className="text-[14px] text-charcoal-900">{form.description || <span className="text-charcoal-300">לא הוגדר</span>}</p>
-          )}
-        </div>
-
-        {/* כפתורי שמור / ביטול */}
-        {isEditing && (
-          <div className="px-4 pb-4 pt-3 border-t border-[#F2EAD8] flex gap-2">
-            <button
-              onClick={cancelEdit}
-              className="flex-1 py-2.5 rounded-[18px] border border-[#E0D6C2] text-[14px] font-semibold text-charcoal-600 active:scale-[0.98] transition-transform"
-            >
-              ביטול
-            </button>
-            <button
-              onClick={() => void saveEvent()}
-              disabled={busyAction === 'save'}
-              className="flex-1 py-2.5 rounded-[18px] bg-charcoal-900 text-white text-[14px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
-            >
-              {busyAction === 'save' ? 'שומר...' : 'שמור'}
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className={surface}>
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className={sectionLabel}>RSVP ציבורי</p>
-              <h3 className="text-[18px] font-bold text-charcoal-900 mt-2">קישור ושיתוף לאורחים</h3>
-              <p className="text-[12px] text-charcoal-400 mt-1">הפעלת עמוד אישור ציבורי עם קישור קבוע לאירוע.</p>
-            </div>
-            <button
-              onClick={isOwner ? () => setField('publicEnabled', !form.publicEnabled) : undefined}
-              disabled={!isOwner}
-              className={`rounded-2xl bg-[#FAF7EF] px-3 py-2 flex items-center gap-2 transition-transform${isOwner ? ' active:scale-[0.98]' : ' cursor-default opacity-75'}`}
-            >
-              {form.publicEnabled ? (
-                <ToggleRight className="w-5 h-5 text-green-500" />
-              ) : (
-                <ToggleLeft className="w-5 h-5 text-charcoal-400" />
-              )}
-              <span className="text-[13px] font-bold text-charcoal-900">{form.publicEnabled ? 'פעיל' : 'כבוי'}</span>
-            </button>
-          </div>
-
-          <div className="rounded-[20px] border border-[#EFE8D8] bg-[#FAF7EF] p-3 mt-4">
-            <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-[0.18em] mb-2">קישור האירוע</p>
-            <div className="flex items-center gap-2" dir="ltr">
-              <span className="text-[13px] text-charcoal-400 font-mono flex-shrink-0">/event/</span>
-              <input
-                value={form.publicSlug}
-                onChange={(e) => setField('publicSlug', e.target.value)}
-                placeholder="my-event-link"
-                readOnly={!isOwner}
-                className={`flex-1 bg-transparent text-[15px] text-charcoal-900 focus:outline-none${!isOwner ? ' cursor-default select-text' : ''}`}
-              />
-            </div>
-          </div>
-
-          {form.publicEnabled && (
-            <div className="flex items-center justify-between mt-3 px-1">
-              <div>
-                <p className="text-[13px] font-bold text-charcoal-900">קבלת הרשמות</p>
-                <p className="text-[11px] text-charcoal-400 mt-0.5">כשסגור — אורחים לא יוכלו להירשם</p>
-              </div>
-              <button
-                onClick={isOwner ? () => setField('rsvpOpen', !form.rsvpOpen) : undefined}
-                disabled={!isOwner}
-                className={`rounded-2xl bg-[#FAF7EF] px-3 py-2 flex items-center gap-2 transition-transform${isOwner ? ' active:scale-[0.98]' : ' cursor-default opacity-75'}`}
-              >
-                {form.rsvpOpen ? (
-                  <ToggleRight className="w-5 h-5 text-green-500" />
-                ) : (
-                  <ToggleLeft className="w-5 h-5 text-red-400" />
-                )}
-                <span className="text-[13px] font-bold text-charcoal-900">
-                  {form.rsvpOpen ? 'פתוח' : 'סגור'}
-                </span>
-              </button>
-            </div>
-          )}
-
-          {slugChanged ? (
-            <div className="rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 mt-3 text-[12px] text-amber-900">
-              שינוי slug ישבור קישורים ציבוריים ישנים שכבר נשלחו לאורחים.
-            </div>
-          ) : null}
-
-          {publicUrl ? (
-            <div className="rounded-[20px] border border-[#EEDFB5] bg-[#FFFBEF] p-3 mt-3">
-              <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-[0.18em] mb-2">קישור מוכן</p>
-              <p className="text-[12px] text-charcoal-700 break-all" dir="ltr">
-                {publicUrl}
-              </p>
-              <div className="grid grid-cols-2 gap-2 mt-3">
-                <button
-                  onClick={copyLink}
-                  className="py-3 rounded-[18px] bg-white text-[13px] font-bold text-charcoal-900 border border-[#EFE3C6] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-                >
-                  <Copy className="w-4 h-4" />
-                  העתק קישור
-                </button>
-                <button
-                  onClick={shareLink}
-                  className="py-3 rounded-[18px] bg-charcoal-900 text-[13px] font-bold text-white active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-                >
-                  <Send className="w-4 h-4" />
-                  שתף בוואטסאפ
-                </button>
-              </div>
-              <button
-                onClick={openPreview}
-                className="w-full mt-2 py-3 rounded-[18px] bg-white text-[13px] font-bold text-charcoal-900 border border-[#EFE3C6] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-              >
-                <Eye className="w-4 h-4" />
-                צפה בדף ה-RSVP
-              </button>
-            </div>
-          ) : (
-            <div className="rounded-[20px] border border-dashed border-[#E5D9BE] bg-[#FCF9F0] px-4 py-4 text-center text-[12px] text-charcoal-400 mt-3">
-              הקישור הציבורי יופיע כאן אחרי שמירה והפעלת RSVP.
-            </div>
-          )}
-        </div>
-      </div>
-
       {message ? (
         <div
           className={`rounded-[20px] px-4 py-3 text-[13px] font-medium ${
@@ -683,164 +472,488 @@ export const EventManager = ({
         </div>
       ) : null}
 
-
+      {/* פרטי האירוע */}
       <div className={surface}>
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className={sectionLabel}>ניהול משותף</p>
-              <h3 className="text-[18px] font-bold text-charcoal-900 mt-2">שיתוף אירוע</h3>
-              <p className="text-[12px] text-charcoal-400 mt-1">
-                הזמן את בן/בת הזוג לנהל את רשימת האורחים יחד.
-              </p>
-            </div>
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: '#F5F3FF' }}>
-              <UserPlus className="w-4.5 h-4.5" style={{ color: '#7C3AED' }} />
-            </div>
+        <button
+          onClick={() => toggleSection('details')}
+          className="w-full px-4 py-4 flex items-center gap-3"
+        >
+          <div className="flex-1 min-w-0 text-right">
+            <p className={sectionLabel}>פרטי האירוע</p>
+            <p className="text-[13px] text-charcoal-500 mt-0.5 truncate">
+              {form.eventName || 'ללא שם'}
+              {form.eventDate ? ` · ${selectedDateLabel}` : ''}
+            </p>
           </div>
-
-          {isOwner ? (
-            <>
-              <div className="flex gap-2 mt-4">
-                <input
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') void handleInvite(); }}
-                  placeholder="כתובת מייל"
-                  dir="ltr"
-                  className="flex-1 rounded-[20px] border border-[#EFE8D8] bg-[#FAF7EF] px-4 py-2.5 text-[14px] text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-[#D8C088]"
-                />
-                <button
-                  onClick={() => void handleInvite()}
-                  disabled={busyAction === 'invite' || !inviteEmail.trim()}
-                  className="px-4 py-2.5 rounded-[20px] bg-charcoal-900 text-white text-[13px] font-bold disabled:opacity-40 active:scale-[0.98] transition-transform flex-shrink-0"
-                >
-                  {busyAction === 'invite' ? '...' : 'הזמן'}
-                </button>
-              </div>
-
-              {lastInvitedEmail && (
-                <div className="rounded-[20px] bg-[#EDFFF4] border border-[#A7F3C9] px-4 py-3 mt-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[12px] font-bold text-green-800">נוסף/ה בהצלחה!</p>
-                    <p className="text-[11px] text-green-700 mt-0.5 truncate" dir="ltr">{lastInvitedEmail}</p>
-                    <p className="text-[11px] text-green-600 mt-0.5">שלח/י להם הודעה כדי שידעו להיכנס</p>
+          <ChevronDown
+            className={`w-4 h-4 text-charcoal-400 flex-shrink-0 transition-transform duration-200 ${openSection === 'details' ? 'rotate-180' : ''}`}
+          />
+        </button>
+        <AnimatePresence initial={false}>
+          {openSection === 'details' && (
+            <motion.div
+              key="details-content"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+              style={{ overflow: 'hidden' }}
+            >
+              <div className="border-t border-[#F2EAD8]">
+                {isOwner && !isEditing && (
+                  <div className="px-4 pt-3 flex justify-end">
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="flex items-center gap-1.5 text-[12px] font-semibold text-charcoal-600 px-3 py-1.5 rounded-xl bg-[#FAF7EF] active:scale-90 transition-transform"
+                    >
+                      <Pencil className="w-3 h-3" />
+                      ערוך
+                    </button>
                   </div>
+                )}
+
+                <div className="px-4 py-2.5 border-t border-[#F2EAD8] mt-2">
+                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">שם האירוע</p>
+                  {isEditing ? (
+                    <input
+                      value={form.eventName}
+                      onChange={(e) => setField('eventName', e.target.value)}
+                      placeholder="חתונה, בר-מצווה..."
+                      autoFocus
+                      className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
+                    />
+                  ) : (
+                    <p className="text-[14px] text-charcoal-900">{form.eventName || <span className="text-charcoal-300">לא הוגדר</span>}</p>
+                  )}
+                </div>
+
+                <div
+                  className={`px-4 py-2.5 border-t border-[#F2EAD8] relative${isEditing ? ' cursor-pointer' : ''}`}
+                  onClick={isEditing ? () => dateInputRef.current?.showPicker?.() : undefined}
+                >
+                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">תאריך</p>
+                  <p className={`text-[14px] ${form.eventDate ? 'text-charcoal-900' : 'text-charcoal-300'}`}>
+                    {selectedDateLabel}
+                    {isEditing && <span className="text-[11px] text-gold-500 mr-2">← לחץ לשינוי</span>}
+                  </p>
+                  <input
+                    ref={dateInputRef}
+                    type="date"
+                    value={form.eventDate}
+                    onChange={(e) => setField('eventDate', e.target.value)}
+                    className={`absolute inset-0 w-full h-full opacity-0${isEditing ? ' cursor-pointer' : ' pointer-events-none'}`}
+                    tabIndex={-1}
+                  />
+                </div>
+
+                <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
+                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">מקום האירוע</p>
+                  {isEditing ? (
+                    <input
+                      value={form.venueName}
+                      onChange={(e) => setField('venueName', e.target.value)}
+                      placeholder="שם האולם"
+                      className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
+                    />
+                  ) : (
+                    <p className="text-[14px] text-charcoal-900">{form.venueName || <span className="text-charcoal-300">לא הוגדר</span>}</p>
+                  )}
+                </div>
+
+                <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
+                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">כתובת</p>
+                  {isEditing ? (
+                    <input
+                      value={form.venueAddress}
+                      onChange={(e) => setField('venueAddress', e.target.value)}
+                      placeholder="רחוב ועיר"
+                      className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
+                    />
+                  ) : (
+                    <p className="text-[14px] text-charcoal-900">{form.venueAddress || <span className="text-charcoal-300">לא הוגדר</span>}</p>
+                  )}
+                </div>
+
+                <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
+                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">תיאור</p>
+                  {isEditing ? (
+                    <textarea
+                      value={form.description}
+                      onChange={(e) => setField('description', e.target.value)}
+                      placeholder="תיאור קצר לאורחים"
+                      rows={2}
+                      className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none resize-none"
+                    />
+                  ) : (
+                    <p className="text-[14px] text-charcoal-900">{form.description || <span className="text-charcoal-300">לא הוגדר</span>}</p>
+                  )}
+                </div>
+
+                {isEditing && (
+                  <div className="px-4 pb-4 pt-3 border-t border-[#F2EAD8] flex gap-2">
+                    <button
+                      onClick={cancelEdit}
+                      className="flex-1 py-2.5 rounded-[18px] border border-[#E0D6C2] text-[14px] font-semibold text-charcoal-600 active:scale-[0.98] transition-transform"
+                    >
+                      ביטול
+                    </button>
+                    <button
+                      onClick={() => void saveEvent()}
+                      disabled={busyAction === 'save'}
+                      className="flex-1 py-2.5 rounded-[18px] bg-charcoal-900 text-white text-[14px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+                    >
+                      {busyAction === 'save' ? 'שומר...' : 'שמור'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* RSVP ציבורי */}
+      <div className={surface}>
+        <button
+          onClick={() => toggleSection('rsvp')}
+          className="w-full px-4 py-4 flex items-center gap-3"
+        >
+          <div className="flex-1 min-w-0 text-right">
+            <p className={sectionLabel}>RSVP ציבורי</p>
+            <p className="text-[13px] text-charcoal-500 mt-0.5">קישור ושיתוף לאורחים</p>
+          </div>
+          <span
+            className={`text-[11px] font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${
+              form.publicEnabled
+                ? 'bg-green-100 text-green-700'
+                : 'bg-charcoal-100 text-charcoal-500'
+            }`}
+          >
+            {form.publicEnabled ? 'פעיל' : 'כבוי'}
+          </span>
+          <ChevronDown
+            className={`w-4 h-4 text-charcoal-400 flex-shrink-0 transition-transform duration-200 ${openSection === 'rsvp' ? 'rotate-180' : ''}`}
+          />
+        </button>
+        <AnimatePresence initial={false}>
+          {openSection === 'rsvp' && (
+            <motion.div
+              key="rsvp-content"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+              style={{ overflow: 'hidden' }}
+            >
+              <div className="border-t border-[#F2EAD8] p-4">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <p className="text-[13px] font-bold text-charcoal-900">הפעל עמוד RSVP ציבורי</p>
                   <button
-                    onClick={() => {
-                      const appUrl = window.location.origin;
-                      const text = `הוזמנת לנהל יחד את האורחים של ${form.eventName || 'האירוע שלנו'} 🎉\nכנס/י לאפליקציה עם המייל: ${lastInvitedEmail}\n${appUrl}`;
-                      openWhatsAppUrl(`https://wa.me/?text=${encodeURIComponent(text)}`);
-                    }}
-                    className="shrink-0 flex items-center gap-1.5 bg-[#25D366] text-white text-[12px] font-bold px-3 py-2 rounded-[14px] active:scale-[0.97] transition-transform"
+                    onClick={isOwner ? () => setField('publicEnabled', !form.publicEnabled) : undefined}
+                    disabled={!isOwner}
+                    className={`rounded-2xl bg-[#FAF7EF] px-3 py-2 flex items-center gap-2 transition-transform${isOwner ? ' active:scale-[0.98]' : ' cursor-default opacity-75'}`}
                   >
-                    <Send className="w-3.5 h-3.5" />
-                    WhatsApp
+                    {form.publicEnabled ? (
+                      <ToggleRight className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <ToggleLeft className="w-5 h-5 text-charcoal-400" />
+                    )}
+                    <span className="text-[13px] font-bold text-charcoal-900">{form.publicEnabled ? 'פעיל' : 'כבוי'}</span>
                   </button>
                 </div>
-              )}
 
-              {collaborators.length === 0 ? (
-                <div className="rounded-[20px] bg-[#FAF7EF] px-4 py-4 text-center text-[13px] text-charcoal-400 mt-3">
-                  עדיין אין שותפים לניהול האירוע.
+                <div className="rounded-[20px] border border-[#EFE8D8] bg-[#FAF7EF] p-3">
+                  <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-[0.18em] mb-2">קישור האירוע</p>
+                  <div className="flex items-center gap-2" dir="ltr">
+                    <span className="text-[13px] text-charcoal-400 font-mono flex-shrink-0">/event/</span>
+                    <input
+                      value={form.publicSlug}
+                      onChange={(e) => setField('publicSlug', e.target.value)}
+                      placeholder="my-event-link"
+                      readOnly={!isOwner}
+                      className={`flex-1 bg-transparent text-[15px] text-charcoal-900 focus:outline-none${!isOwner ? ' cursor-default select-text' : ''}`}
+                    />
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-2 mt-3">
-                  {collaborators.map((c) => (
-                    <div
-                      key={c.user_id}
-                      className="flex items-center gap-3 rounded-[20px] border border-[#EFE8D8] bg-[#FCFBF7] px-4 py-3"
+
+                {form.publicEnabled && (
+                  <div className="flex items-center justify-between mt-3 px-1">
+                    <div>
+                      <p className="text-[13px] font-bold text-charcoal-900">קבלת הרשמות</p>
+                      <p className="text-[11px] text-charcoal-400 mt-0.5">כשסגור — אורחים לא יוכלו להירשם</p>
+                    </div>
+                    <button
+                      onClick={isOwner ? () => setField('rsvpOpen', !form.rsvpOpen) : undefined}
+                      disabled={!isOwner}
+                      className={`rounded-2xl bg-[#FAF7EF] px-3 py-2 flex items-center gap-2 transition-transform${isOwner ? ' active:scale-[0.98]' : ' cursor-default opacity-75'}`}
                     >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-bold text-charcoal-900 truncate" dir="ltr">
-                          {c.email}
-                        </p>
-                      </div>
+                      {form.rsvpOpen ? (
+                        <ToggleRight className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <ToggleLeft className="w-5 h-5 text-red-400" />
+                      )}
+                      <span className="text-[13px] font-bold text-charcoal-900">
+                        {form.rsvpOpen ? 'פתוח' : 'סגור'}
+                      </span>
+                    </button>
+                  </div>
+                )}
+
+                {slugChanged ? (
+                  <div className="rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 mt-3 text-[12px] text-amber-900">
+                    שינוי slug ישבור קישורים ציבוריים ישנים שכבר נשלחו לאורחים.
+                  </div>
+                ) : null}
+
+                {publicUrl ? (
+                  <div className="rounded-[20px] border border-[#EEDFB5] bg-[#FFFBEF] p-3 mt-3">
+                    <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-[0.18em] mb-2">קישור מוכן</p>
+                    <p className="text-[12px] text-charcoal-700 break-all" dir="ltr">
+                      {publicUrl}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 mt-3">
                       <button
-                        onClick={() => void handleRemoveCollaborator(c.user_id)}
-                        disabled={busyAction === 'removeCollab'}
-                        className="w-7 h-7 rounded-xl border border-red-200 bg-red-50 flex items-center justify-center disabled:opacity-40 active:scale-[0.98] transition-transform flex-shrink-0"
+                        onClick={copyLink}
+                        className="py-3 rounded-[18px] bg-white text-[13px] font-bold text-charcoal-900 border border-[#EFE3C6] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
                       >
-                        <X className="w-3.5 h-3.5 text-red-500" />
+                        <Copy className="w-4 h-4" />
+                        העתק קישור
+                      </button>
+                      <button
+                        onClick={shareLink}
+                        className="py-3 rounded-[18px] bg-charcoal-900 text-[13px] font-bold text-white active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                      >
+                        <Send className="w-4 h-4" />
+                        שתף בוואטסאפ
                       </button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="rounded-[20px] bg-[#F5F3FF] px-4 py-4 mt-3 text-center text-[13px] text-[#5B21B6]">
-              אתה/את מנהל/ת אירוע זה כשותף/ה.
-            </div>
+                    <button
+                      onClick={openPreview}
+                      className="w-full mt-2 py-3 rounded-[18px] bg-white text-[13px] font-bold text-charcoal-900 border border-[#EFE3C6] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                    >
+                      <Eye className="w-4 h-4" />
+                      צפה בדף ה-RSVP
+                    </button>
+                  </div>
+                ) : (
+                  <div className="rounded-[20px] border border-dashed border-[#E5D9BE] bg-[#FCF9F0] px-4 py-4 text-center text-[12px] text-charcoal-400 mt-3">
+                    הקישור הציבורי יופיע כאן אחרי שמירה והפעלת RSVP.
+                  </div>
+                )}
+
+                {isOwner && (
+                  <button
+                    onClick={() => void saveEvent()}
+                    disabled={busyAction === 'save'}
+                    className="w-full mt-3 py-3 rounded-[22px] bg-charcoal-900 text-white text-[14px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+                  >
+                    {busyAction === 'save' ? 'שומר...' : 'שמור הגדרות'}
+                  </button>
+                )}
+              </div>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
+      </div>
+
+      {/* ניהול משותף */}
+      <div className={surface}>
+        <button
+          onClick={() => toggleSection('sharing')}
+          className="w-full px-4 py-4 flex items-center gap-3"
+        >
+          <div className="flex-1 min-w-0 text-right">
+            <p className={sectionLabel}>ניהול משותף</p>
+            <p className="text-[13px] text-charcoal-500 mt-0.5">
+              {collaborators.length > 0
+                ? `${collaborators.length} שותף${collaborators.length !== 1 ? 'ים' : ''}`
+                : 'אין שותפים'}
+            </p>
+          </div>
+          <ChevronDown
+            className={`w-4 h-4 text-charcoal-400 flex-shrink-0 transition-transform duration-200 ${openSection === 'sharing' ? 'rotate-180' : ''}`}
+          />
+        </button>
+        <AnimatePresence initial={false}>
+          {openSection === 'sharing' && (
+            <motion.div
+              key="sharing-content"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+              style={{ overflow: 'hidden' }}
+            >
+              <div className="border-t border-[#F2EAD8] p-4">
+                {isOwner ? (
+                  <>
+                    <div className="flex gap-2">
+                      <input
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') void handleInvite(); }}
+                        placeholder="כתובת מייל"
+                        dir="ltr"
+                        className="flex-1 rounded-[20px] border border-[#EFE8D8] bg-[#FAF7EF] px-4 py-2.5 text-[14px] text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-[#D8C088]"
+                      />
+                      <button
+                        onClick={() => void handleInvite()}
+                        disabled={busyAction === 'invite' || !inviteEmail.trim()}
+                        className="px-4 py-2.5 rounded-[20px] bg-charcoal-900 text-white text-[13px] font-bold disabled:opacity-40 active:scale-[0.98] transition-transform flex-shrink-0"
+                      >
+                        {busyAction === 'invite' ? '...' : 'הזמן'}
+                      </button>
+                    </div>
+
+                    {lastInvitedEmail && (
+                      <div className="rounded-[20px] bg-[#EDFFF4] border border-[#A7F3C9] px-4 py-3 mt-3 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[12px] font-bold text-green-800">נוסף/ה בהצלחה!</p>
+                          <p className="text-[11px] text-green-700 mt-0.5 truncate" dir="ltr">{lastInvitedEmail}</p>
+                          <p className="text-[11px] text-green-600 mt-0.5">שלח/י להם הודעה כדי שידעו להיכנס</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const appUrl = window.location.origin;
+                            const text = `הוזמנת לנהל יחד את האורחים של ${form.eventName || 'האירוע שלנו'} 🎉\nכנס/י לאפליקציה עם המייל: ${lastInvitedEmail}\n${appUrl}`;
+                            openWhatsAppUrl(`https://wa.me/?text=${encodeURIComponent(text)}`);
+                          }}
+                          className="shrink-0 flex items-center gap-1.5 bg-[#25D366] text-white text-[12px] font-bold px-3 py-2 rounded-[14px] active:scale-[0.97] transition-transform"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                          WhatsApp
+                        </button>
+                      </div>
+                    )}
+
+                    {collaborators.length === 0 ? (
+                      <div className="rounded-[20px] bg-[#FAF7EF] px-4 py-4 text-center text-[13px] text-charcoal-400 mt-3">
+                        עדיין אין שותפים לניהול האירוע.
+                      </div>
+                    ) : (
+                      <div className="space-y-2 mt-3">
+                        {collaborators.map((c) => (
+                          <div
+                            key={c.user_id}
+                            className="flex items-center gap-3 rounded-[20px] border border-[#EFE8D8] bg-[#FCFBF7] px-4 py-3"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[13px] font-bold text-charcoal-900 truncate" dir="ltr">
+                                {c.email}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => void handleRemoveCollaborator(c.user_id)}
+                              disabled={busyAction === 'removeCollab'}
+                              className="w-7 h-7 rounded-xl border border-red-200 bg-red-50 flex items-center justify-center disabled:opacity-40 active:scale-[0.98] transition-transform flex-shrink-0"
+                            >
+                              <X className="w-3.5 h-3.5 text-red-500" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-[20px] bg-[#F5F3FF] px-4 py-4 text-center text-[13px] text-[#5B21B6]">
+                    אתה/את מנהל/ת אירוע זה כשותף/ה.
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {isOwner && (
-      <div className={surface}>
-        <div className="p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
+        <div className={surface}>
+          <button
+            onClick={() => toggleSection('archive')}
+            className="w-full px-4 py-4 flex items-center gap-3"
+          >
+            <div className="flex-1 min-w-0 text-right">
               <p className={sectionLabel}>ארכיון אירועים</p>
-              <p className="text-[12px] text-charcoal-400 mt-1">מעבר מהיר בין אירועים קודמים בלי לאבד מידע.</p>
+              <p className="text-[13px] text-charcoal-500 mt-0.5">
+                {archivedEvents.length > 0 ? `${archivedEvents.length} אירועים בארכיון` : 'ריק'}
+              </p>
             </div>
-            <button
-              onClick={() => setConfirmAction('archive')}
-              disabled={busyAction === 'archive'}
-              className="rounded-2xl border border-[#E9DEC5] px-3 py-2 text-[12px] font-bold text-charcoal-700 disabled:opacity-50 active:scale-[0.98] transition-transform flex items-center gap-2"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              {busyAction === 'archive' ? 'מעביר...' : 'העבר לארכיון'}
-            </button>
-          </div>
-
-          {archivedEvents.length === 0 ? (
-            <div className="rounded-[20px] bg-[#FAF7EF] px-4 py-5 text-center text-[13px] text-charcoal-400 mt-4">
-              עדיין אין אירועים בארכיון.
-            </div>
-          ) : (
-            <div className="space-y-2 mt-4">
-              {archivedEvents.map((archivedEvent) => (
-                <div
-                  key={archivedEvent.id}
-                  className="rounded-[20px] border border-[#EFE8D8] bg-[#FCFBF7] px-4 py-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-bold text-charcoal-900 truncate">
-                        {archivedEvent.event_name}
-                      </p>
-                      <p className="text-[12px] text-charcoal-400 mt-0.5">
-                        {formatDisplayDate(archivedEvent.event_date)}
-                      </p>
-                    </div>
+            <ChevronDown
+              className={`w-4 h-4 text-charcoal-400 flex-shrink-0 transition-transform duration-200 ${openSection === 'archive' ? 'rotate-180' : ''}`}
+            />
+          </button>
+          <AnimatePresence initial={false}>
+            {openSection === 'archive' && (
+              <motion.div
+                key="archive-content"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                style={{ overflow: 'hidden' }}
+              >
+                <div className="border-t border-[#F2EAD8] p-4">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <p className="text-[12px] text-charcoal-400">מעבר מהיר בין אירועים קודמים בלי לאבד מידע.</p>
                     <button
-                      onClick={() => activateEvent(archivedEvent.id)}
-                      disabled={busyAction === 'activate'}
-                      className="px-3 py-2 rounded-xl bg-charcoal-900 text-white text-[12px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform shrink-0"
+                      onClick={() => setConfirmAction('archive')}
+                      disabled={busyAction === 'archive'}
+                      className="rounded-2xl border border-[#E9DEC5] px-3 py-2 text-[12px] font-bold text-charcoal-700 disabled:opacity-50 active:scale-[0.98] transition-transform flex items-center gap-2 shrink-0"
                     >
-                      הפוך לפעיל
-                    </button>
-                    <button
-                      onClick={() =>
-                        setConfirmAction({
-                          type: 'delete',
-                          eventId: archivedEvent.id,
-                          name: archivedEvent.event_name || 'אירוע',
-                        })
-                      }
-                      disabled={busyAction === 'delete'}
-                      className="w-8 h-8 rounded-xl border border-red-200 bg-red-50 flex items-center justify-center disabled:opacity-50 active:scale-[0.98] transition-transform shrink-0"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      {busyAction === 'archive' ? 'מעביר...' : 'העבר לארכיון'}
                     </button>
                   </div>
+
+                  {archivedEvents.length === 0 ? (
+                    <div className="rounded-[20px] bg-[#FAF7EF] px-4 py-5 text-center text-[13px] text-charcoal-400">
+                      עדיין אין אירועים בארכיון.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {archivedEvents.map((archivedEvent) => (
+                        <div
+                          key={archivedEvent.id}
+                          className="rounded-[20px] border border-[#EFE8D8] bg-[#FCFBF7] px-4 py-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[14px] font-bold text-charcoal-900 truncate">
+                                {archivedEvent.event_name}
+                              </p>
+                              <p className="text-[12px] text-charcoal-400 mt-0.5">
+                                {formatDisplayDate(archivedEvent.event_date)}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => activateEvent(archivedEvent.id)}
+                              disabled={busyAction === 'activate'}
+                              className="px-3 py-2 rounded-xl bg-charcoal-900 text-white text-[12px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform shrink-0"
+                            >
+                              הפוך לפעיל
+                            </button>
+                            <button
+                              onClick={() =>
+                                setConfirmAction({
+                                  type: 'delete',
+                                  eventId: archivedEvent.id,
+                                  name: archivedEvent.event_name || 'אירוע',
+                                })
+                              }
+                              disabled={busyAction === 'delete'}
+                              className="w-8 h-8 rounded-xl border border-red-200 bg-red-50 flex items-center justify-center disabled:opacity-50 active:scale-[0.98] transition-transform shrink-0"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </div>
       )}
 
       {createPortal(
