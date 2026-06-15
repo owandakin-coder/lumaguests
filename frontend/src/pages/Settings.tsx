@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { useEvent } from '../hooks/useEvent';
 import { authService, guestService, openWhatsAppUrl, supabase } from '../services/supabase';
 import { Event } from '../types';
 
@@ -118,6 +119,7 @@ export const Settings = ({
   onOpenEventManager,
 }: SettingsProps) => {
   const auth = useSupabaseAuth();
+  const { reload } = useEvent();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -207,15 +209,16 @@ export const Settings = ({
     }
   };
 
-  const handleDeleteAccount = async () => {
+  const handleDeleteData = async () => {
     if (!auth.user) return;
 
     try {
       setDeleteLoading(true);
       await guestService.deleteAll(auth.user.id);
       await supabase.from('events').delete().eq('owner_user_id', auth.user.id);
-      await authService.signOut();
-      onLogout();
+      await reload();
+      setShowDeleteConfirm(false);
+      setOk('כל הנתונים נמחקו בהצלחה. אפשר ליצור אירוע חדש בכל רגע.');
     } catch {
       setShowDeleteConfirm(false);
       setActiveModal(null);
@@ -391,7 +394,7 @@ export const Settings = ({
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border border-red-200 bg-red-50 text-red-500 text-[14px] font-bold active:scale-[0.98] transition-transform"
         >
           <Trash2 className="w-4 h-4" />
-          מחיקת חשבון
+          מחיקת כל הנתונים
         </button>
       </div>
 
@@ -636,15 +639,15 @@ export const Settings = ({
                   מחיקת כל הנתונים
                 </h3>
                 <p className="text-[14px] text-charcoal-500 text-center leading-relaxed mb-6">
-                  פעולה זו תמחק לצמיתות את כל המוזמנים, האירועים ופרטי החשבון שלך.
+                  הפעולה תמחק לצמיתות את כל האירועים והמוזמנים שלך, אבל החשבון יישאר קיים ותוכל לפתוח אירוע חדש אחר כך.
                 </p>
                 <div className="space-y-2.5">
                   <button
-                    onClick={handleDeleteAccount}
+                    onClick={handleDeleteData}
                     disabled={deleteLoading}
                     className="w-full py-4 rounded-2xl bg-red-500 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
                   >
-                    {deleteLoading ? 'מוחק...' : 'כן, מחק את החשבון'}
+                    {deleteLoading ? 'מוחק...' : 'כן, מחק את כל הנתונים'}
                   </button>
                   <button
                     onClick={() => setShowDeleteConfirm(false)}

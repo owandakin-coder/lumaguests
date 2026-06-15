@@ -69,11 +69,13 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (!allEvents.some((item) => !item.archived_at)) {
         try {
-          const recovered = await eventService.getActiveOrCreate(auth.user.id);
-          allEvents = [
-            recovered,
-            ...allEvents.filter((item) => item.id !== recovered.id),
-          ];
+          const recovered = await eventService.getActive(auth.user.id);
+          if (recovered) {
+            allEvents = [
+              recovered,
+              ...allEvents.filter((item) => item.id !== recovered.id),
+            ];
+          }
         } catch (error) {
           console.error('Failed to recover active event:', error);
         }

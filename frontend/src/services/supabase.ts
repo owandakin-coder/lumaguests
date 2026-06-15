@@ -268,8 +268,7 @@ export const eventService = {
     ] as EventRecord[];
   },
 
-  getActiveOrCreate: async (userId: string) => {
-    // 1. Check for owned active event
+  getActive: async (userId: string) => {
     const { data, error } = await supabase
       .from('events')
       .select('*')
@@ -281,6 +280,36 @@ export const eventService = {
 
     if (data) return data as EventRecord;
     if (error && error.code !== 'PGRST116') throw error;
+
+    try {
+      const { data: collabs } = await supabase
+        .from('event_collaborators')
+        .select('events(*)')
+        .eq('user_id', userId);
+      const activeCollab = (collabs || [])
+        .map((c: any) => c.events)
+        .find((e: any) => e && !e.archived_at);
+      return (activeCollab || null) as EventRecord | null;
+    } catch {
+      return null;
+    }
+  },
+
+  getActiveOrCreate: async (userId: string) => {
+    const active = await eventService.getActive(userId);
+    if (active) return active;
+
+    const { data: existing, error: existingError } = await supabase
+      .from('events')
+      .select('*')
+      .eq('owner_user_id', userId)
+      .is('archived_at', null)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) return existing as EventRecord;
+    if (existingError && existingError.code !== 'PGRST116') throw existingError;
 
     // 2. Check for a collaborated active event (before creating a new owned one)
     try {

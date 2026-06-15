@@ -180,6 +180,7 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
       </motion.div>
 
       {/* Countdown banner — when event date set */}
+      {event && (
       <motion.div
         variants={fade}
         className="rounded-[28px] px-4 py-3.5 flex items-center gap-3"
@@ -204,6 +205,7 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
           ערוך אירוע
         </button>
       </motion.div>
+      )}
 
       {/* Event switcher — shown only when multiple events exist */}
       {events && events.length > 1 && (
@@ -227,6 +229,30 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
         </motion.div>
       )}
 
+      {!event ? (
+        <motion.div
+          variants={fade}
+          className="bg-white rounded-3xl p-5 text-center"
+          style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}
+        >
+          <div className="w-14 h-14 rounded-2xl bg-charcoal-100 flex items-center justify-center mx-auto mb-4">
+            <CalendarDays className="w-6 h-6 text-charcoal-400" strokeWidth={1.8} />
+          </div>
+          <p className="text-[20px] font-bold text-charcoal-900 mb-2">אין כרגע אירוע פעיל</p>
+          <p className="text-[13px] text-charcoal-500 leading-relaxed mb-5">
+            {events && events.length > 0
+              ? 'אפשר לבחור אירוע מהרשימה למעלה או לפתוח אירוע חדש.'
+              : 'כדי להתחיל, צריך ליצור אירוע ואז להוסיף מוזמנים.'}
+          </p>
+          <button
+            onClick={onSetupEvent}
+            className="w-full py-3.5 rounded-2xl bg-charcoal-900 text-white text-[14px] font-bold active:scale-[0.98] transition-transform"
+          >
+            פתח ניהול אירוע
+          </button>
+        </motion.div>
+      ) : (
+        <>
       {false && safeCountdownDays > 0 && (
         <motion.div variants={fade}
           className="rounded-2xl px-4 py-3 flex items-center gap-3"
@@ -472,6 +498,8 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
             הוסף מוזמן
           </button>
         </motion.div>
+      )}
+        </>
       )}
 
     </motion.div>

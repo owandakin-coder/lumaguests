@@ -225,7 +225,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
       link = null;
     }
 
-    const side = sideLabel[guest.category] ?? undefined;
+    const side = guest.side ? sideLabel[guest.side] ?? undefined : undefined;
     const message = activeTemplate.build(name, link, side);
     openWhatsAppUrl(`https://wa.me/${toWaPhone(guest.phone)}?text=${encodeURIComponent(message)}`);
     setOptimisticSentIds((prev) => new Set(prev).add(guest.id));

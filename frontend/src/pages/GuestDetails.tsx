@@ -225,8 +225,7 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
             </button>
             <button
               onClick={handleCopyLink}
-              disabled={!guest.rsvp_token}
-              className="flex flex-col items-center gap-1.5 py-3 rounded-2xl active:scale-95 transition-transform disabled:opacity-40"
+              className="flex flex-col items-center gap-1.5 py-3 rounded-2xl active:scale-95 transition-transform"
               style={{ background: copied ? 'rgba(16,185,129,0.15)' : 'rgba(168,85,247,0.12)' }}
             >
               <Link className="w-5 h-5" style={{ color: copied ? '#10B981' : '#A855F7' }} strokeWidth={2} />

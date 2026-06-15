@@ -26,6 +26,7 @@ type AuthPage = 'login' | 'register';
 
 function AuthenticatedApp() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  const [eventManagerReturnPage, setEventManagerReturnPage] = useState<Page>('settings');
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingGuest, setEditingGuest] = useState<Guest | null>(null);
@@ -47,6 +48,25 @@ function AuthenticatedApp() {
     archiveEvent,
     deleteEvent,
   } = useEvent();
+
+  const openEventManager = useCallback((returnPage: Page = 'dashboard') => {
+    setEventManagerReturnPage(returnPage);
+    setCurrentPage('eventManager');
+  }, []);
+
+  const openPageRequiringEvent = useCallback((page: Extract<Page, 'guests' | 'add' | 'messages'>, returnPage: Page = 'dashboard') => {
+    if (!event) {
+      addToast('צריך אירוע פעיל כדי להמשיך', 'info');
+      openEventManager(returnPage);
+      return;
+    }
+
+    if (page === 'messages') {
+      setMessagesInitialFilter('ALL');
+    }
+
+    setCurrentPage(page);
+  }, [addToast, event, openEventManager]);
 
   const loadGuests = useCallback(async () => {
     if (!auth.user || !event?.id) {
@@ -125,8 +145,10 @@ function AuthenticatedApp() {
   }, [addToast, auth.isAuthenticated, auth.user, event?.id]);
 
   useEffect(() => {
-    if (!eventLoading && !event && currentPage !== 'eventManager') {
-      setCurrentPage('eventManager');
+    if (eventLoading || event) return;
+
+    if (['guests', 'add', 'edit', 'details', 'messages'].includes(currentPage)) {
+      setCurrentPage('dashboard');
     }
   }, [currentPage, event, eventLoading]);
 
@@ -203,17 +225,17 @@ function AuthenticatedApp() {
             loading={loading}
             event={event}
             events={archivedEvents.length > 0 ? [event, ...archivedEvents].filter(Boolean) as import('./types').Event[] : undefined}
-            onAddGuest={() => setCurrentPage('add')}
-            onViewGuests={() => setCurrentPage('guests')}
+            onAddGuest={() => openPageRequiringEvent('add')}
+            onViewGuests={() => openPageRequiringEvent('guests')}
             onViewGuest={(guest) => {
               setViewingGuest(guest);
               setCurrentPage('details');
             }}
             onViewGuestsFiltered={(status) => {
               setGuestStatusFilter(status);
-              setCurrentPage('guests');
+              openPageRequiringEvent('guests');
             }}
-            onSetupEvent={() => setCurrentPage('settings')}
+            onSetupEvent={() => openEventManager('dashboard')}
             onSwitchEvent={activateEvent}
           />
         );
@@ -224,7 +246,7 @@ function AuthenticatedApp() {
             loading={loading}
             userId={event?.owner_user_id || auth.user!.id}
             event={event}
-            onAddGuest={() => setCurrentPage('add')}
+            onAddGuest={() => openPageRequiringEvent('add', 'guests')}
             onEditGuest={(guest) => {
               setEditingGuest(guest);
               setCurrentPage('edit');
@@ -268,7 +290,7 @@ function AuthenticatedApp() {
             onLogout={handleLogout}
             userEmail={auth.user?.email}
             event={event}
-            onOpenEventManager={() => setCurrentPage('eventManager')}
+            onOpenEventManager={() => openEventManager('settings')}
           />
         );
       case 'eventManager':
@@ -276,7 +298,7 @@ function AuthenticatedApp() {
           <EventManager
             event={event}
             archivedEvents={archivedEvents}
-            onBack={() => setCurrentPage('settings')}
+            onBack={() => setCurrentPage(eventManagerReturnPage)}
             onEventUpdate={updateEvent}
             onCreateEvent={createEvent}
             onActivateEvent={activateEvent}
@@ -318,9 +340,11 @@ function AuthenticatedApp() {
         <MobileBottomNav
           currentPage={currentPage}
           onNavChange={(page) => {
-            if (page === 'messages') {
-              setMessagesInitialFilter('ALL');
+            if (page === 'guests' || page === 'messages') {
+              openPageRequiringEvent(page as 'guests' | 'messages', currentPage === 'settings' ? 'settings' : 'dashboard');
+              return;
             }
+
             setCurrentPage(page as Page);
           }}
         />
