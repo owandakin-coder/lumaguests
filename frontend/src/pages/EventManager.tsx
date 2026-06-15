@@ -39,7 +39,7 @@ type ConfirmAction = 'create' | 'archive' | { type: 'delete'; eventId: string; n
 type AccordionSection = 'details' | 'rsvp' | 'sharing' | 'archive';
 
 const surface = 'rounded-[28px] bg-white shadow-[0_10px_28px_rgba(34,29,21,0.07)]';
-const sectionLabel = 'text-[11px] font-bold tracking-[0.22em] text-[#B49B62] uppercase';
+const sectionLabel = 'text-[11px] font-bold tracking-[0.22em] text-charcoal-900 uppercase';
 const inputClass =
   'w-full rounded-[20px] border border-[#EFE8D8] bg-[#FAF7EF] px-4 py-3 text-[15px] text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-[#D8C088]';
 
