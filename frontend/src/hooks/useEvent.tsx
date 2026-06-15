@@ -69,7 +69,7 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (!allEvents.some((item) => !item.archived_at)) {
         try {
-          const recovered = await eventService.getActive(auth.user.id);
+          const recovered = await eventService.getActiveOrCreate(auth.user.id);
           if (recovered) {
             allEvents = [
               recovered,

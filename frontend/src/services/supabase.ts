@@ -268,8 +268,9 @@ export const eventService = {
     ] as EventRecord[];
   },
 
-  getActive: async (userId: string) => {
-    const { data, error } = await supabase
+  getActiveOrCreate: async (userId: string) => {
+    // 1. Check for owned active event
+    const { data: owned, error: ownedErr } = await supabase
       .from('events')
       .select('*')
       .eq('owner_user_id', userId)
@@ -278,60 +279,29 @@ export const eventService = {
       .limit(1)
       .maybeSingle();
 
-    if (data) return data as EventRecord;
-    if (error && error.code !== 'PGRST116') throw error;
+    if (owned) return owned as EventRecord;
+    if (ownedErr && ownedErr.code !== 'PGRST116') throw ownedErr;
 
-    try {
-      const { data: collabs } = await supabase
-        .from('event_collaborators')
-        .select('events(*)')
-        .eq('user_id', userId);
-      const activeCollab = (collabs || [])
+    // 2. Check for a collaborated active event (event_collaborators may not exist yet)
+    const { data: collabs, error: collabErr } = await supabase
+      .from('event_collaborators')
+      .select('events(*)')
+      .eq('user_id', userId);
+
+    if (!collabErr && collabs) {
+      const activeCollab = collabs
         .map((c: any) => c.events)
         .find((e: any) => e && !e.archived_at);
-      return (activeCollab || null) as EventRecord | null;
-    } catch {
-      return null;
-    }
-  },
-
-  getActiveOrCreate: async (userId: string) => {
-    const active = await eventService.getActive(userId);
-    if (active) return active;
-
-    const { data: existing, error: existingError } = await supabase
-      .from('events')
-      .select('*')
-      .eq('owner_user_id', userId)
-      .is('archived_at', null)
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    if (existing) return existing as EventRecord;
-    if (existingError && existingError.code !== 'PGRST116') throw existingError;
-
-    // 2. Check for a collaborated active event (before creating a new owned one)
-    try {
-      const { data: collabs } = await supabase
-        .from('event_collaborators')
-        .select('events(*)')
-        .eq('user_id', userId);
-      const activeCollab = (collabs || [])
-        .map((c: any) => c.events)
-        .filter((e: any) => e && !e.archived_at)[0];
       if (activeCollab) return activeCollab as EventRecord;
-    } catch {
-      // event_collaborators table not yet created ׳³ג€™׳’ג€ֲ¬׳’ג‚¬ֲ safe to ignore
     }
 
-    // 3. No event found anywhere ׳³ג€™׳’ג€ֲ¬׳’ג‚¬ֲ create a fresh owned event
+    // 3. Create a new owned event
     const slug = buildDefaultSlug();
     const { data: created, error: createError } = await supabase
       .from('events')
       .insert({
         owner_user_id: userId,
-        event_name: '׳³ֲ³׳’ג‚¬ֲ׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢׳³ֲ³ײ²ֲ¨׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ²ֲ¢ ׳³ֲ³ײ²ֲ©׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢',
+        event_name: 'האירוע שלי',
         public_slug: slug,
         archived_at: null,
       })
