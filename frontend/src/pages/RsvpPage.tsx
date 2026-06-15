@@ -488,16 +488,9 @@ export const RsvpPage = ({
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
-                  className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-[28px]"
-                  style={{
-                    background: choice === 'CONFIRMED' ? 'rgba(236,253,245,0.92)' : 'rgba(255,241,242,0.92)',
-                    boxShadow:
-                      choice === 'CONFIRMED'
-                        ? '0 8px 24px rgba(16,185,129,0.25)'
-                        : '0 8px 24px rgba(248,113,113,0.2)',
-                  }}
+                  className="mx-auto mb-5 text-center"
                 >
-                  <span className="text-4xl">{choice === 'CONFIRMED' ? '🎉' : '💛'}</span>
+                  <span className="text-5xl">{choice === 'CONFIRMED' ? '🎉' : '💛'}</span>
                 </motion.div>
 
                 <div className="rounded-[34px] border border-white/70 bg-white/86 px-5 pb-6 pt-5 shadow-[0_24px_60px_rgba(102,84,50,0.14)] backdrop-blur-xl">
