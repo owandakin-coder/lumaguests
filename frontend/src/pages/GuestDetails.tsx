@@ -59,7 +59,7 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
 
   const load = async () => {
     if (!auth.user || !event?.id) return;
-    try { setLoading(true); setGuest(await guestService.getById(guestId, auth.user.id, event.id)); }
+    try { setLoading(true); setGuest(await guestService.getById(guestId, event.owner_user_id || auth.user.id, event.id)); }
     catch { /* silent */ } finally { setLoading(false); }
   };
 
@@ -104,7 +104,7 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
     const token = rsvpService.generateToken();
 
     try {
-      await guestService.update(guest.id, { rsvp_token: token }, auth.user.id, event?.id);
+      await guestService.update(guest.id, { rsvp_token: token }, event?.owner_user_id || auth.user.id, event?.id);
       setGuest((prev) => (prev ? { ...prev, rsvp_token: token } : prev));
       return token;
     } catch {
