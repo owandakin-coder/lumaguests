@@ -257,7 +257,7 @@ export const eventService = {
         .eq('user_id', userId);
       collaboratedEvents = (collabs || []).map((c: any) => c.events).filter(Boolean);
     } catch {
-      // event_collaborators table not yet created — safe to ignore
+      // event_collaborators table not yet created ׳³ג€™׳’ג€ֲ¬׳’ג‚¬ֲ safe to ignore
     }
 
     // Merge without duplicates (owned events take precedence)
@@ -322,16 +322,16 @@ export const eventService = {
         .filter((e: any) => e && !e.archived_at)[0];
       if (activeCollab) return activeCollab as EventRecord;
     } catch {
-      // event_collaborators table not yet created — safe to ignore
+      // event_collaborators table not yet created ׳³ג€™׳’ג€ֲ¬׳’ג‚¬ֲ safe to ignore
     }
 
-    // 3. No event found anywhere — create a fresh owned event
+    // 3. No event found anywhere ׳³ג€™׳’ג€ֲ¬׳’ג‚¬ֲ create a fresh owned event
     const slug = buildDefaultSlug();
     const { data: created, error: createError } = await supabase
       .from('events')
       .insert({
         owner_user_id: userId,
-        event_name: 'האירוע שלי',
+        event_name: '׳³ֲ³׳’ג‚¬ֲ׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢׳³ֲ³ײ²ֲ¨׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ²ֲ¢ ׳³ֲ³ײ²ֲ©׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢',
         public_slug: slug,
         archived_at: null,
       })
@@ -360,10 +360,42 @@ export const eventService = {
   createNew: async (userId: string, name?: string) => {
     const { data, error } = await supabase.rpc('create_event_lite', {
       p_user_id: userId,
-      p_event_name: name?.trim() || 'אירוע חדש',
+      p_event_name: name?.trim() || '׳׳™׳¨׳•׳¢ ׳—׳“׳©',
     });
-    if (error) throw error;
-    return data as EventRecord;
+
+    if (!error && data) {
+      return data as EventRecord;
+    }
+
+    const now = new Date().toISOString();
+    const slug = buildDefaultSlug();
+
+    const { error: archiveError } = await supabase
+      .from('events')
+      .update({ archived_at: now })
+      .eq('owner_user_id', userId)
+      .is('archived_at', null);
+
+    if (archiveError) {
+      throw error || archiveError;
+    }
+
+    const { data: created, error: createError } = await supabase
+      .from('events')
+      .insert({
+        owner_user_id: userId,
+        event_name: name?.trim() || '׳׳™׳¨׳•׳¢ ׳—׳“׳©',
+        public_slug: slug,
+        archived_at: null,
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      throw error || createError;
+    }
+
+    return created as EventRecord;
   },
 
   activate: async (userId: string, eventId: string) => {
@@ -504,7 +536,7 @@ export const rsvpService = {
     if (!base) return `${window.location.origin}/rsvp/${token}`;
     if (!ev) return base;
     const params = new URLSearchParams();
-    if (ev.event_name && ev.event_name !== 'האירוע שלי') params.set('en', ev.event_name);
+    if (ev.event_name && ev.event_name !== '׳³ֲ³׳’ג‚¬ֲ׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢׳³ֲ³ײ²ֲ¨׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ²ֲ¢ ׳³ֲ³ײ²ֲ©׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢') params.set('en', ev.event_name);
     if (ev.event_date) params.set('ed', ev.event_date.split('T')[0]);
     if (ev.venue_name) params.set('vn', ev.venue_name);
     if (ev.venue_address) params.set('va', ev.venue_address);
@@ -525,7 +557,7 @@ export const rsvpService = {
     const base = `${window.location.origin}/share/${token}`;
     if (!ev) return base;
     const params = new URLSearchParams();
-    if (ev.event_name && ev.event_name !== 'האירוע שלי') params.set('en', ev.event_name);
+    if (ev.event_name && ev.event_name !== '׳³ֲ³׳’ג‚¬ֲ׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢׳³ֲ³ײ²ֲ¨׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ²ֲ¢ ׳³ֲ³ײ²ֲ©׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢') params.set('en', ev.event_name);
     if (ev.event_date) params.set('ed', ev.event_date.split('T')[0]);
     if (ev.venue_name) params.set('vn', ev.venue_name);
     if (ev.venue_address) params.set('va', ev.venue_address);
@@ -547,17 +579,17 @@ export const rsvpService = {
     } | null
   ): string => {
     const link = rsvpService.buildPersonalRsvpLink({ rsvp_token: token }) || `${window.location.origin}/rsvp/${token}`;
-    const eventName = ev?.event_name && ev.event_name !== 'האירוע שלי' ? ev.event_name : 'האירוע שלנו';
-    const lines: string[] = [`היי ${guestName} 👋`, '', `נשמח לראות אותך ב${eventName}`];
+    const eventName = ev?.event_name && ev.event_name !== '׳³ֲ³׳’ג‚¬ֲ׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢׳³ֲ³ײ²ֲ¨׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ²ֲ¢ ׳³ֲ³ײ²ֲ©׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢' ? ev.event_name : '׳³ֲ³׳’ג‚¬ֲ׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢׳³ֲ³ײ²ֲ¨׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ²ֲ¢ ׳³ֲ³ײ²ֲ©׳³ֲ³ײ²ֲ׳³ֲ³ײ²ֲ ׳³ֲ³׳’ג‚¬ֲ¢';
+    const lines: string[] = [`׳³ֲ³׳’ג‚¬ֲ׳³ֲ³׳’ג€ֲ¢׳³ֲ³׳’ג€ֲ¢ ${guestName} ׳³ֲ ײ²ֲ׳’ג‚¬ֻ׳’ג‚¬ֲ¹`, '', `׳³ֲ³ײ²ֲ ׳³ֲ³ײ²ֲ©׳³ֲ³ײ²ֲ׳³ֲ³׳’ג‚¬ג€ ׳³ֲ³ײ²ֲ׳³ֲ³ײ²ֲ¨׳³ֲ³ײ²ֲ׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ³ג€” ׳³ֲ³ײ²ֲ׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ³ג€”׳³ֲ³ײ²ֲ ׳³ֲ³׳’ג‚¬ֻ${eventName}`];
 
     if (ev?.event_date) {
       const date = new Date(ev.event_date);
-      lines.push(`📅 ${date.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}`);
+      lines.push(`׳³ֲ ײ²ֲ׳’ג‚¬ֲ׳’ג‚¬ֲ¦ ${date.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}`);
     }
-    if (ev?.venue_name) lines.push(`📍 ${ev.venue_name}`);
+    if (ev?.venue_name) lines.push(`׳³ֲ ײ²ֲ׳’ג‚¬ֲײ²ֲ ${ev.venue_name}`);
     if (ev?.venue_address) lines.push(`   ${ev.venue_address}`);
 
-    lines.push('', 'לאישור הגעה:', link, '', 'תודה ❤️');
+    lines.push('', '׳³ֲ³ײ²ֲ׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢׳³ֲ³ײ²ֲ©׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ²ֲ¨ ׳³ֲ³׳’ג‚¬ֲ׳³ֲ³׳’ג‚¬ג„¢׳³ֲ³ײ²ֲ¢׳³ֲ³׳’ג‚¬ֲ:', link, '', '׳³ֲ³ײ³ג€”׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³׳’ג‚¬ֲ׳³ֲ³׳’ג‚¬ֲ ׳³ג€™ײ²ֲ׳’ג€ֳ—׳³ֲײ²ֲ¸ײ²ֲ');
     return `https://wa.me/${toWaPhone(phone)}?text=${encodeURIComponent(lines.join('\n'))}`;
   },
 };
@@ -601,7 +633,7 @@ export const storageService = {
 
     if (error) throw error;
 
-    // Store the path only — signed URLs are generated at display time
+    // Store the path only ׳³ג€™׳’ג€ֲ¬׳’ג‚¬ֲ signed URLs are generated at display time
     return path;
   },
 
