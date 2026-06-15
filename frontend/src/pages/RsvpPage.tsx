@@ -392,30 +392,30 @@ export const RsvpPage = ({
                   </div>
 
                   <div className="space-y-4">
-                    <div className="rounded-[28px] border border-white/80 bg-white/88 px-4 py-3 shadow-[0_16px_40px_rgba(89,69,35,0.10)] backdrop-blur-xl">
-                      <p className="text-center text-[14px] font-bold text-charcoal-700">כמה אנשים תגיעו?</p>
-                      <div className="mt-2 flex items-center justify-center gap-6" dir="ltr">
+                    <div className="rounded-[28px] border border-white/80 bg-white/88 px-4 py-4 shadow-[0_16px_40px_rgba(89,69,35,0.10)] backdrop-blur-xl">
+                      <p className="text-center text-[15px] font-bold text-charcoal-700">כמה אנשים תגיעו?</p>
+                      <div className="mt-4 flex items-center justify-center gap-5" dir="ltr">
                         <button
                           onClick={() => setCompanions((current) => Math.max(0, current - 1))}
-                          className="flex h-10 w-10 items-center justify-center rounded-full bg-[#D2AB54] text-white shadow-[0_6px_14px_rgba(210,171,84,0.24)] transition-transform active:scale-90"
+                          className="flex h-12 w-12 items-center justify-center rounded-full bg-[#D2AB54] text-white shadow-[0_8px_18px_rgba(210,171,84,0.24)] transition-transform active:scale-90"
                         >
-                          <Minus className="h-4 w-4" />
+                          <Minus className="h-5 w-5" />
                         </button>
 
-                        <div className="min-w-[60px] text-center">
-                          <p className="text-[36px] font-black leading-none tracking-tight text-charcoal-900">
+                        <div className="min-w-[84px] text-center">
+                          <p className="text-[46px] font-black leading-[0.95] tracking-tight text-charcoal-900">
                             {companions + 1}
                           </p>
-                          <p className="mt-0.5 text-[12px] text-charcoal-400">
+                          <p className="mt-1 text-[14px] text-charcoal-500">
                             {companions + 1 === 1 ? 'רק אני' : `${companions + 1} אנשים`}
                           </p>
                         </div>
 
                         <button
                           onClick={() => setCompanions((current) => Math.min(20, current + 1))}
-                          className="flex h-10 w-10 items-center justify-center rounded-full bg-[#D2AB54] text-white shadow-[0_6px_14px_rgba(210,171,84,0.24)] transition-transform active:scale-90"
+                          className="flex h-12 w-12 items-center justify-center rounded-full bg-[#D2AB54] text-white shadow-[0_8px_18px_rgba(210,171,84,0.24)] transition-transform active:scale-90"
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-5 w-5" />
                         </button>
                       </div>
                     </div>
