@@ -88,6 +88,14 @@ export const RsvpPage = ({
 
       setGuest(data);
       setCompanions(data.companions || 0);
+
+      // Start signed URL fetch in parallel — don't await, just fire
+      if (data.cover_image_url) {
+        storageService.getSignedCoverUrl(data.cover_image_url)
+          .then(url => setSignedCoverUrl(url))
+          .catch(() => setSignedCoverUrl(data.cover_image_url ?? null));
+      }
+
       setStep(data.rsvp_via_link ? 'already' : 'form');
     } catch {
       setErrorState('general');
@@ -175,21 +183,30 @@ export const RsvpPage = ({
         ? `אגיע עם ${companions} מלווים`
         : 'אגיע לאירוע';
 
-  const hasHeroImage = !!eventInfo.coverImageUrl;
-  const heroHeightClass = hasHeroImage ? 'h-[276px] sm:h-[316px]' : '';
-  const heroOffsetClass = hasHeroImage ? 'pt-[152px] sm:pt-[172px]' : 'pt-3';
+  // Determine hero layout from raw data (not signedUrl) to avoid layout shift
+  const hasCoverData = !!(guest?.cover_image_url || propCoverImageUrl);
+  const heroHeightClass = hasCoverData ? 'h-[276px] sm:h-[316px]' : '';
+  const heroOffsetClass = hasCoverData ? 'pt-[152px] sm:pt-[172px]' : 'pt-3';
+  // Actual image src — only set once signed URL is ready
+  const heroImageSrc = signedCoverUrl || null;
 
   return (
     <div dir="rtl" className="min-h-screen overflow-hidden bg-[#F7F2E8]">
       <div className="relative min-h-screen">
-        {hasHeroImage ? (
+        {hasCoverData ? (
           <div className={`absolute inset-x-0 top-0 overflow-hidden ${heroHeightClass}`}>
-            <img
-              src={eventInfo.coverImageUrl}
-              alt={eventInfo.eventName}
-              className="h-full w-full object-cover"
-              style={{ objectPosition: 'center 30%' }}
-            />
+            {/* Skeleton shown while signed URL is loading */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#D4B97A]/40 to-[#C09A50]/20" />
+            {heroImageSrc && (
+              <img
+                src={heroImageSrc}
+                alt={eventInfo.eventName}
+                fetchPriority="high"
+                loading="eager"
+                className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
+                style={{ objectPosition: 'center 30%' }}
+              />
+            )}
             <div
               className="absolute inset-0"
               style={{
@@ -205,7 +222,7 @@ export const RsvpPage = ({
           <div
             className="absolute inset-0"
             style={{
-              background: hasHeroImage
+              background: hasCoverData
                 ? 'linear-gradient(180deg, rgba(251,248,241,0.18) 0%, rgba(248,244,236,0.84) 34%, #F7F2E8 64%, #F7F2E8 100%)'
                 : 'linear-gradient(180deg, #FCFAF4 0%, #F7F2E8 56%, #F4EEE2 100%)',
             }}
