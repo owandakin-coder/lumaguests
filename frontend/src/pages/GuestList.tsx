@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Plus, Users, ArrowUpDown, Download, Upload, Layers, List, FileText } from 'lucide-react';
 import { GuestCard } from '../components/GuestCard';
@@ -44,6 +44,9 @@ const sideLabelFull: Record<string, string> = {
   GROOM:'צד החתן', BRIDE:'צד הכלה', SHARED:'משותף',
 };
 
+const LARGE_LIST = 100; // threshold to skip entry animations
+const BATCH_SIZE  = 80; // items rendered per scroll-batch
+
 // Grouped mode — group by side
 const SIDE_ORDER: (Side | null)[] = ['GROOM', 'BRIDE', 'SHARED', null];
 
@@ -64,6 +67,8 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
   const [filterOpen,  setFilterOpen]  = useState(false);
   const [grouped,     setGrouped]     = useState(false);
   const [hasNote,     setHasNote]     = useState(false);
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const activeFilterCount = (side !== 'ALL' ? 1 : 0) + (category !== 'ALL' ? 1 : 0) + (hasNote ? 1 : 0);
 
@@ -114,6 +119,22 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
     filtered.forEach(g => { map.get((g.side as Side | null) ?? null)?.push(g); });
     return SIDE_ORDER.map(s => ({ side: s, guests: map.get(s) ?? [] })).filter(g => g.guests.length > 0);
   }, [grouped, filtered]);
+
+  // Reset visible count whenever filters/search change
+  useEffect(() => { setVisibleCount(BATCH_SIZE); }, [filtered]);
+
+  // Load next batch when sentinel scrolls into view
+  const loadMore = useCallback(() => {
+    setVisibleCount(prev => Math.min(prev + BATCH_SIZE, filtered.length));
+  }, [filtered.length]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || filtered.length <= LARGE_LIST) return;
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) loadMore(); }, { rootMargin: '300px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [filtered.length, visibleCount, loadMore]);
 
   const exportCSV = () => {
     const eventName = localStorage.getItem('luma_event_name') || 'מוזמנים';
@@ -269,10 +290,12 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
           )}
         </motion.div>
       ) : groupedList ? (
+        // ── Grouped by side ──────────────────────────────────────
         <div className="space-y-5">
           {groupedList.map(({ side: s, guests: grp }) => {
             const key = s ?? 'null';
             const cfg = sideGroupConfig[key];
+            const animate = grp.length <= LARGE_LIST;
             return (
               <div key={key}>
                 <div className="flex items-center gap-2 mb-2">
@@ -283,17 +306,38 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
                   </span>
                 </div>
                 <div className="space-y-2">
-                  {grp.map((g,i) => (
-                    <motion.div key={g.id} initial={{opacity:0,y:4}} animate={{opacity:1,y:0}} transition={{delay:i*0.02}}>
-                      <GuestCard guest={g} onEdit={onEditGuest} onDelete={onDeleteGuest} onView={onViewGuest} userId={userId} event={event}/>
-                    </motion.div>
-                  ))}
+                  {grp.map((g, i) =>
+                    animate ? (
+                      <motion.div key={g.id} initial={{opacity:0,y:4}} animate={{opacity:1,y:0}} transition={{delay:i*0.02}}>
+                        <GuestCard guest={g} onEdit={onEditGuest} onDelete={onDeleteGuest} onView={onViewGuest} userId={userId} event={event}/>
+                      </motion.div>
+                    ) : (
+                      <div key={g.id}>
+                        <GuestCard guest={g} onEdit={onEditGuest} onDelete={onDeleteGuest} onView={onViewGuest} userId={userId} event={event}/>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
+      ) : filtered.length > LARGE_LIST ? (
+        // ── Large flat list: progressive rendering, no animations ─
+        <div className="space-y-2">
+          {filtered.slice(0, visibleCount).map(g => (
+            <div key={g.id}>
+              <GuestCard guest={g} onEdit={onEditGuest} onDelete={onDeleteGuest} onView={onViewGuest} userId={userId} event={event}/>
+            </div>
+          ))}
+          {visibleCount < filtered.length && (
+            <div ref={sentinelRef} className="flex justify-center py-4">
+              <div className="w-5 h-5 border-2 border-charcoal-200 border-t-charcoal-500 rounded-full animate-spin" />
+            </div>
+          )}
+        </div>
       ) : (
+        // ── Small flat list: animated ─────────────────────────────
         <AnimatePresence>
           <div className="space-y-2">
             {filtered.map((g,i)=>(

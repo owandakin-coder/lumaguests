@@ -592,6 +592,8 @@ export const collaboratorService = {
   },
 };
 
+const _signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
+
 export const storageService = {
   uploadEventCover: async (userId: string, eventId: string, file: File): Promise<string> => {
     const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
@@ -622,15 +624,25 @@ export const storageService = {
     return idx >= 0 ? urlOrPath.slice(idx + marker.length).split('?')[0] : null;
   },
 
-  // Generate a time-limited signed URL (falls back to input on error)
+  // Generate a time-limited signed URL — cached for (expiresIn - 5 min)
   getSignedCoverUrl: async (urlOrPath: string, expiresIn = 7200): Promise<string> => {
     const path = storageService.extractCoverPath(urlOrPath);
     if (!path) return urlOrPath;
+
+    const cached = _signedUrlCache.get(path);
+    if (cached && cached.expiresAt > Date.now() + 5 * 60_000) {
+      return cached.url;
+    }
+
     try {
       const { data, error } = await supabase.storage
         .from('event-covers')
         .createSignedUrl(path, expiresIn);
       if (error || !data?.signedUrl) return urlOrPath;
+      _signedUrlCache.set(path, {
+        url: data.signedUrl,
+        expiresAt: Date.now() + expiresIn * 1000,
+      });
       return data.signedUrl;
     } catch {
       return urlOrPath;
