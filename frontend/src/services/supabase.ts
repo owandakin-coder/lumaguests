@@ -250,22 +250,21 @@ export const eventService = {
 
     // Also fetch events where this user is a collaborator
     let collaboratedEvents: EventRecord[] = [];
-    try {
-      const { data: collabs } = await supabase
-        .from('event_collaborators')
-        .select('events(*)')
-        .eq('user_id', userId);
-      collaboratedEvents = (collabs || []).map((c: any) => c.events).filter(Boolean);
-    } catch {
-      // event_collaborators table not yet created ׳³ג€™׳’ג€ֲ¬׳’ג‚¬ֲ safe to ignore
+    const { data: collabs, error: collabErr } = await supabase
+      .from('event_collaborators')
+      .select('events(*)')
+      .eq('user_id', userId);
+    if (!collabErr && collabs) {
+      collaboratedEvents = collabs.map((c: any) => c.events).filter(Boolean);
     }
 
-    // Merge without duplicates (owned events take precedence)
-    const seen = new Set((owned || []).map((e: EventRecord) => e.id));
-    return [
-      ...(owned || []),
-      ...collaboratedEvents.filter((e) => !seen.has(e.id)),
-    ] as EventRecord[];
+    // Active collaborated events come FIRST — so a newly invited collaborator
+    // sees the shared event immediately instead of their own auto-created one
+    const ownedList = owned || [];
+    const seen = new Set(ownedList.map((e: EventRecord) => e.id));
+    const activeCollabs = collaboratedEvents.filter((e) => !seen.has(e.id) && !e.archived_at);
+    const archivedCollabs = collaboratedEvents.filter((e) => !seen.has(e.id) && e.archived_at);
+    return [...activeCollabs, ...ownedList, ...archivedCollabs] as EventRecord[];
   },
 
   getActiveOrCreate: async (userId: string) => {
