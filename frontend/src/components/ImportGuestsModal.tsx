@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Upload, AlertTriangle, CheckCircle2, ChevronDown,
@@ -337,7 +338,7 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId, eventId }
     }
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -727,6 +728,7 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId, eventId }
           </div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
