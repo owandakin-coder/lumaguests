@@ -148,11 +148,26 @@ export const RsvpPage = ({
         })
       : fallbackDate;
 
+    const shortDate = rawDate
+      ? new Date(rawDate).toLocaleDateString('he-IL', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'numeric',
+          year: '2-digit',
+        })
+      : fallbackDate;
+
+    const venueCompact = venueName !== fallbackVenue
+      ? `${venueName}${venueAddress ? `, ${venueAddress}` : ''}`
+      : fallbackVenue;
+
     return {
       eventName,
       formattedDate,
+      shortDate,
       venueName,
       venueAddress,
+      venueCompact,
       coverImageUrl,
     };
   }, [guest, propCoverImageUrl, propEventDate, propEventName, propVenueAddress, propVenueName, signedCoverUrl]);
@@ -295,23 +310,21 @@ export const RsvpPage = ({
                       : 'קיבלנו את ההודעה שלא תגיע/י'}
                   </p>
 
-                  <div className="mt-5 rounded-[28px] bg-[#FFFDF8] p-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+                  <div className="mt-4 rounded-[28px] bg-[#FFFDF8] px-4 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
                     <p className="text-[12px] font-semibold text-gold-700">{eventInfo.eventName}</p>
-                    <div className="mt-3 space-y-2 text-[14px] text-charcoal-600">
-                      <p className="flex items-center justify-center gap-2">
-                        <CalendarDays className="h-4 w-4 text-gold-600" />
-                        {eventInfo.formattedDate}
-                      </p>
-                      <p className="flex items-center justify-center gap-2">
-                        <MapPin className="h-4 w-4 text-gold-600" />
-                        {eventInfo.venueName}
-                      </p>
-                      {eventInfo.venueAddress ? (
-                        <p className="text-[12px] text-charcoal-400">{eventInfo.venueAddress}</p>
-                      ) : null}
+                    <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[12px] text-charcoal-500">
+                      <span className="flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3 text-gold-600" />
+                        {eventInfo.shortDate}
+                      </span>
+                      <span className="text-charcoal-300">·</span>
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3 text-gold-600" />
+                        {eventInfo.venueCompact}
+                      </span>
                     </div>
 
-                    <div className="mt-4 rounded-[22px] border border-[#F2E5BF] bg-white px-4 py-3">
+                    <div className="mt-3 rounded-[22px] border border-[#F2E5BF] bg-white px-4 py-2.5">
                       <p className="text-[11px] uppercase tracking-[0.24em] text-charcoal-400">הסטטוס שלך</p>
                       <p className="mt-1 text-[20px] font-black text-charcoal-900">
                         {guest.rsvp_status === 'CONFIRMED' ? 'אישרתי הגעה' : 'לא אגיע/ה'}
@@ -353,18 +366,16 @@ export const RsvpPage = ({
                       {eventInfo.eventName}
                     </p>
 
-                    <div className="mt-3 space-y-1.5 text-[14px] text-charcoal-600">
-                      <p className="flex items-center justify-center gap-2">
-                        <CalendarDays className="h-4 w-4 text-gold-600" />
-                        {eventInfo.formattedDate}
-                      </p>
-                      <p className="flex items-center justify-center gap-2">
-                        <MapPin className="h-4 w-4 text-gold-600" />
-                        {eventInfo.venueName}
-                      </p>
-                      {eventInfo.venueAddress ? (
-                        <p className="text-[12px] text-charcoal-400">{eventInfo.venueAddress}</p>
-                      ) : null}
+                    <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[12px] text-charcoal-500">
+                      <span className="flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3 text-gold-600" />
+                        {eventInfo.shortDate}
+                      </span>
+                      <span className="text-charcoal-300">·</span>
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3 text-gold-600" />
+                        {eventInfo.venueCompact}
+                      </span>
                     </div>
                   </div>
 
@@ -420,12 +431,12 @@ export const RsvpPage = ({
                           boxShadow: '0 14px 28px rgba(20,143,74,0.22)',
                         }}
                       >
+                        אגיע לאירוע
                         {submitting && choice === 'CONFIRMED' ? (
                           <Loader2 className="h-5 w-5 animate-spin" />
                         ) : (
                           <CheckCircle className="h-5 w-5" />
                         )}
-                        אגיע לאירוע
                       </motion.button>
 
                       <motion.button
@@ -434,12 +445,12 @@ export const RsvpPage = ({
                         disabled={submitting}
                         className="flex w-full items-center justify-center gap-3 rounded-[24px] border border-[#D5B671] bg-white/92 px-5 py-4 text-[17px] font-black text-charcoal-800 shadow-[0_6px_22px_rgba(130,104,48,0.08)] disabled:opacity-60"
                       >
+                        לא אגיע לאירוע
                         {submitting && choice === 'DECLINED' ? (
                           <Loader2 className="h-5 w-5 animate-spin" />
                         ) : (
                           <span className="text-[20px]">😔</span>
                         )}
-                        לא אגיע לאירוע
                       </motion.button>
                     </div>
 
