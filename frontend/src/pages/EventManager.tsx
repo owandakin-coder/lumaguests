@@ -6,8 +6,8 @@ import {
   ChevronRight,
   Copy,
   Eye,
+  Pencil,
   RefreshCw,
-  Save,
   Send,
   ToggleLeft,
   ToggleRight,
@@ -64,6 +64,7 @@ export const EventManager = ({
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [newEventName, setNewEventName] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [inviteEmail, setInviteEmail] = useState('');
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
@@ -92,6 +93,7 @@ export const EventManager = ({
     });
     setMessage(null);
     setNewEventName('');
+    setIsEditing(false);
   }, [
     event?.id,
     event?.event_name,
@@ -162,7 +164,7 @@ export const EventManager = ({
         public_rsvp_enabled: form.rsvpOpen,
       });
       setMessage({ type: 'success', text: 'פרטי האירוע נשמרו.' });
-      setTimeout(() => onBack(), 1200);
+      setIsEditing(false);
     } catch (error: any) {
       const duplicate =
         error?.code === '23505' || String(error?.message || '').toLowerCase().includes('duplicate');
@@ -175,6 +177,21 @@ export const EventManager = ({
     } finally {
       setBusyAction(null);
     }
+  };
+
+  const cancelEdit = () => {
+    setForm({
+      eventName: event?.event_name || '',
+      eventDate: event?.event_date ? event.event_date.split('T')[0] : '',
+      venueName: event?.venue_name || '',
+      venueAddress: event?.venue_address || '',
+      description: event?.description || '',
+      publicSlug: event?.public_slug || '',
+      publicEnabled: !!event?.is_public,
+      rsvpOpen: event?.public_rsvp_enabled ?? true,
+    });
+    setMessage(null);
+    setIsEditing(false);
   };
 
   const createEvent = async () => {
@@ -436,73 +453,118 @@ export const EventManager = ({
       </div>
 
       <div className={surface}>
-        <div className="px-4 pt-4 pb-1">
+        <div className="px-4 pt-4 pb-1 flex items-center justify-between">
           <p className={sectionLabel}>פרטי האירוע</p>
+          {isOwner && !isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="w-8 h-8 rounded-xl bg-[#FAF7EF] flex items-center justify-center active:scale-90 transition-transform"
+            >
+              <Pencil className="w-3.5 h-3.5 text-charcoal-500" />
+            </button>
+          )}
         </div>
 
+        {/* שם האירוע */}
         <div className="px-4 py-2.5 border-t border-[#F2EAD8] mt-2">
           <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">שם האירוע</p>
-          <input
-            value={form.eventName}
-            onChange={(e) => setField('eventName', e.target.value)}
-            placeholder="חתונה, בר-מצווה..."
-            readOnly={!isOwner}
-            className={`w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none${!isOwner ? ' cursor-default select-text' : ''}`}
-          />
+          {isEditing ? (
+            <input
+              value={form.eventName}
+              onChange={(e) => setField('eventName', e.target.value)}
+              placeholder="חתונה, בר-מצווה..."
+              autoFocus
+              className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
+            />
+          ) : (
+            <p className="text-[14px] text-charcoal-900">{form.eventName || <span className="text-charcoal-300">לא הוגדר</span>}</p>
+          )}
         </div>
 
+        {/* תאריך */}
         <div
-          className={`px-4 py-2.5 border-t border-[#F2EAD8] relative${isOwner ? ' cursor-pointer' : ' cursor-default'}`}
-          onClick={isOwner ? () => dateInputRef.current?.showPicker?.() : undefined}
+          className={`px-4 py-2.5 border-t border-[#F2EAD8] relative${isEditing ? ' cursor-pointer' : ''}`}
+          onClick={isEditing ? () => dateInputRef.current?.showPicker?.() : undefined}
         >
           <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">תאריך</p>
           <p className={`text-[14px] ${form.eventDate ? 'text-charcoal-900' : 'text-charcoal-300'}`}>
             {selectedDateLabel}
+            {isEditing && <span className="text-[11px] text-gold-500 mr-2">← לחץ לשינוי</span>}
           </p>
           <input
             ref={dateInputRef}
             type="date"
             value={form.eventDate}
             onChange={(e) => setField('eventDate', e.target.value)}
-            className={`absolute inset-0 w-full h-full opacity-0${isOwner ? ' cursor-pointer' : ' pointer-events-none'}`}
+            className={`absolute inset-0 w-full h-full opacity-0${isEditing ? ' cursor-pointer' : ' pointer-events-none'}`}
             tabIndex={-1}
-            readOnly={!isOwner}
           />
         </div>
 
+        {/* מקום האירוע */}
         <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
           <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">מקום האירוע</p>
-          <input
-            value={form.venueName}
-            onChange={(e) => setField('venueName', e.target.value)}
-            placeholder="שם האולם"
-            readOnly={!isOwner}
-            className={`w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none${!isOwner ? ' cursor-default select-text' : ''}`}
-          />
+          {isEditing ? (
+            <input
+              value={form.venueName}
+              onChange={(e) => setField('venueName', e.target.value)}
+              placeholder="שם האולם"
+              className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
+            />
+          ) : (
+            <p className="text-[14px] text-charcoal-900">{form.venueName || <span className="text-charcoal-300">לא הוגדר</span>}</p>
+          )}
         </div>
 
+        {/* כתובת */}
         <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
           <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">כתובת</p>
-          <input
-            value={form.venueAddress}
-            onChange={(e) => setField('venueAddress', e.target.value)}
-            placeholder="רחוב ועיר"
-            readOnly={!isOwner}
-            className={`w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none${!isOwner ? ' cursor-default select-text' : ''}`}
-          />
+          {isEditing ? (
+            <input
+              value={form.venueAddress}
+              onChange={(e) => setField('venueAddress', e.target.value)}
+              placeholder="רחוב ועיר"
+              className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
+            />
+          ) : (
+            <p className="text-[14px] text-charcoal-900">{form.venueAddress || <span className="text-charcoal-300">לא הוגדר</span>}</p>
+          )}
         </div>
 
-        <div className="px-4 py-2.5 border-t border-[#F2EAD8] pb-4">
+        {/* תיאור */}
+        <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
           <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">תיאור</p>
-          <textarea
-            value={form.description}
-            onChange={(e) => setField('description', e.target.value)}
-            placeholder="תיאור קצר לאורחים"
-            rows={2}
-            readOnly={!isOwner}
-            className={`w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none resize-none${!isOwner ? ' cursor-default select-text' : ''}`}
-          />
+          {isEditing ? (
+            <textarea
+              value={form.description}
+              onChange={(e) => setField('description', e.target.value)}
+              placeholder="תיאור קצר לאורחים"
+              rows={2}
+              className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none resize-none"
+            />
+          ) : (
+            <p className="text-[14px] text-charcoal-900">{form.description || <span className="text-charcoal-300">לא הוגדר</span>}</p>
+          )}
         </div>
+
+        {/* כפתורי שמור / ביטול */}
+        {isEditing && (
+          <div className="px-4 pb-4 pt-3 border-t border-[#F2EAD8] flex gap-2">
+            <button
+              onClick={cancelEdit}
+              className="flex-1 py-2.5 rounded-[18px] border border-[#E0D6C2] text-[14px] font-semibold text-charcoal-600 active:scale-[0.98] transition-transform"
+            >
+              ביטול
+            </button>
+            <button
+              onClick={() => void saveEvent()}
+              disabled={busyAction === 'save'}
+              className="flex-1 py-2.5 rounded-[18px] bg-charcoal-900 text-white text-[14px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+            >
+              {busyAction === 'save' ? 'שומר...' : 'שמור'}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className={surface}>
@@ -618,21 +680,6 @@ export const EventManager = ({
         </div>
       ) : null}
 
-      {isOwner ? (
-        <button
-          onClick={saveEvent}
-          disabled={busyAction === 'save'}
-          className="w-full py-4 rounded-[22px] bg-charcoal-900 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-          style={{ boxShadow: '0 12px 30px rgba(26,25,22,0.14)' }}
-        >
-          <Save className="w-4 h-4" />
-          {busyAction === 'save' ? 'שומר...' : 'שמור פרטי אירוע'}
-        </button>
-      ) : (
-        <div className="w-full py-4 rounded-[22px] border border-[#DDD6FE] bg-[#F5F3FF] text-[13px] text-[#5B21B6] font-medium text-center">
-          עריכת פרטי האירוע זמינה רק לבעל/ת האירוע
-        </div>
-      )}
 
       <div className={surface}>
         <div className="p-4">
