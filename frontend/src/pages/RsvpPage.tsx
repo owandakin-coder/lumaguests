@@ -200,8 +200,8 @@ export const RsvpPage = ({
 
   // Determine hero layout from raw data (not signedUrl) to avoid layout shift
   const hasCoverData = !!(guest?.cover_image_url || propCoverImageUrl);
-  const heroHeightClass = hasCoverData ? 'h-[276px] sm:h-[316px]' : '';
-  const heroOffsetClass = hasCoverData ? 'pt-[152px] sm:pt-[172px]' : 'pt-3';
+  const heroHeightClass = hasCoverData ? 'h-[340px] sm:h-[380px]' : '';
+  const heroOffsetClass = hasCoverData ? 'pt-[220px] sm:pt-[250px]' : 'pt-3';
   // Actual image src — only set once signed URL is ready
   const heroImageSrc = signedCoverUrl || null;
 
