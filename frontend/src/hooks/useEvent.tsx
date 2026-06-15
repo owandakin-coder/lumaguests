@@ -60,14 +60,18 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setLoading(true);
       let allEvents: Event[] = [];
+      let listSucceeded = false;
 
       try {
         allEvents = await eventService.list(auth.user.id);
+        listSucceeded = true;
       } catch (error) {
-        console.error('Failed to list events, attempting recovery:', error);
+        console.error('Failed to list events:', error);
       }
 
-      if (!allEvents.some((item) => !item.archived_at)) {
+      // Only attempt getActiveOrCreate when list() succeeded but found no active event.
+      // If list() failed (network error), skip — otherwise a new empty event gets created.
+      if (listSucceeded && !allEvents.some((item) => !item.archived_at)) {
         try {
           const recovered = await eventService.getActiveOrCreate(auth.user.id);
           if (recovered) {
