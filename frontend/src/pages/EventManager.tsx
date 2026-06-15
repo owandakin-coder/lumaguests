@@ -328,7 +328,7 @@ export const EventManager = ({
             <ChevronRight className="w-5 h-5 text-charcoal-600" />
           </button>
           <div>
-            <p className="text-[11px] font-bold tracking-[0.18em] text-gold-600 uppercase">Event Studio</p>
+  
             <h1 className="text-[28px] font-bold text-charcoal-900">ניהול אירוע</h1>
             <p className="text-[12px] text-charcoal-400 mt-0.5">יצירת אירוע חדש או חזרה לאירוע קודם</p>
           </div>
@@ -420,7 +420,7 @@ export const EventManager = ({
           <ChevronRight className="w-5 h-5 text-charcoal-600" />
         </button>
         <div>
-          <p className="text-[11px] font-bold tracking-[0.18em] text-gold-600 uppercase">Event Studio</p>
+
           <h1 className="text-[28px] font-bold text-charcoal-900">ניהול אירוע</h1>
           <p className="text-[12px] text-charcoal-400 mt-0.5">פרטי אירוע ו-RSVP במסך אחד פשוט</p>
         </div>
