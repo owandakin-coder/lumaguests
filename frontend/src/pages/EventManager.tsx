@@ -93,6 +93,7 @@ export const EventManager = ({
   const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
   const [croppedPreview, setCroppedPreview] = useState<string | null>(null);
   const [showCropper, setShowCropper] = useState(false);
+  const [signedCoverUrl, setSignedCoverUrl] = useState<string | null>(null);
 
   useEffect(() => {
     setForm({
@@ -124,6 +125,16 @@ export const EventManager = ({
     if (!event?.id || !isOwner) return;
     void collaboratorService.list(event.id).then(setCollaborators).catch(() => {});
   }, [event?.id, isOwner]);
+
+  useEffect(() => {
+    const raw = event?.cover_image_url;
+    if (!raw) { setSignedCoverUrl(null); return; }
+    let cancelled = false;
+    storageService.getSignedCoverUrl(raw)
+      .then(url => { if (!cancelled) setSignedCoverUrl(url); })
+      .catch(() => { if (!cancelled) setSignedCoverUrl(raw); });
+    return () => { cancelled = true; };
+  }, [event?.cover_image_url]);
 
   const normalizedSlug = useMemo(
     () =>
@@ -547,7 +558,7 @@ export const EventManager = ({
             <div className="flex-1 min-w-0 text-right">
               <p className={sectionLabel}>תמונת האירוע</p>
               <p className="text-[13px] text-charcoal-500 mt-0.5">
-                {(croppedPreview || event?.cover_image_url) ? 'תמונה מוגדרת' : 'לא הוגדרה תמונה'}
+                {(croppedPreview || signedCoverUrl) ? 'תמונה מוגדרת' : 'לא הוגדרה תמונה'}
               </p>
             </div>
             <ChevronDown
@@ -565,10 +576,10 @@ export const EventManager = ({
                 style={{ overflow: 'hidden' }}
               >
                 <div className="border-t border-[#F2EAD8] p-4">
-                  {(croppedPreview || event?.cover_image_url) ? (
+                  {(croppedPreview || signedCoverUrl) ? (
                     <div className="rounded-2xl overflow-hidden bg-charcoal-100 mb-3" style={{ aspectRatio: '16 / 9' }}>
                       <img
-                        src={croppedPreview || event?.cover_image_url || ''}
+                        src={croppedPreview || signedCoverUrl || ''}
                         alt={form.eventName || 'תמונת האירוע'}
                         className="w-full h-full object-cover"
                       />
@@ -582,7 +593,7 @@ export const EventManager = ({
                   <label className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[20px] border-2 border-dashed border-charcoal-200 cursor-pointer active:bg-charcoal-50 transition-colors">
                     <ImagePlus className="w-4 h-4 text-charcoal-400" />
                     <span className="text-[14px] font-semibold text-charcoal-600">
-                      {croppedBlob || event?.cover_image_url ? 'החלף תמונה' : 'בחר תמונת אירוע'}
+                      {croppedBlob || signedCoverUrl ? 'החלף תמונה' : 'בחר תמונת אירוע'}
                     </span>
                     <input
                       ref={fileInputRef}
@@ -603,7 +614,7 @@ export const EventManager = ({
                         {busyAction === 'cover' ? 'שומר תמונה...' : 'שמור תמונת אירוע'}
                       </button>
                     )}
-                    {!croppedBlob && event?.cover_image_url && (
+                    {!croppedBlob && signedCoverUrl && (
                       <button
                         onClick={() => void removeCover()}
                         disabled={busyAction === 'cover'}
