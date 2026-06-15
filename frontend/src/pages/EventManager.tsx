@@ -3,16 +3,20 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
+  Archive,
+  CalendarDays,
   ChevronDown,
   ChevronRight,
   Copy,
   Eye,
+  Link,
   Pencil,
   RefreshCw,
   Send,
   ToggleLeft,
   ToggleRight,
   Trash2,
+  Users,
   X,
 } from 'lucide-react';
 import { Collaborator, Event } from '../types';
@@ -478,6 +482,9 @@ export const EventManager = ({
           onClick={() => toggleSection('details')}
           className="w-full px-4 py-4 flex items-center gap-3"
         >
+          <div className="w-9 h-9 rounded-[14px] bg-amber-50 flex items-center justify-center flex-shrink-0">
+            <CalendarDays className="w-4 h-4 text-amber-600" />
+          </div>
           <div className="flex-1 min-w-0 text-right">
             <p className={sectionLabel}>פרטי האירוע</p>
             <p className="text-[13px] text-charcoal-500 mt-0.5 truncate">
@@ -618,6 +625,9 @@ export const EventManager = ({
           onClick={() => toggleSection('rsvp')}
           className="w-full px-4 py-4 flex items-center gap-3"
         >
+          <div className="w-9 h-9 rounded-[14px] bg-sky-50 flex items-center justify-center flex-shrink-0">
+            <Link className="w-4 h-4 text-sky-500" />
+          </div>
           <div className="flex-1 min-w-0 text-right">
             <p className={sectionLabel}>RSVP ציבורי</p>
             <p className="text-[13px] text-charcoal-500 mt-0.5">קישור ושיתוף לאורחים</p>
@@ -762,6 +772,9 @@ export const EventManager = ({
           onClick={() => toggleSection('sharing')}
           className="w-full px-4 py-4 flex items-center gap-3"
         >
+          <div className="w-9 h-9 rounded-[14px] bg-violet-50 flex items-center justify-center flex-shrink-0">
+            <Users className="w-4 h-4 text-violet-500" />
+          </div>
           <div className="flex-1 min-w-0 text-right">
             <p className={sectionLabel}>ניהול משותף</p>
             <p className="text-[13px] text-charcoal-500 mt-0.5">
@@ -871,6 +884,9 @@ export const EventManager = ({
             onClick={() => toggleSection('archive')}
             className="w-full px-4 py-4 flex items-center gap-3"
           >
+            <div className="w-9 h-9 rounded-[14px] bg-charcoal-100 flex items-center justify-center flex-shrink-0">
+              <Archive className="w-4 h-4 text-charcoal-500" />
+            </div>
             <div className="flex-1 min-w-0 text-right">
               <p className={sectionLabel}>ארכיון אירועים</p>
               <p className="text-[13px] text-charcoal-500 mt-0.5">
