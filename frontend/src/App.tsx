@@ -176,7 +176,7 @@ function AuthenticatedApp() {
     );
   }
 
-  if (!event) {
+  if (!event && currentPage !== 'eventManager') {
     return (
       <div dir="rtl" className="bg-ivory-100 min-h-screen px-5 py-10">
         <div className="max-w-[430px] mx-auto rounded-[28px] bg-white p-6 text-center shadow-[0_10px_28px_rgba(34,29,21,0.07)]">
