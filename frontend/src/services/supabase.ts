@@ -81,12 +81,18 @@ export const authService = {
 
 export const guestService = {
   getAll: async (userId: string, eventId: string) => {
-    const { data, error } = await supabase
+    let query = supabase
       .from('guests')
       .select('*')
-      .eq('user_id', userId)
-      .eq('event_id', eventId)
       .order('created_at', { ascending: false });
+
+    if (eventId) {
+      query = query.eq('event_id', eventId);
+    } else {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
     return (data || []) as GuestRecord[];
   },
@@ -95,11 +101,12 @@ export const guestService = {
     let query = supabase
       .from('guests')
       .select('*')
-      .eq('id', id)
-      .eq('user_id', userId);
+      .eq('id', id);
 
     if (eventId) {
       query = query.eq('event_id', eventId);
+    } else {
+      query = query.eq('user_id', userId);
     }
 
     const { data, error } = await query.single();
@@ -124,11 +131,12 @@ export const guestService = {
       let tokenQuery = supabase
         .from('guests')
         .select('rsvp_token')
-        .eq('id', id)
-        .eq('user_id', userId);
+        .eq('id', id);
 
       if (eventId) {
         tokenQuery = tokenQuery.eq('event_id', eventId);
+      } else {
+        tokenQuery = tokenQuery.eq('user_id', userId);
       }
 
       const { data: currentGuest, error: currentError } = await tokenQuery.single();
@@ -144,11 +152,12 @@ export const guestService = {
     let query = supabase
       .from('guests')
       .update(safeUpdates)
-      .eq('id', id)
-      .eq('user_id', userId);
+      .eq('id', id);
 
     if (eventId) {
       query = query.eq('event_id', eventId);
+    } else {
+      query = query.eq('user_id', userId);
     }
 
     const { data, error } = await query.select().single();
@@ -160,11 +169,12 @@ export const guestService = {
     let query = supabase
       .from('guests')
       .delete()
-      .eq('id', id)
-      .eq('user_id', userId);
+      .eq('id', id);
 
     if (eventId) {
       query = query.eq('event_id', eventId);
+    } else {
+      query = query.eq('user_id', userId);
     }
 
     const { error } = await query;
@@ -185,11 +195,10 @@ export const guestService = {
     if (error) throw error;
   },
 
-  checkDuplicatePhone: async (phone: string, userId: string, eventId: string, excludeId?: string) => {
+  checkDuplicatePhone: async (phone: string, _userId: string, eventId: string, excludeId?: string) => {
     let query = supabase
       .from('guests')
       .select('id')
-      .eq('user_id', userId)
       .eq('event_id', eventId)
       .eq('phone', phone);
 
@@ -203,11 +212,17 @@ export const guestService = {
   },
 
   getStats: async (userId: string, eventId: string) => {
-    const { data, error } = await supabase
+    let query = supabase
       .from('guests')
-      .select('rsvp_status, companions')
-      .eq('user_id', userId)
-      .eq('event_id', eventId);
+      .select('rsvp_status, companions');
+
+    if (eventId) {
+      query = query.eq('event_id', eventId);
+    } else {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 

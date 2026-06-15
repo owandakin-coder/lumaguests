@@ -176,6 +176,28 @@ function AuthenticatedApp() {
     );
   }
 
+  if (!event) {
+    return (
+      <div dir="rtl" className="bg-ivory-100 min-h-screen px-5 py-10">
+        <div className="max-w-[430px] mx-auto rounded-[28px] bg-white p-6 text-center shadow-[0_10px_28px_rgba(34,29,21,0.07)]">
+          <p className="text-[12px] font-bold tracking-[0.24em] text-[#B49B62] uppercase">Event Required</p>
+          <h1 className="mt-3 text-[28px] font-black text-charcoal-900">לא נמצא אירוע פעיל</h1>
+          <p className="mt-3 text-[15px] leading-7 text-charcoal-500">
+            כרגע אי אפשר לטעון מוזמנים או להוסיף מוזמן חדש בלי אירוע פעיל.
+          </p>
+          <button
+            type="button"
+            onClick={() => setCurrentPage('eventManager')}
+            className="mt-6 inline-flex min-w-[220px] items-center justify-center rounded-[22px] bg-charcoal-900 px-5 py-3 text-[15px] font-bold text-white"
+          >
+            פתח ניהול אירוע
+          </button>
+        </div>
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
+      </div>
+    );
+  }
+
   if (showOnboarding) {
     return (
       <div dir="rtl">

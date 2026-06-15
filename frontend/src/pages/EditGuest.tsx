@@ -37,8 +37,11 @@ export const EditGuest = ({ guestId, onSuccess, onCancel }: EditGuestProps) => {
   };
 
   const handleSubmit = async (data: CreateGuestInput) => {
-    if (!auth.user || !event?.id) {
+    if (!auth.user) {
       throw new Error('לא מחובר');
+    }
+    if (!event?.id) {
+      throw new Error('לא נמצא אירוע פעיל. יש לחזור לניהול אירוע ולטעון אירוע פעיל.');
     }
 
     const guestOwnerId = event.owner_user_id || auth.user.id;
