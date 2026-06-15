@@ -393,25 +393,27 @@ export const RsvpPage = ({
 
                   <div className="space-y-4">
                     <div className="rounded-[28px] border border-white/80 bg-white/88 px-4 py-3 shadow-[0_16px_40px_rgba(89,69,35,0.10)] backdrop-blur-xl">
-                      <div className="flex items-center justify-between gap-4">
+                      <p className="text-center text-[14px] font-bold text-charcoal-700">כמה אנשים תגיעו?</p>
+                      <div className="mt-2 flex items-center justify-center gap-6" dir="ltr">
                         <button
                           onClick={() => setCompanions((current) => Math.max(0, current - 1))}
-                          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#D2AB54] text-white shadow-[0_6px_14px_rgba(210,171,84,0.24)] transition-transform active:scale-90"
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-[#D2AB54] text-white shadow-[0_6px_14px_rgba(210,171,84,0.24)] transition-transform active:scale-90"
                         >
                           <Minus className="h-4 w-4" />
                         </button>
 
-                        <div className="flex flex-1 items-center justify-center gap-3">
-                          <p className="text-[13px] font-bold text-charcoal-700">כמה אנשים תגיעו?</p>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-[28px] font-black leading-none tracking-tight text-charcoal-900">{companions + 1}</span>
-                            <span className="text-[13px] text-charcoal-400">{companions + 1 === 1 ? 'רק אני' : 'אנשים'}</span>
-                          </div>
+                        <div className="min-w-[60px] text-center">
+                          <p className="text-[36px] font-black leading-none tracking-tight text-charcoal-900">
+                            {companions + 1}
+                          </p>
+                          <p className="mt-0.5 text-[12px] text-charcoal-400">
+                            {companions + 1 === 1 ? 'רק אני' : `${companions + 1} אנשים`}
+                          </p>
                         </div>
 
                         <button
                           onClick={() => setCompanions((current) => Math.min(20, current + 1))}
-                          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#D2AB54] text-white shadow-[0_6px_14px_rgba(210,171,84,0.24)] transition-transform active:scale-90"
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-[#D2AB54] text-white shadow-[0_6px_14px_rgba(210,171,84,0.24)] transition-transform active:scale-90"
                         >
                           <Plus className="h-4 w-4" />
                         </button>
