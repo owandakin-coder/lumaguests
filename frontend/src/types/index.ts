@@ -116,7 +116,6 @@ export interface Collaborator {
 
 export interface PublicEventData {
   id: string;
-  owner_user_id: string;
   event_name: string;
   event_date: string | null;
   venue_name: string | null;
