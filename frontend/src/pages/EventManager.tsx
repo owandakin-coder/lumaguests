@@ -443,26 +443,15 @@ export const EventManager = ({
           boxShadow: '0 8px 24px rgba(20,18,12,0.18)',
         }}
       >
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-[9px] font-bold tracking-[0.24em] text-white/38 uppercase mb-0.5">האירוע הפעיל</p>
-            <h2 className="text-[20px] font-black leading-tight truncate">
-              {form.eventName || 'האירוע שלי'}
-            </h2>
-            <p className="text-[11px] text-white/50 mt-0.5 truncate">
-              {selectedDateLabel}
-              {form.venueName ? ` · ${form.venueName}` : ''}
-            </p>
-          </div>
-          {isOwner && (
-            <button
-              onClick={() => setConfirmAction('create')}
-              disabled={busyAction === 'create'}
-              className="shrink-0 rounded-xl bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white active:scale-[0.97] transition-transform disabled:opacity-50"
-            >
-              {busyAction === 'create' ? '...' : '+ אירוע'}
-            </button>
-          )}
+        <div>
+          <p className="text-[9px] font-bold tracking-[0.24em] text-white/38 uppercase mb-0.5">האירוע הפעיל</p>
+          <h2 className="text-[20px] font-black leading-tight truncate">
+            {form.eventName || 'האירוע שלי'}
+          </h2>
+          <p className="text-[11px] text-white/50 mt-0.5 truncate">
+            {selectedDateLabel}
+            {form.venueName ? ` · ${form.venueName}` : ''}
+          </p>
         </div>
       </div>
 
@@ -908,6 +897,14 @@ export const EventManager = ({
                 style={{ overflow: 'hidden' }}
               >
                 <div className="border-t border-[#F2EAD8] p-4">
+                  <button
+                    onClick={() => setConfirmAction('create')}
+                    disabled={busyAction === 'create'}
+                    className="w-full py-3 rounded-[20px] bg-charcoal-900 text-white text-[14px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform mb-3"
+                  >
+                    {busyAction === 'create' ? 'יוצר...' : '+ צור אירוע חדש'}
+                  </button>
+
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <p className="text-[12px] text-charcoal-400">מעבר מהיר בין אירועים קודמים בלי לאבד מידע.</p>
                     <button
