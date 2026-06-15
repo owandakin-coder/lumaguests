@@ -67,6 +67,7 @@ export const EventManager = ({
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [lastInvitedEmail, setLastInvitedEmail] = useState('');
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [form, setForm] = useState({
     eventName: '',
@@ -253,7 +254,9 @@ export const EventManager = ({
       setBusyAction('invite');
       const result = await collaboratorService.invite(event.id, inviteEmail.trim());
       if (result.success) {
+        const invited = inviteEmail.trim();
         setInviteEmail('');
+        setLastInvitedEmail(invited);
         setMessage({ type: 'success', text: 'השותף/ה נוסף/ה בהצלחה.' });
         const updated = await collaboratorService.list(event.id);
         setCollaborators(updated);
@@ -715,6 +718,27 @@ export const EventManager = ({
                   {busyAction === 'invite' ? '...' : 'הזמן'}
                 </button>
               </div>
+
+              {lastInvitedEmail && (
+                <div className="rounded-[20px] bg-[#EDFFF4] border border-[#A7F3C9] px-4 py-3 mt-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-bold text-green-800">נוסף/ה בהצלחה!</p>
+                    <p className="text-[11px] text-green-700 mt-0.5 truncate" dir="ltr">{lastInvitedEmail}</p>
+                    <p className="text-[11px] text-green-600 mt-0.5">שלח/י להם הודעה כדי שידעו להיכנס</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const appUrl = window.location.origin;
+                      const text = `הוזמנת לנהל יחד את האורחים של ${form.eventName || 'האירוע שלנו'} 🎉\nכנס/י לאפליקציה עם המייל: ${lastInvitedEmail}\n${appUrl}`;
+                      openWhatsAppUrl(`https://wa.me/?text=${encodeURIComponent(text)}`);
+                    }}
+                    className="shrink-0 flex items-center gap-1.5 bg-[#25D366] text-white text-[12px] font-bold px-3 py-2 rounded-[14px] active:scale-[0.97] transition-transform"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    WhatsApp
+                  </button>
+                </div>
+              )}
 
               {collaborators.length === 0 ? (
                 <div className="rounded-[20px] bg-[#FAF7EF] px-4 py-4 text-center text-[13px] text-charcoal-400 mt-3">
