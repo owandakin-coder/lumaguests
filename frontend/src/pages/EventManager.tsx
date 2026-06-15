@@ -284,6 +284,99 @@ export const EventManager = ({
     window.open(publicUrl, '_blank');
   };
 
+  if (!event) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 pt-1 pb-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center active:scale-90 transition-transform"
+            style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }}
+          >
+            <ChevronRight className="w-5 h-5 text-charcoal-600" />
+          </button>
+          <div>
+            <p className="text-[11px] font-bold tracking-[0.18em] text-gold-600 uppercase">Event Studio</p>
+            <h1 className="text-[28px] font-bold text-charcoal-900">ניהול אירוע</h1>
+            <p className="text-[12px] text-charcoal-400 mt-0.5">יצירת אירוע חדש או חזרה לאירוע קודם</p>
+          </div>
+        </div>
+
+        <div className={surface}>
+          <div className="p-5">
+            <p className={sectionLabel}>אירוע חדש</p>
+            <h2 className="text-[24px] font-black text-charcoal-900 mt-3">אין כרגע אירוע פעיל</h2>
+            <p className="text-[13px] text-charcoal-500 mt-2 leading-relaxed">
+              תן שם לאירוע שלך ולחץ על הכפתור. מיד אחרי זה ייפתח אירוע פעיל חדש ותוכל להגדיר RSVP, פרטי מקום ותאריך.
+            </p>
+
+            <input
+              value={newEventName}
+              onChange={(e) => setNewEventName(e.target.value)}
+              placeholder="לדוגמה: החתונה של דוד"
+              className={`${inputClass} mt-4`}
+            />
+
+            <button
+              onClick={() => void createEvent()}
+              disabled={busyAction === 'create'}
+              className="w-full mt-3 py-4 rounded-[22px] bg-charcoal-900 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+              style={{ boxShadow: '0 12px 30px rgba(26,25,22,0.14)' }}
+            >
+              {busyAction === 'create' ? 'יוצר אירוע...' : 'צור אירוע חדש'}
+            </button>
+          </div>
+        </div>
+
+        {message ? (
+          <div
+            className={`rounded-[20px] px-4 py-3 text-[13px] font-medium ${
+              message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
+            }`}
+          >
+            {message.text}
+          </div>
+        ) : null}
+
+        {archivedEvents.length > 0 && (
+          <div className={surface}>
+            <div className="p-4">
+              <p className={sectionLabel}>אירועים קודמים</p>
+              <p className="text-[12px] text-charcoal-400 mt-1">אפשר גם להחזיר אירוע קיים להיות פעיל.</p>
+
+              <div className="space-y-2 mt-4">
+                {archivedEvents.map((archivedEvent) => (
+                  <div
+                    key={archivedEvent.id}
+                    className="rounded-[20px] border border-[#EFE8D8] bg-[#FCFBF7] px-4 py-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[14px] font-bold text-charcoal-900 truncate">
+                          {archivedEvent.event_name}
+                        </p>
+                        <p className="text-[12px] text-charcoal-400 mt-0.5">
+                          {formatDisplayDate(archivedEvent.event_date)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => activateEvent(archivedEvent.id)}
+                        disabled={busyAction === 'activate'}
+                        className="px-3 py-2 rounded-xl bg-charcoal-900 text-white text-[12px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform shrink-0"
+                      >
+                        הפוך לפעיל
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 pt-1 pb-4">
       <div className="flex items-center gap-3">
