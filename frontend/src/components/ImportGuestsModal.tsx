@@ -8,6 +8,7 @@ import {
 import * as XLSX from 'xlsx';
 import { Category, Side } from '../types';
 import { rsvpService, supabase } from '../services/supabase';
+import { normalizePhone } from '../utils/phone';
 
 interface ContactDraft { name: string; phone: string; side: Side | null; category: Category; }
 
@@ -68,12 +69,6 @@ function parseCSV(text: string): string[][] {
   });
 }
 
-function normalizePhone(raw: string): string {
-  let p = raw.replace(/[\s\-\(\)\.]/g, '');
-  if (p.startsWith('+972')) p = '0' + p.slice(4);
-  else if (p.startsWith('972') && p.length >= 12) p = '0' + p.slice(3);
-  return p;
-}
 
 const PHONE_RE = /^0[2-9]\d{7,8}$/;
 

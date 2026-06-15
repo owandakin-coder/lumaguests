@@ -2,13 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { Side, Category, RsvpStatus, Guest, CreateGuestInput } from '../types';
-
-function normalizePhone(raw: string): string {
-  let p = raw.replace(/[\s\-\(\)\.]/g, '');
-  if (p.startsWith('+972')) p = '0' + p.slice(4);
-  else if (p.startsWith('972') && p.length >= 12) p = '0' + p.slice(3);
-  return p;
-}
+import { normalizePhone } from '../utils/phone';
 
 interface GuestFormProps {
   initialData?: Guest;
