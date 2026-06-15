@@ -301,6 +301,15 @@ export const EventManager = ({
         </div>
       </div>
 
+      {!isOwner && (
+        <div className="rounded-[18px] border border-[#DDD6FE] bg-[#F5F3FF] px-4 py-2.5 flex items-center gap-2">
+          <span className="text-[13px] flex-shrink-0" style={{ color: '#7C3AED' }}>🔒</span>
+          <p className="text-[12px] leading-snug" style={{ color: '#5B21B6' }}>
+            גישה כשותף/ה — עריכת פרטי האירוע זמינה רק לבעל/ת האירוע
+          </p>
+        </div>
+      )}
+
       <div
         className="rounded-[22px] px-4 py-3.5 text-white"
         style={{
@@ -320,13 +329,15 @@ export const EventManager = ({
               {form.venueName ? ` · ${form.venueName}` : ''}
             </p>
           </div>
-          <button
-            onClick={() => setConfirmAction('create')}
-            disabled={busyAction === 'create'}
-            className="shrink-0 rounded-xl bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white active:scale-[0.97] transition-transform disabled:opacity-50"
-          >
-            {busyAction === 'create' ? '...' : '+ אירוע'}
-          </button>
+          {isOwner && (
+            <button
+              onClick={() => setConfirmAction('create')}
+              disabled={busyAction === 'create'}
+              className="shrink-0 rounded-xl bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white active:scale-[0.97] transition-transform disabled:opacity-50"
+            >
+              {busyAction === 'create' ? '...' : '+ אירוע'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -341,13 +352,14 @@ export const EventManager = ({
             value={form.eventName}
             onChange={(e) => setField('eventName', e.target.value)}
             placeholder="חתונה, בר-מצווה..."
-            className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
+            readOnly={!isOwner}
+            className={`w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none${!isOwner ? ' cursor-default select-text' : ''}`}
           />
         </div>
 
         <div
-          className="px-4 py-2.5 border-t border-[#F2EAD8] relative cursor-pointer"
-          onClick={() => dateInputRef.current?.showPicker?.()}
+          className={`px-4 py-2.5 border-t border-[#F2EAD8] relative${isOwner ? ' cursor-pointer' : ' cursor-default'}`}
+          onClick={isOwner ? () => dateInputRef.current?.showPicker?.() : undefined}
         >
           <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">תאריך</p>
           <p className={`text-[14px] ${form.eventDate ? 'text-charcoal-900' : 'text-charcoal-300'}`}>
@@ -358,8 +370,9 @@ export const EventManager = ({
             type="date"
             value={form.eventDate}
             onChange={(e) => setField('eventDate', e.target.value)}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            className={`absolute inset-0 w-full h-full opacity-0${isOwner ? ' cursor-pointer' : ' pointer-events-none'}`}
             tabIndex={-1}
+            readOnly={!isOwner}
           />
         </div>
 
@@ -369,7 +382,8 @@ export const EventManager = ({
             value={form.venueName}
             onChange={(e) => setField('venueName', e.target.value)}
             placeholder="שם האולם"
-            className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
+            readOnly={!isOwner}
+            className={`w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none${!isOwner ? ' cursor-default select-text' : ''}`}
           />
         </div>
 
@@ -379,7 +393,8 @@ export const EventManager = ({
             value={form.venueAddress}
             onChange={(e) => setField('venueAddress', e.target.value)}
             placeholder="רחוב ועיר"
-            className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
+            readOnly={!isOwner}
+            className={`w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none${!isOwner ? ' cursor-default select-text' : ''}`}
           />
         </div>
 
@@ -390,7 +405,8 @@ export const EventManager = ({
             onChange={(e) => setField('description', e.target.value)}
             placeholder="תיאור קצר לאורחים"
             rows={2}
-            className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none resize-none"
+            readOnly={!isOwner}
+            className={`w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none resize-none${!isOwner ? ' cursor-default select-text' : ''}`}
           />
         </div>
       </div>
@@ -404,8 +420,9 @@ export const EventManager = ({
               <p className="text-[12px] text-charcoal-400 mt-1">הפעלת עמוד אישור ציבורי עם קישור קבוע לאירוע.</p>
             </div>
             <button
-              onClick={() => setField('publicEnabled', !form.publicEnabled)}
-              className="rounded-2xl bg-[#FAF7EF] px-3 py-2 flex items-center gap-2 active:scale-[0.98] transition-transform"
+              onClick={isOwner ? () => setField('publicEnabled', !form.publicEnabled) : undefined}
+              disabled={!isOwner}
+              className={`rounded-2xl bg-[#FAF7EF] px-3 py-2 flex items-center gap-2 transition-transform${isOwner ? ' active:scale-[0.98]' : ' cursor-default opacity-75'}`}
             >
               {form.publicEnabled ? (
                 <ToggleRight className="w-5 h-5 text-green-500" />
@@ -424,7 +441,8 @@ export const EventManager = ({
                 value={form.publicSlug}
                 onChange={(e) => setField('publicSlug', e.target.value)}
                 placeholder="my-event-link"
-                className="flex-1 bg-transparent text-[15px] text-charcoal-900 focus:outline-none"
+                readOnly={!isOwner}
+                className={`flex-1 bg-transparent text-[15px] text-charcoal-900 focus:outline-none${!isOwner ? ' cursor-default select-text' : ''}`}
               />
             </div>
           </div>
@@ -436,8 +454,9 @@ export const EventManager = ({
                 <p className="text-[11px] text-charcoal-400 mt-0.5">כשסגור — אורחים לא יוכלו להירשם</p>
               </div>
               <button
-                onClick={() => setField('rsvpOpen', !form.rsvpOpen)}
-                className="rounded-2xl bg-[#FAF7EF] px-3 py-2 flex items-center gap-2 active:scale-[0.98] transition-transform"
+                onClick={isOwner ? () => setField('rsvpOpen', !form.rsvpOpen) : undefined}
+                disabled={!isOwner}
+                className={`rounded-2xl bg-[#FAF7EF] px-3 py-2 flex items-center gap-2 transition-transform${isOwner ? ' active:scale-[0.98]' : ' cursor-default opacity-75'}`}
               >
                 {form.rsvpOpen ? (
                   <ToggleRight className="w-5 h-5 text-green-500" />
@@ -505,15 +524,21 @@ export const EventManager = ({
         </div>
       ) : null}
 
-      <button
-        onClick={saveEvent}
-        disabled={busyAction === 'save'}
-        className="w-full py-4 rounded-[22px] bg-charcoal-900 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-        style={{ boxShadow: '0 12px 30px rgba(26,25,22,0.14)' }}
-      >
-        <Save className="w-4 h-4" />
-        {busyAction === 'save' ? 'שומר...' : 'שמור פרטי אירוע'}
-      </button>
+      {isOwner ? (
+        <button
+          onClick={saveEvent}
+          disabled={busyAction === 'save'}
+          className="w-full py-4 rounded-[22px] bg-charcoal-900 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+          style={{ boxShadow: '0 12px 30px rgba(26,25,22,0.14)' }}
+        >
+          <Save className="w-4 h-4" />
+          {busyAction === 'save' ? 'שומר...' : 'שמור פרטי אירוע'}
+        </button>
+      ) : (
+        <div className="w-full py-4 rounded-[22px] border border-[#DDD6FE] bg-[#F5F3FF] text-[13px] text-[#5B21B6] font-medium text-center">
+          עריכת פרטי האירוע זמינה רק לבעל/ת האירוע
+        </div>
+      )}
 
       <div className={surface}>
         <div className="p-4">
