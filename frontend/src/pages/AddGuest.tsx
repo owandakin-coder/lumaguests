@@ -44,6 +44,8 @@ export const AddGuest = ({ onSuccess, onCancel }: AddGuestProps) => {
     } catch (error: any) {
       if (error?.message?.includes('rsvp_token') || error?.code === '42703') {
         await guestService.create(base);
+      } else if (error?.code === '23505') {
+        throw new Error('מוזמן עם מספר טלפון זה כבר קיים');
       } else {
         throw error;
       }

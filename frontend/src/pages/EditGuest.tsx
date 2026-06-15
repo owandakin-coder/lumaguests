@@ -53,20 +53,25 @@ export const EditGuest = ({ guestId, onSuccess, onCancel }: EditGuestProps) => {
       }
     }
 
-    await guestService.update(
-      guestId,
-      {
-        full_name: data.fullName.trim(),
-        phone: data.phone.trim(),
-        companions: data.companions,
-        side: data.side ?? null,
-        category: data.category,
-        rsvp_status: data.rsvpStatus,
-        notes: data.notes?.trim() || null,
-      },
-      guestOwnerId,
-      event.id
-    );
+    try {
+      await guestService.update(
+        guestId,
+        {
+          full_name: data.fullName.trim(),
+          phone: data.phone.trim(),
+          companions: data.companions,
+          side: data.side ?? null,
+          category: data.category,
+          rsvp_status: data.rsvpStatus,
+          notes: data.notes?.trim() || null,
+        },
+        guestOwnerId,
+        event.id
+      );
+    } catch (error: any) {
+      if (error?.code === '23505') throw new Error('מוזמן עם מספר טלפון זה כבר קיים');
+      throw error;
+    }
 
     onSuccess();
   };
