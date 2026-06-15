@@ -124,6 +124,7 @@ export const Settings = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [notifPerm, setNotifPerm] = useState<NotificationPermission>('default');
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [err, setErr] = useState('');
@@ -523,15 +524,40 @@ export const Settings = ({
       </Sheet>
 
       <Sheet open={activeModal === 'help'} onClose={close} title="שאלות נפוצות">
-        <div className="space-y-3 max-h-72 overflow-y-auto">
-          {[
-            ['איך מוסיפים מוזמן?', 'לוחצים על הוספת מוזמן, ממלאים את הפרטים ושומרים.'],
-            ['איך שולחים בקשת אישור הגעה?', 'פותחים את בחירת המוזמנים ואז את כפתור השליחה בוואטסאפ.'],
-            ['איפה עורכים את האירוע?', 'דרך כרטיס ניהול אירוע בחלק העליון של מסך ההגדרות.'],
-          ].map(([q, a]) => (
-            <div key={q} className="bg-charcoal-50 rounded-2xl p-4">
-              <p className="text-[13px] font-bold text-charcoal-900 mb-1">{q}</p>
-              <p className="text-[12px] text-charcoal-500 leading-relaxed">{a}</p>
+        <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '60dvh' }}>
+          {([
+            { id: 'guests-add', q: 'איך מוסיפים מוזמנים?', a: 'לחץ על "הוסף מוזמן" ברשימת המוזמנים. מלא שם, מספר טלפון, מספר מלווים, צד (חתן/כלה) וקטגוריה. לחץ שמור.' },
+            { id: 'guests-import', q: 'איך מייבאים מוזמנים מאקסל?', a: 'ברשימת המוזמנים לחץ על "ייבוא". העלה קובץ Excel או CSV עם עמודות שם וטלפון, מפה את העמודות לשדות המערכת ולחץ "ייבא".' },
+            { id: 'link-send', q: 'איך שולחים קישור אישי למוזמן?', a: 'בכרטיסיית המוזמן לחץ על כפתור WhatsApp. נפתח צ\'אט עם הודעה מוכנה הכוללת קישור אישי. המוזמן לוחץ על הקישור ומאשר או מסרב להגעה.' },
+            { id: 'link-what', q: 'מה זה קישור אישי?', a: 'כל מוזמן מקבל קישור ייחודי שמזהה אותו אוטומטית. כשהוא פותח את הקישור הוא רואה את שמו ופרטי האירוע, ויכול לאשר הגעה עם מספר מלווים.' },
+            { id: 'rsvp-public', q: 'מה זה RSVP ציבורי ואיך מפעילים?', a: 'דף ציבורי שכל אחד יכול לגשת אליו. ב-Event Studio פתח "RSVP ציבורי", הגדר קישור לאירוע, הפעל את המתג ושתף את הקישור.' },
+            { id: 'cover', q: 'איך מוסיפים תמונת כיסוי לאירוע?', a: 'ב-Event Studio פתח "תמונת האירוע", לחץ על "בחר תמונה" ובחר תמונה מהגלריה. חתוך לפי הצורך ולחץ "העלה תמונה". התמונה תופיע בקישורים האישיים.' },
+            { id: 'collab', q: 'איך מוסיפים שותף לניהול האירוע?', a: 'ב-Event Studio פתח "ניהול משותף", הכנס את כתובת האימייל של השותף ולחץ "הזמן". השותף יקבל גישה לאחר שייכנס עם אותו אימייל.' },
+            { id: 'new-event', q: 'איך יוצרים אירוע חדש?', a: 'ב-Event Studio פתח "ארכיון אירועים" ולחץ "+ צור אירוע חדש". האירוע הנוכחי יועבר לארכיון והאירוע החדש יהפוך לפעיל.' },
+            { id: 'stats', q: 'איפה רואים סטטיסטיקות?', a: 'בדף הבית מוצגים סיכומי אישורים, סירובים וממתינים. לחץ על "כל המוזמנים" לרשימה מלאה עם אפשרויות סינון לפי סטטוס וצד.' },
+          ] as { id: string; q: string; a: string }[]).map(({ id, q, a }) => (
+            <div key={id} className="rounded-2xl border border-charcoal-100 overflow-hidden">
+              <button
+                onClick={() => setOpenFaq(prev => prev === id ? null : id)}
+                className="w-full flex items-center justify-between gap-3 px-4 py-3 text-right"
+              >
+                <span className="text-[13px] font-semibold text-charcoal-900">{q}</span>
+                <ChevronLeft className={`w-4 h-4 text-charcoal-400 flex-shrink-0 transition-transform duration-150 ${openFaq === id ? '-rotate-90' : ''}`} />
+              </button>
+              <AnimatePresence initial={false}>
+                {openFaq === id && (
+                  <motion.div
+                    key={id}
+                    initial={{ height: 0 }}
+                    animate={{ height: 'auto' }}
+                    exit={{ height: 0 }}
+                    transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <p className="px-4 pb-3 text-[13px] leading-relaxed text-charcoal-500">{a}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ))}
         </div>

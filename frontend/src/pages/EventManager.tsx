@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Copy,
   Eye,
-  HelpCircle,
   ImagePlus,
   Link,
   Pencil,
@@ -39,7 +38,7 @@ interface EventManagerProps {
 
 type BusyAction = 'save' | 'create' | 'activate' | 'archive' | 'delete' | 'invite' | 'removeCollab' | 'cover' | null;
 type ConfirmAction = 'create' | 'archive' | { type: 'delete'; eventId: string; name: string } | null;
-type AccordionSection = 'cover' | 'details' | 'rsvp' | 'sharing' | 'archive' | 'help';
+type AccordionSection = 'cover' | 'details' | 'rsvp' | 'sharing' | 'archive';
 
 const surface = 'rounded-[28px] bg-white shadow-[0_10px_28px_rgba(34,29,21,0.07)]';
 const sectionLabel = 'text-[11px] font-bold tracking-[0.22em] text-charcoal-900 uppercase';
@@ -72,7 +71,6 @@ export const EventManager = ({
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [openSection, setOpenSection] = useState<AccordionSection | null>(null);
-  const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [newEventName, setNewEventName] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -1165,106 +1163,6 @@ export const EventManager = ({
           </AnimatePresence>
         </div>
       )}
-
-      {/* Help & FAQ */}
-      <div className={surface}>
-        <button onClick={() => toggleSection('help')} className="w-full px-4 py-4 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-[14px] bg-blue-50 flex items-center justify-center flex-shrink-0">
-            <HelpCircle className="w-4 h-4 text-blue-500" />
-          </div>
-          <div className="flex-1 min-w-0 text-right">
-            <p className={sectionLabel}>עזרה ושאלות נפוצות</p>
-            <p className="text-[13px] text-charcoal-500 mt-0.5">מדריך שימוש מלא</p>
-          </div>
-          <ChevronDown className={`w-4 h-4 text-charcoal-400 flex-shrink-0 transition-transform duration-200 ${openSection === 'help' ? 'rotate-180' : ''}`} />
-        </button>
-        <AnimatePresence initial={false}>
-          {openSection === 'help' && (
-            <motion.div
-              key="help-content"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-              style={{ overflow: 'hidden' }}
-            >
-              <div className="border-t border-[#F2EAD8] p-4 space-y-2">
-                {([
-                  {
-                    id: 'guests-add',
-                    q: 'איך מוסיפים מוזמנים?',
-                    a: 'לחץ על "הוסף מוזמן" ברשימת המוזמנים. מלא שם, מספר טלפון (לשליחת קישור), מספר מלווים, צד (חתן/כלה) וקטגוריה. לחץ שמור.',
-                  },
-                  {
-                    id: 'guests-import',
-                    q: 'איך מייבאים מוזמנים מאקסל?',
-                    a: 'ברשימת המוזמנים לחץ על "ייבוא". העלה קובץ Excel או CSV עם עמודות שם וטלפון. מפה את העמודות לשדות המערכת ולחץ "ייבא".',
-                  },
-                  {
-                    id: 'link-send',
-                    q: 'איך שולחים קישור אישי למוזמן?',
-                    a: 'בכרטיסיית המוזמן לחץ על כפתור WhatsApp. נפתח צ\'אט עם הודעה מוכנה הכוללת קישור אישי. המוזמן לוחץ על הקישור ויכול לאשר או לסרב להגעה.',
-                  },
-                  {
-                    id: 'link-personal',
-                    q: 'מה זה קישור אישי?',
-                    a: 'כל מוזמן מקבל קישור ייחודי שמזהה אותו אוטומטית. כשהוא פותח את הקישור הוא רואה את שמו, פרטי האירוע, ויכול לאשר הגעה עם מספר מלווים.',
-                  },
-                  {
-                    id: 'rsvp-public',
-                    q: 'מה זה RSVP ציבורי ואיך מפעילים?',
-                    a: 'דף ציבורי שכל אחד יכול לגשת אליו (ללא קישור אישי). ב-Event Studio פתח "RSVP ציבורי", הגדר קישור לאירוע, הפעל את המתג ושתף את הקישור ברשתות חברתיות.',
-                  },
-                  {
-                    id: 'cover-image',
-                    q: 'איך מוסיפים תמונת כיסוי לאירוע?',
-                    a: 'ב-Event Studio פתח את "תמונת האירוע", לחץ על "בחר תמונה" ובחר תמונה מהגלריה. חתוך לפי הצורך ולחץ "העלה תמונה". התמונה תופיע בקישורים האישיים.',
-                  },
-                  {
-                    id: 'collab',
-                    q: 'איך מוסיפים שותף לניהול האירוע?',
-                    a: 'ב-Event Studio פתח "ניהול משותף", הכנס את כתובת האימייל של השותף ולחץ "הזמן". השותף יקבל גישה לאירוע לאחר שייכנס עם אותו אימייל.',
-                  },
-                  {
-                    id: 'archive',
-                    q: 'איך יוצרים אירוע חדש?',
-                    a: 'ב-Event Studio פתח "ארכיון אירועים" ולחץ "+ צור אירוע חדש". האירוע הנוכחי יועבר לארכיון והאירוע החדש יהפוך לפעיל.',
-                  },
-                  {
-                    id: 'stats',
-                    q: 'איפה רואים סטטיסטיקות?',
-                    a: 'בדף הבית (Dashboard) מוצגים סיכומי אישורים, סירובים וממתינים. לחץ על "כל המוזמנים" לרשימה מלאה עם אפשרויות סינון לפי סטטוס וצד.',
-                  },
-                ] as { id: string; q: string; a: string }[]).map(({ id, q, a }) => (
-                  <div key={id} className="rounded-[18px] border border-[#EFE8D8] overflow-hidden">
-                    <button
-                      onClick={() => setOpenFaq(prev => prev === id ? null : id)}
-                      className="w-full flex items-center justify-between gap-3 px-4 py-3 text-right"
-                    >
-                      <span className="text-[13px] font-semibold text-charcoal-800">{q}</span>
-                      <ChevronDown className={`w-3.5 h-3.5 text-charcoal-400 flex-shrink-0 transition-transform duration-150 ${openFaq === id ? 'rotate-180' : ''}`} />
-                    </button>
-                    <AnimatePresence initial={false}>
-                      {openFaq === id && (
-                        <motion.div
-                          key={`faq-${id}`}
-                          initial={{ height: 0 }}
-                          animate={{ height: 'auto' }}
-                          exit={{ height: 0 }}
-                          transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
-                          style={{ overflow: 'hidden' }}
-                        >
-                          <p className="px-4 pb-3 text-[13px] leading-relaxed text-charcoal-500">{a}</p>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
 
       {showCropper && rawImageUrl && (
         <ImageCropModal
