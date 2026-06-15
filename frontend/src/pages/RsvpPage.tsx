@@ -47,6 +47,7 @@ export const RsvpPage = ({
   const [submitting, setSubmitting] = useState(false);
   const [choice, setChoice] = useState<'CONFIRMED' | 'DECLINED' | null>(null);
   const [signedCoverUrl, setSignedCoverUrl] = useState<string | null>(null);
+  const [showNotes, setShowNotes] = useState(false);
 
   useEffect(() => {
     void load();
@@ -454,19 +455,40 @@ export const RsvpPage = ({
                       </motion.button>
                     </div>
 
-                    <div className="rounded-[28px] border border-white/80 bg-white/88 px-4 py-4 shadow-[0_16px_40px_rgba(89,69,35,0.10)] backdrop-blur-xl">
-                      <div className="mb-2 flex items-center justify-between gap-3">
-                        <p className="text-[15px] font-bold text-charcoal-700">הערות / רגישויות מזון</p>
-                        <UtensilsCrossed className="h-5 w-5 text-[#C49A40]" />
-                      </div>
-                      <textarea
-                        value={note}
-                        onChange={(e) => setNote(e.target.value)}
-                        placeholder="לדוגמה: צמחוני, ללא גלוטן..."
-                        rows={2}
-                        className="w-full resize-none rounded-[20px] bg-[#FBF8F2] px-4 py-3.5 text-[14px] text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-[#E5D3A1] transition"
-                      />
-                    </div>
+                    {!showNotes ? (
+                      <button
+                        onClick={() => setShowNotes(true)}
+                        className="flex w-full items-center justify-center gap-2 rounded-[24px] border border-[#E8D9B0] bg-white/60 py-3 text-[14px] text-charcoal-500"
+                      >
+                        <UtensilsCrossed className="h-4 w-4 text-[#C49A40]" />
+                        יש לך רגישויות מזון? הוסף הערה
+                      </button>
+                    ) : (
+                      <AnimatePresence initial={false}>
+                        <motion.div
+                          key="notes"
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                          style={{ overflow: 'hidden' }}
+                        >
+                          <div className="rounded-[28px] border border-white/80 bg-white/88 px-4 py-4 shadow-[0_16px_40px_rgba(89,69,35,0.10)] backdrop-blur-xl">
+                            <div className="mb-2 flex items-center justify-between gap-3">
+                              <p className="text-[15px] font-bold text-charcoal-700">הערות / רגישויות מזון</p>
+                              <UtensilsCrossed className="h-5 w-5 text-[#C49A40]" />
+                            </div>
+                            <textarea
+                              autoFocus
+                              value={note}
+                              onChange={(e) => setNote(e.target.value)}
+                              placeholder="לדוגמה: צמחוני, ללא גלוטן..."
+                              rows={2}
+                              className="w-full resize-none rounded-[20px] bg-[#FBF8F2] px-4 py-3.5 text-[14px] text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-[#E5D3A1] transition"
+                            />
+                          </div>
+                        </motion.div>
+                      </AnimatePresence>
+                    )}
 
                     <div className="px-4 pt-1 text-center">
                       <p className="text-[15px] font-medium text-charcoal-500">מחכים לכם באהבה</p>
