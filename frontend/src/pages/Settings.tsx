@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { useEvent } from '../hooks/useEvent';
-import { authService, guestService, openWhatsAppUrl, supabase } from '../services/supabase';
+import { authService, guestService, openWhatsAppUrl, storageService, supabase } from '../services/supabase';
 import { Event } from '../types';
 
 interface SettingsProps {
@@ -215,6 +215,20 @@ export const Settings = ({
 
     try {
       setDeleteLoading(true);
+
+      // Delete cover images from Storage before removing events
+      const { data: userEvents } = await supabase
+        .from('events')
+        .select('id, cover_image_url')
+        .eq('owner_user_id', auth.user.id);
+      if (userEvents) {
+        await Promise.allSettled(
+          userEvents
+            .filter(e => e.cover_image_url)
+            .map(e => storageService.removeEventCover(auth.user!.id, e.id))
+        );
+      }
+
       await guestService.deleteAll(auth.user.id);
       await supabase.from('events').delete().eq('owner_user_id', auth.user.id);
       await reload();

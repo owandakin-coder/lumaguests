@@ -3,6 +3,13 @@ import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { Side, Category, RsvpStatus, Guest, CreateGuestInput } from '../types';
 
+function normalizePhone(raw: string): string {
+  let p = raw.replace(/[\s\-\(\)\.]/g, '');
+  if (p.startsWith('+972')) p = '0' + p.slice(4);
+  else if (p.startsWith('972') && p.length >= 12) p = '0' + p.slice(3);
+  return p;
+}
+
 interface GuestFormProps {
   initialData?: Guest;
   onSubmit: (data: CreateGuestInput) => Promise<void>;
@@ -56,7 +63,7 @@ export const GuestForm = ({ initialData, onSubmit, isLoading=false, onCancel, ti
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    try { await onSubmit(form); }
+    try { await onSubmit({ ...form, phone: normalizePhone(form.phone) }); }
     catch (err: any) {
       const msg = err?.message || (typeof err === 'string' ? err : 'שגיאה בשמירה, נסה שוב');
       setErrors(p=>({...p, submit: msg}));
