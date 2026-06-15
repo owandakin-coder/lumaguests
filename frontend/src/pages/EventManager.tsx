@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Copy,
   Eye,
+  ImagePlus,
   Link,
   Pencil,
   RefreshCw,
@@ -20,7 +21,8 @@ import {
   X,
 } from 'lucide-react';
 import { Collaborator, Event } from '../types';
-import { collaboratorService, eventService, openWhatsAppUrl } from '../services/supabase';
+import { collaboratorService, eventService, openWhatsAppUrl, storageService } from '../services/supabase';
+import { ImageCropModal } from '../components/ImageCropModal';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
 interface EventManagerProps {
@@ -34,9 +36,9 @@ interface EventManagerProps {
   onDeleteEvent?: (eventId: string) => Promise<void>;
 }
 
-type BusyAction = 'save' | 'create' | 'activate' | 'archive' | 'delete' | 'invite' | 'removeCollab' | null;
+type BusyAction = 'save' | 'create' | 'activate' | 'archive' | 'delete' | 'invite' | 'removeCollab' | 'cover' | null;
 type ConfirmAction = 'create' | 'archive' | { type: 'delete'; eventId: string; name: string } | null;
-type AccordionSection = 'details' | 'rsvp' | 'sharing' | 'archive';
+type AccordionSection = 'cover' | 'details' | 'rsvp' | 'sharing' | 'archive';
 
 const surface = 'rounded-[28px] bg-white shadow-[0_10px_28px_rgba(34,29,21,0.07)]';
 const sectionLabel = 'text-[11px] font-bold tracking-[0.22em] text-charcoal-900 uppercase';
@@ -86,6 +88,11 @@ export const EventManager = ({
     rsvpOpen: true,
   });
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [rawImageUrl, setRawImageUrl] = useState<string | null>(null);
+  const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
+  const [croppedPreview, setCroppedPreview] = useState<string | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
 
   useEffect(() => {
     setForm({
@@ -199,6 +206,68 @@ export const EventManager = ({
     });
     setMessage(null);
     setIsEditing(false);
+  };
+
+  const resetCoverState = () => {
+    setRawImageUrl(null);
+    setCroppedBlob(null);
+    setCroppedPreview(null);
+    setShowCropper(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'ניתן להעלות רק תמונה תקינה מסוג JPG, PNG או WEBP.' });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setRawImageUrl(ev.target?.result as string);
+      setShowCropper(true);
+      setMessage(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropDone = (blob: Blob) => {
+    setCroppedBlob(blob);
+    setCroppedPreview(URL.createObjectURL(blob));
+    setShowCropper(false);
+    setMessage({ type: 'success', text: 'התמונה נחתכה ומוכנה לשמירה.' });
+  };
+
+  const uploadCover = async () => {
+    if (!croppedBlob || !event?.id || !auth.user || !onEventUpdate) return;
+    try {
+      setBusyAction('cover');
+      const file = new File([croppedBlob], 'cover.jpg', { type: 'image/jpeg' });
+      const url = await storageService.uploadEventCover(auth.user.id, event.id, file);
+      await onEventUpdate({ cover_image_url: url });
+      resetCoverState();
+      setMessage({ type: 'success', text: 'תמונת האירוע נשמרה.' });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error?.message || 'לא הצלחנו לשמור את תמונת האירוע.' });
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const removeCover = async () => {
+    if (!event?.id || !auth.user || !onEventUpdate) return;
+    try {
+      setBusyAction('cover');
+      await storageService.removeEventCover(auth.user.id, event.id);
+      await onEventUpdate({ cover_image_url: null });
+      resetCoverState();
+      setMessage({ type: 'success', text: 'תמונת האירוע הוסרה.' });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error?.message || 'לא הצלחנו להסיר את תמונת האירוע.' });
+    } finally {
+      setBusyAction(null);
+    }
   };
 
   const toggleSection = (section: AccordionSection) => {
@@ -464,6 +533,92 @@ export const EventManager = ({
           {message.text}
         </div>
       ) : null}
+
+      {/* תמונת האירוע */}
+      {isOwner && (
+        <div className={surface}>
+          <button
+            onClick={() => toggleSection('cover')}
+            className="w-full px-4 py-4 flex items-center gap-3"
+          >
+            <div className="w-9 h-9 rounded-[14px] bg-pink-50 flex items-center justify-center flex-shrink-0">
+              <ImagePlus className="w-4 h-4 text-pink-500" />
+            </div>
+            <div className="flex-1 min-w-0 text-right">
+              <p className={sectionLabel}>תמונת האירוע</p>
+              <p className="text-[13px] text-charcoal-500 mt-0.5">
+                {(croppedPreview || event?.cover_image_url) ? 'תמונה מוגדרת' : 'לא הוגדרה תמונה'}
+              </p>
+            </div>
+            <ChevronDown
+              className={`w-4 h-4 text-charcoal-400 flex-shrink-0 transition-transform duration-200 ${openSection === 'cover' ? 'rotate-180' : ''}`}
+            />
+          </button>
+          <AnimatePresence initial={false}>
+            {openSection === 'cover' && (
+              <motion.div
+                key="cover-content"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                style={{ overflow: 'hidden' }}
+              >
+                <div className="border-t border-[#F2EAD8] p-4">
+                  {(croppedPreview || event?.cover_image_url) ? (
+                    <div className="rounded-2xl overflow-hidden bg-charcoal-100 mb-3" style={{ aspectRatio: '16 / 9' }}>
+                      <img
+                        src={croppedPreview || event?.cover_image_url || ''}
+                        alt={form.eventName || 'תמונת האירוע'}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-charcoal-200 px-4 py-6 text-center text-[12px] text-charcoal-400 mb-3">
+                      עדיין לא הוגדרה תמונת אירוע.
+                    </div>
+                  )}
+
+                  <label className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[20px] border-2 border-dashed border-charcoal-200 cursor-pointer active:bg-charcoal-50 transition-colors">
+                    <ImagePlus className="w-4 h-4 text-charcoal-400" />
+                    <span className="text-[14px] font-semibold text-charcoal-600">
+                      {croppedBlob || event?.cover_image_url ? 'החלף תמונה' : 'בחר תמונת אירוע'}
+                    </span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileSelect}
+                    />
+                  </label>
+
+                  <div className="mt-3 space-y-2">
+                    {croppedBlob && (
+                      <button
+                        onClick={() => void uploadCover()}
+                        disabled={busyAction === 'cover'}
+                        className="w-full py-3 rounded-[20px] bg-charcoal-900 text-white text-[14px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+                      >
+                        {busyAction === 'cover' ? 'שומר תמונה...' : 'שמור תמונת אירוע'}
+                      </button>
+                    )}
+                    {!croppedBlob && event?.cover_image_url && (
+                      <button
+                        onClick={() => void removeCover()}
+                        disabled={busyAction === 'cover'}
+                        className="w-full py-3 rounded-[20px] border border-charcoal-200 text-charcoal-700 text-[14px] font-semibold disabled:opacity-50 active:scale-[0.98] transition-transform"
+                      >
+                        {busyAction === 'cover' ? 'מסיר...' : 'הסר תמונת אירוע'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* פרטי האירוע */}
       <div className={surface}>
@@ -967,6 +1122,18 @@ export const EventManager = ({
             )}
           </AnimatePresence>
         </div>
+      )}
+
+      {showCropper && rawImageUrl && (
+        <ImageCropModal
+          imageSrc={rawImageUrl}
+          onDone={(blob) => handleCropDone(blob)}
+          onCancel={() => {
+            setShowCropper(false);
+            setRawImageUrl(null);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+          }}
+        />
       )}
 
       {createPortal(
