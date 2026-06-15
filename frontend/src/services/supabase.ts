@@ -328,9 +328,10 @@ export const eventService = {
   },
 
   createNew: async (userId: string, name?: string) => {
+    const eventName = name?.trim() || 'אירוע חדש';
     const { data, error } = await supabase.rpc('create_event_lite', {
       p_user_id: userId,
-      p_event_name: name?.trim() || '׳׳™׳¨׳•׳¢ ׳—׳“׳©',
+      p_event_name: eventName,
     });
 
     if (!error && data) {
@@ -354,7 +355,7 @@ export const eventService = {
       .from('events')
       .insert({
         owner_user_id: userId,
-        event_name: name?.trim() || '׳׳™׳¨׳•׳¢ ׳—׳“׳©',
+        event_name: eventName,
         public_slug: slug,
         archived_at: null,
       })

@@ -162,6 +162,7 @@ export const EventManager = ({
         public_rsvp_enabled: form.rsvpOpen,
       });
       setMessage({ type: 'success', text: 'פרטי האירוע נשמרו.' });
+      setTimeout(() => onBack(), 1200);
     } catch (error: any) {
       const duplicate =
         error?.code === '23505' || String(error?.message || '').toLowerCase().includes('duplicate');
