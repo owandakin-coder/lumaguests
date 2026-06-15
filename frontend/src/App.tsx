@@ -36,6 +36,7 @@ function AuthenticatedApp() {
   const [guestStatusFilter, setGuestStatusFilter] = useState<RsvpStatus | 'ALL'>('ALL');
   const [messagesInitialFilter, setMessagesInitialFilter] = useState<RsvpStatus | 'ALL'>('ALL');
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [realtimeConnected, setRealtimeConnected] = useState(true);
   const { toasts, addToast, removeToast } = useToast();
   const auth = useSupabaseAuth();
   const {
@@ -137,12 +138,22 @@ function AuthenticatedApp() {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        setRealtimeConnected(status === 'SUBSCRIBED');
+      });
 
     return () => {
       supabase.removeChannel(channel);
+      setRealtimeConnected(true);
     };
   }, [addToast, auth.isAuthenticated, auth.user, event?.id]);
+
+  // Fallback polling when Realtime is disconnected
+  useEffect(() => {
+    if (realtimeConnected || !event?.id || !auth.isAuthenticated) return;
+    const interval = setInterval(() => void loadGuests(), 30_000);
+    return () => clearInterval(interval);
+  }, [realtimeConnected, event?.id, auth.isAuthenticated, loadGuests]);
 
   useEffect(() => {
     if (eventLoading || event) return;
@@ -357,6 +368,25 @@ function AuthenticatedApp() {
         onCancel={() => setDeletingGuest(null)}
         isLoading={isDeleteLoading}
       />
+
+      <AnimatePresence>
+        {!realtimeConnected && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-[100px] left-0 right-0 z-30 px-4 pointer-events-none"
+          >
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2.5 flex items-center gap-2.5 shadow-sm">
+              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+              <p className="text-[12px] text-amber-800 font-medium">
+                עדכונים בזמן אמת לא זמינים · מרענן כל 30 שניות
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
