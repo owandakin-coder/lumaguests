@@ -13,6 +13,7 @@ type EventRecord = import('../types').Event;
 type PublicEventRecord = import('../types').PublicEventData;
 type GuestRecord = import('../types').Guest;
 type RsvpPublicGuestRecord = import('../types').RsvpPublicGuest;
+type CollaboratorRecord = import('../types').Collaborator;
 
 function buildDefaultSlug() {
   return `event-${Math.random().toString(36).substring(2, 9)}`;
@@ -223,18 +224,37 @@ export const guestService = {
 
 export const eventService = {
   list: async (userId: string) => {
-    const { data, error } = await supabase
+    const { data: owned, error: ownedError } = await supabase
       .from('events')
       .select('*')
       .eq('owner_user_id', userId)
       .order('archived_at', { ascending: true, nullsFirst: true })
       .order('updated_at', { ascending: false });
 
-    if (error) throw error;
-    return (data || []) as EventRecord[];
+    if (ownedError) throw ownedError;
+
+    // Also fetch events where this user is a collaborator
+    let collaboratedEvents: EventRecord[] = [];
+    try {
+      const { data: collabs } = await supabase
+        .from('event_collaborators')
+        .select('events(*)')
+        .eq('user_id', userId);
+      collaboratedEvents = (collabs || []).map((c: any) => c.events).filter(Boolean);
+    } catch {
+      // event_collaborators table not yet created — safe to ignore
+    }
+
+    // Merge without duplicates (owned events take precedence)
+    const seen = new Set((owned || []).map((e: EventRecord) => e.id));
+    return [
+      ...(owned || []),
+      ...collaboratedEvents.filter((e) => !seen.has(e.id)),
+    ] as EventRecord[];
   },
 
   getActiveOrCreate: async (userId: string) => {
+    // 1. Check for owned active event
     const { data, error } = await supabase
       .from('events')
       .select('*')
@@ -247,6 +267,21 @@ export const eventService = {
     if (data) return data as EventRecord;
     if (error && error.code !== 'PGRST116') throw error;
 
+    // 2. Check for a collaborated active event (before creating a new owned one)
+    try {
+      const { data: collabs } = await supabase
+        .from('event_collaborators')
+        .select('events(*)')
+        .eq('user_id', userId);
+      const activeCollab = (collabs || [])
+        .map((c: any) => c.events)
+        .filter((e: any) => e && !e.archived_at)[0];
+      if (activeCollab) return activeCollab as EventRecord;
+    } catch {
+      // event_collaborators table not yet created — safe to ignore
+    }
+
+    // 3. No event found anywhere — create a fresh owned event
     const slug = buildDefaultSlug();
     const { data: created, error: createError } = await supabase
       .from('events')
@@ -480,6 +515,34 @@ export const rsvpService = {
 
     lines.push('', 'לאישור הגעה:', link, '', 'תודה ❤️');
     return `https://wa.me/${toWaPhone(phone)}?text=${encodeURIComponent(lines.join('\n'))}`;
+  },
+};
+
+export const collaboratorService = {
+  invite: async (eventId: string, email: string) => {
+    const { data, error } = await supabase.rpc('invite_event_collaborator', {
+      p_event_id: eventId,
+      p_email: email,
+    });
+    if (error) throw error;
+    return data as { success: boolean; error?: string };
+  },
+
+  list: async (eventId: string) => {
+    const { data, error } = await supabase.rpc('get_event_collaborators', {
+      p_event_id: eventId,
+    });
+    if (error) throw error;
+    return Array.isArray(data) ? (data as CollaboratorRecord[]) : [];
+  },
+
+  remove: async (eventId: string, userId: string) => {
+    const { data, error } = await supabase.rpc('remove_event_collaborator', {
+      p_event_id: eventId,
+      p_user_id: userId,
+    });
+    if (error) throw error;
+    return data as { success: boolean; error?: string };
   },
 };
 

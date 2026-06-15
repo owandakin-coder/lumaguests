@@ -12,9 +12,12 @@ import {
   ToggleLeft,
   ToggleRight,
   Trash2,
+  UserPlus,
+  X,
 } from 'lucide-react';
-import { Event } from '../types';
-import { eventService, openWhatsAppUrl } from '../services/supabase';
+import { Collaborator, Event } from '../types';
+import { collaboratorService, eventService, openWhatsAppUrl } from '../services/supabase';
+import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
 interface EventManagerProps {
   event?: Event | null;
@@ -27,7 +30,7 @@ interface EventManagerProps {
   onDeleteEvent?: (eventId: string) => Promise<void>;
 }
 
-type BusyAction = 'save' | 'create' | 'activate' | 'archive' | 'delete' | null;
+type BusyAction = 'save' | 'create' | 'activate' | 'archive' | 'delete' | 'invite' | 'removeCollab' | null;
 type ConfirmAction = 'create' | 'archive' | { type: 'delete'; eventId: string; name: string } | null;
 
 const surface = 'rounded-[28px] bg-white shadow-[0_10px_28px_rgba(34,29,21,0.07)]';
@@ -55,10 +58,15 @@ export const EventManager = ({
   onArchiveEvent,
   onDeleteEvent,
 }: EventManagerProps) => {
+  const auth = useSupabaseAuth();
+  const isOwner = !event || event.owner_user_id === auth.user?.id;
+
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [newEventName, setNewEventName] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [form, setForm] = useState({
     eventName: '',
     eventDate: '',
@@ -95,6 +103,11 @@ export const EventManager = ({
     event?.is_public,
     event?.public_rsvp_enabled,
   ]);
+
+  useEffect(() => {
+    if (!event?.id || !isOwner) return;
+    void collaboratorService.list(event.id).then(setCollaborators).catch(() => {});
+  }, [event?.id, isOwner]);
 
   const normalizedSlug = useMemo(
     () =>
@@ -211,6 +224,44 @@ export const EventManager = ({
       setMessage({ type: 'success', text: 'האירוע נמחק.' });
     } catch (error: any) {
       setMessage({ type: 'error', text: error?.message || 'לא הצלחנו למחוק את האירוע.' });
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const handleInvite = async () => {
+    if (!event?.id || !inviteEmail.trim()) return;
+    try {
+      setBusyAction('invite');
+      const result = await collaboratorService.invite(event.id, inviteEmail.trim());
+      if (result.success) {
+        setInviteEmail('');
+        setMessage({ type: 'success', text: 'השותף/ה נוסף/ה בהצלחה.' });
+        const updated = await collaboratorService.list(event.id);
+        setCollaborators(updated);
+      } else {
+        const msgs: Record<string, string> = {
+          user_not_found: 'לא נמצא משתמש עם כתובת מייל זו.',
+          not_owner: 'רק בעל/ת האירוע יכול/ה להזמין שותפים.',
+          cannot_invite_self: 'לא ניתן להזמין את עצמך.',
+        };
+        setMessage({ type: 'error', text: msgs[result.error || ''] || 'לא הצלחנו להזמין.' });
+      }
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error?.message || 'שגיאה בהזמנה.' });
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const handleRemoveCollaborator = async (userId: string) => {
+    if (!event?.id) return;
+    try {
+      setBusyAction('removeCollab');
+      await collaboratorService.remove(event.id, userId);
+      setCollaborators((prev) => prev.filter((c) => c.user_id !== userId));
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error?.message || 'לא הצלחנו להסיר.' });
     } finally {
       setBusyAction(null);
     }
@@ -466,6 +517,78 @@ export const EventManager = ({
 
       <div className={surface}>
         <div className="p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className={sectionLabel}>ניהול משותף</p>
+              <h3 className="text-[18px] font-bold text-charcoal-900 mt-2">שיתוף אירוע</h3>
+              <p className="text-[12px] text-charcoal-400 mt-1">
+                הזמן את בן/בת הזוג לנהל את רשימת האורחים יחד.
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: '#F5F3FF' }}>
+              <UserPlus className="w-4.5 h-4.5" style={{ color: '#7C3AED' }} />
+            </div>
+          </div>
+
+          {isOwner ? (
+            <>
+              <div className="flex gap-2 mt-4">
+                <input
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') void handleInvite(); }}
+                  placeholder="כתובת מייל"
+                  dir="ltr"
+                  className="flex-1 rounded-[20px] border border-[#EFE8D8] bg-[#FAF7EF] px-4 py-2.5 text-[14px] text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-[#D8C088]"
+                />
+                <button
+                  onClick={() => void handleInvite()}
+                  disabled={busyAction === 'invite' || !inviteEmail.trim()}
+                  className="px-4 py-2.5 rounded-[20px] bg-charcoal-900 text-white text-[13px] font-bold disabled:opacity-40 active:scale-[0.98] transition-transform flex-shrink-0"
+                >
+                  {busyAction === 'invite' ? '...' : 'הזמן'}
+                </button>
+              </div>
+
+              {collaborators.length === 0 ? (
+                <div className="rounded-[20px] bg-[#FAF7EF] px-4 py-4 text-center text-[13px] text-charcoal-400 mt-3">
+                  עדיין אין שותפים לניהול האירוע.
+                </div>
+              ) : (
+                <div className="space-y-2 mt-3">
+                  {collaborators.map((c) => (
+                    <div
+                      key={c.user_id}
+                      className="flex items-center gap-3 rounded-[20px] border border-[#EFE8D8] bg-[#FCFBF7] px-4 py-3"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-bold text-charcoal-900 truncate" dir="ltr">
+                          {c.email}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => void handleRemoveCollaborator(c.user_id)}
+                        disabled={busyAction === 'removeCollab'}
+                        className="w-7 h-7 rounded-xl border border-red-200 bg-red-50 flex items-center justify-center disabled:opacity-40 active:scale-[0.98] transition-transform flex-shrink-0"
+                      >
+                        <X className="w-3.5 h-3.5 text-red-500" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="rounded-[20px] bg-[#F5F3FF] px-4 py-4 mt-3 text-center text-[13px] text-[#5B21B6]">
+              אתה/את מנהל/ת אירוע זה כשותף/ה.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {isOwner && (
+      <div className={surface}>
+        <div className="p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className={sectionLabel}>ארכיון אירועים</p>
@@ -528,6 +651,7 @@ export const EventManager = ({
           )}
         </div>
       </div>
+      )}
 
       {createPortal(
         <AnimatePresence>

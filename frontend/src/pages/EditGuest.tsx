@@ -28,7 +28,8 @@ export const EditGuest = ({ guestId, onSuccess, onCancel }: EditGuestProps) => {
 
     try {
       setLoading(true);
-      const data = await guestService.getById(guestId, auth.user.id, event.id);
+      const guestOwnerId = event.owner_user_id || auth.user.id;
+      const data = await guestService.getById(guestId, guestOwnerId, event.id);
       setGuest(data);
     } finally {
       setLoading(false);
@@ -40,8 +41,10 @@ export const EditGuest = ({ guestId, onSuccess, onCancel }: EditGuestProps) => {
       throw new Error('לא מחובר');
     }
 
+    const guestOwnerId = event.owner_user_id || auth.user.id;
+
     if (guest && data.phone.trim() !== guest.phone) {
-      const hasDuplicate = await guestService.checkDuplicatePhone(data.phone.trim(), auth.user.id, event.id, guestId);
+      const hasDuplicate = await guestService.checkDuplicatePhone(data.phone.trim(), guestOwnerId, event.id, guestId);
       if (hasDuplicate) {
         throw new Error('מוזמן עם מספר טלפון זה כבר קיים');
       }
@@ -58,7 +61,7 @@ export const EditGuest = ({ guestId, onSuccess, onCancel }: EditGuestProps) => {
         rsvp_status: data.rsvpStatus,
         notes: data.notes?.trim() || null,
       },
-      auth.user.id,
+      guestOwnerId,
       event.id
     );
 

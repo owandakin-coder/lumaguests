@@ -108,6 +108,12 @@ export interface Event {
   updated_at: string;
 }
 
+export interface Collaborator {
+  user_id: string;
+  email: string;
+  added_at: string;
+}
+
 export interface PublicEventData {
   id: string;
   owner_user_id: string;

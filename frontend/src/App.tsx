@@ -57,14 +57,15 @@ function AuthenticatedApp() {
 
     try {
       setLoading(true);
-      const data = await guestService.getAll(auth.user.id, event.id);
+      const guestOwnerId = event.owner_user_id || auth.user.id;
+      const data = await guestService.getAll(guestOwnerId, event.id);
       setGuests(data);
     } catch {
       addToast('שגיאה בטעינת המוזמנים', 'error');
     } finally {
       setLoading(false);
     }
-  }, [addToast, auth.user, event?.id]);
+  }, [addToast, auth.user, event?.id, event?.owner_user_id]);
 
   useEffect(() => {
     if (!auth.isLoading && auth.isAuthenticated && !localStorage.getItem('luma_onboarding_done')) {
@@ -128,7 +129,8 @@ function AuthenticatedApp() {
 
     try {
       setIsDeleteLoading(true);
-      await guestService.delete(deletingGuest.id, auth.user.id, event.id);
+      const guestOwnerId = event.owner_user_id || auth.user.id;
+      await guestService.delete(deletingGuest.id, guestOwnerId, event.id);
       setGuests((prev) => prev.filter((guest) => guest.id !== deletingGuest.id));
       const name = deletingGuest.fullName || deletingGuest.full_name;
       addToast(`${name} נמחק בהצלחה`, 'success');
@@ -214,7 +216,7 @@ function AuthenticatedApp() {
           <GuestList
             guests={guests}
             loading={loading}
-            userId={auth.user!.id}
+            userId={event?.owner_user_id || auth.user!.id}
             event={event}
             onAddGuest={() => setCurrentPage('add')}
             onEditGuest={(guest) => {
@@ -231,7 +233,7 @@ function AuthenticatedApp() {
           />
         );
       case 'messages':
-        return <Messages guests={guests} userId={auth.user!.id} initialFilter={messagesInitialFilter} />;
+        return <Messages guests={guests} userId={event?.owner_user_id || auth.user!.id} initialFilter={messagesInitialFilter} />;
       case 'add':
         return <AddGuest onSuccess={handleAddSuccess} onCancel={() => setCurrentPage('guests')} />;
       case 'edit':
