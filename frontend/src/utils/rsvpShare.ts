@@ -28,7 +28,9 @@ const formatEventDate = (eventDate: string | null) => {
   }
 
   const date = new Date(eventDate);
-  const hasTime = date.getHours() !== 0 || date.getMinutes() !== 0;
+  // Dates saved via date-only picker are stored as UTC midnight; use UTC to avoid
+  // falsely detecting a time in local timezones (e.g. UTC+2 reads midnight as 02:00).
+  const hasTime = date.getUTCHours() !== 0 || date.getUTCMinutes() !== 0;
   const dateText = date.toLocaleDateString('he-IL', {
     weekday: 'long',
     day: 'numeric',

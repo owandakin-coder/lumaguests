@@ -150,12 +150,14 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
       })
     : null;
 
-  const formattedTime = event?.event_date
-    ? new Date(event.event_date).toLocaleTimeString('he-IL', {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : null;
+  const formattedTime = (() => {
+    if (!event?.event_date) return null;
+    const d = new Date(event.event_date);
+    // Dates from the date-only picker are stored as UTC midnight. Use UTC hours so
+    // that local-timezone offsets (e.g. UTC+2) don't falsely show "02:00".
+    if (d.getUTCHours() === 0 && d.getUTCMinutes() === 0) return null;
+    return d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  })();
 
   return (
     <div dir="rtl" className="min-h-screen" style={{ background: '#F8F6F2' }}>
@@ -344,7 +346,7 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
                       </div>
                       <div>
                         <p className="text-[14px] font-semibold text-charcoal-900">{formattedDate}</p>
-                        {formattedTime && formattedTime !== '00:00' ? (
+                        {formattedTime ? (
                           <p className="text-[12px] text-charcoal-400">{formattedTime}</p>
                         ) : null}
                       </div>
