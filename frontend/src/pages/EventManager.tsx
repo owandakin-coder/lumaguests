@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Collaborator, Event } from '../types';
 import { collaboratorService, eventService, openWhatsAppUrl, storageService, supabase } from '../services/supabase';
+import { ALL_EVENT_TYPES, EVENT_TYPE_LABELS, EVENT_TYPE_EMOJI } from '../utils/eventType';
 import { ImageCropModal } from '../components/ImageCropModal';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
@@ -78,6 +79,7 @@ export const EventManager = ({
   const [lastInvitedEmail, setLastInvitedEmail] = useState('');
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [form, setForm] = useState({
+    eventType: 'wedding',
     eventName: '',
     eventDate: '',
     venueName: '',
@@ -99,6 +101,7 @@ export const EventManager = ({
 
   useEffect(() => {
     setForm({
+      eventType: event?.event_type || 'wedding',
       eventName: event?.event_name || '',
       eventDate: event?.event_date ? event.event_date.split('T')[0] : '',
       venueName: event?.venue_name || '',
@@ -114,6 +117,7 @@ export const EventManager = ({
     setIsEditing(false);
   }, [
     event?.id,
+    event?.event_type,
     event?.event_name,
     event?.event_date,
     event?.venue_name,
@@ -212,6 +216,7 @@ export const EventManager = ({
     try {
       setBusyAction('save');
       await onEventUpdate({
+        event_type: form.eventType || 'wedding',
         event_name: form.eventName.trim() || 'האירוע שלי',
         event_date: form.eventDate || null,
         venue_name: form.venueName.trim() || null,
@@ -240,6 +245,7 @@ export const EventManager = ({
 
   const cancelEdit = () => {
     setForm({
+      eventType: event?.event_type || 'wedding',
       eventName: event?.event_name || '',
       eventDate: event?.event_date ? event.event_date.split('T')[0] : '',
       venueName: event?.venue_name || '',
@@ -709,7 +715,39 @@ export const EventManager = ({
                   </div>
                 )}
 
+                {/* Event type */}
                 <div className="px-4 py-2.5 border-t border-[#F2EAD8] mt-2">
+                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-2">סוג האירוע</p>
+                  {isEditing ? (
+                    <div className="flex flex-wrap gap-2">
+                      {ALL_EVENT_TYPES.map(({ type, label, emoji }) => {
+                        const selected = form.eventType === type;
+                        return (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => setField('eventType', type)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all active:scale-95"
+                            style={{
+                              background: selected ? '#1A1916' : '#F5F1E8',
+                              color: selected ? '#fff' : '#6E6862',
+                            }}
+                          >
+                            <span className="text-[14px] leading-none">{emoji}</span>
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-[14px] text-charcoal-900 flex items-center gap-1.5">
+                      <span>{EVENT_TYPE_EMOJI[form.eventType as keyof typeof EVENT_TYPE_EMOJI] || '🎉'}</span>
+                      {EVENT_TYPE_LABELS[form.eventType as keyof typeof EVENT_TYPE_LABELS] || form.eventType}
+                    </p>
+                  )}
+                </div>
+
+                <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
                   <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">שם האירוע</p>
                   {isEditing ? (
                     <input
