@@ -26,7 +26,7 @@ interface RsvpPageProps {
 }
 
 type Step = 'loading' | 'form' | 'already' | 'success' | 'error';
-type ErrorState = 'not_found' | 'guest_unavailable' | 'event_passed' | 'rsvp_closed' | 'general';
+type ErrorState = 'not_found' | 'guest_unavailable' | 'event_passed' | 'rsvp_closed' | 'general' | 'rate_limited';
 
 const fallbackDate = 'טרם נקבע';
 const fallbackVenue = 'טרם נקבע';
@@ -110,12 +110,6 @@ export const RsvpPage = ({
       setGuest(data);
       setCompanions(data.companions || 0);
 
-      if (data.cover_image_url) {
-        storageService.getSignedCoverUrl(data.cover_image_url)
-          .then(url => setSignedCoverUrl(url))
-          .catch(() => setSignedCoverUrl(data.cover_image_url ?? null));
-      }
-
       setStep(data.rsvp_via_link ? 'already' : 'form');
     } catch {
       setErrorState('general');
@@ -134,8 +128,12 @@ export const RsvpPage = ({
       if (!response?.success) {
         if (response?.error === 'event_passed') {
           setErrorState('event_passed');
-        } else if (response?.error === 'rsvp_closed') {
+        } else if (response?.error === 'rsvp_closed' || response?.error === 'event_archived') {
           setErrorState('rsvp_closed');
+        } else if (response?.error === 'rate_limited') {
+          setErrorState('rate_limited');
+        } else if (response?.error === 'not_found') {
+          setErrorState('not_found');
         } else if (response?.error) {
           setErrorState('guest_unavailable');
         } else {
@@ -210,6 +208,10 @@ export const RsvpPage = ({
     rsvp_closed: {
       title: 'ההרשמה נסגרה',
       description: 'תאריך סיום ה-RSVP עבר. לשינוי פנה/י למארגנים ישירות.',
+    },
+    rate_limited: {
+      title: 'ניסיונות רבים מדי',
+      description: 'נסה/י שוב בעוד מספר דקות.',
     },
     general: {
       title: 'לא הצלחנו לטעון את אישור ההגעה',
@@ -549,6 +551,7 @@ export const RsvpPage = ({
                               value={note}
                               onChange={(e) => setNote(e.target.value)}
                               placeholder="לדוגמה: צמחוני, ללא גלוטן..."
+                              maxLength={500}
                               rows={2}
                               className="w-full resize-none px-4 py-3.5 text-[14px] placeholder:opacity-50 focus:outline-none focus:ring-2 transition"
                               style={{
