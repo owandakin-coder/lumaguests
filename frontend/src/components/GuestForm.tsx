@@ -44,6 +44,7 @@ export const GuestForm = ({ initialData, onSubmit, isLoading=false, onCancel, ti
     notes:      initialData?.notes     || '',
   });
   const [errors, setErrors] = useState<Record<string,string>>({});
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => { setErrors({}); }, []);
 
@@ -58,11 +59,15 @@ export const GuestForm = ({ initialData, onSubmit, isLoading=false, onCancel, ti
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
-    try { await onSubmit({ ...form, phone: normalizePhone(form.phone) }); }
-    catch (err: any) {
+    if (!validate() || submitting) return;
+    try {
+      setSubmitting(true);
+      await onSubmit({ ...form, phone: normalizePhone(form.phone) });
+    } catch (err: any) {
       const msg = err?.message || (typeof err === 'string' ? err : 'שגיאה בשמירה, נסה שוב');
       setErrors(p=>({...p, submit: msg}));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -130,7 +135,7 @@ export const GuestForm = ({ initialData, onSubmit, isLoading=false, onCancel, ti
             </button>
             <span className="text-[18px] font-bold text-charcoal-900 w-6 text-center">{form.companions}</span>
             <button type="button"
-              onClick={()=>setForm(p=>({...p,companions:p.companions+1}))}
+              onClick={()=>setForm(p=>({...p,companions:Math.min(20,p.companions+1)}))}
               className="w-9 h-9 rounded-xl bg-charcoal-900 flex items-center justify-center text-lg font-bold text-white active:scale-90 transition-transform">
               +
             </button>
@@ -228,10 +233,10 @@ export const GuestForm = ({ initialData, onSubmit, isLoading=false, onCancel, ti
 
       {/* CTA */}
       <div className="pt-2">
-        <button type="submit" disabled={isLoading}
+        <button type="submit" disabled={isLoading || submitting}
           className="w-full py-4 rounded-2xl bg-charcoal-900 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
           style={{boxShadow:'0 4px 16px rgba(26,25,22,0.2)'}}>
-          {isLoading ? 'שומר...' : 'שמור מוזמן'}
+          {isLoading || submitting ? 'שומר...' : 'שמור מוזמן'}
         </button>
       </div>
 
