@@ -31,7 +31,7 @@ interface EventManagerProps {
   archivedEvents?: Event[];
   onBack: () => void;
   onEventUpdate?: (updates: Partial<Event>) => Promise<Event | undefined>;
-  onCreateEvent?: (name?: string) => Promise<Event>;
+  onCreateEvent?: (name?: string, eventType?: string) => Promise<Event>;
   onActivateEvent?: (eventId: string) => Promise<Event>;
   onArchiveEvent?: (eventId: string) => Promise<Event>;
   onDeleteEvent?: (eventId: string) => Promise<void>;
@@ -73,6 +73,7 @@ export const EventManager = ({
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [openSection, setOpenSection] = useState<AccordionSection | null>(null);
   const [newEventName, setNewEventName] = useState('');
+  const [newEventType, setNewEventType] = useState('wedding');
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -331,8 +332,9 @@ export const EventManager = ({
     if (!onCreateEvent) return;
     try {
       setBusyAction('create');
-      await onCreateEvent(newEventName.trim() || undefined);
+      await onCreateEvent(newEventName.trim() || undefined, newEventType);
       setNewEventName('');
+      setNewEventType('wedding');
       onBack();
     } catch (error: any) {
       setMessage({ type: 'error', text: error?.message || 'לא הצלחנו ליצור אירוע חדש.' });
@@ -463,11 +465,28 @@ export const EventManager = ({
               תן שם לאירוע שלך ולחץ על הכפתור. מיד אחרי זה ייפתח אירוע פעיל חדש ותוכל להגדיר RSVP, פרטי מקום ותאריך.
             </p>
 
+            <div className="mt-4 mb-3">
+              <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-2">סוג האירוע</p>
+              <div className="flex flex-wrap gap-2">
+                {ALL_EVENT_TYPES.map(({ type, label, emoji }) => {
+                  const sel = newEventType === type;
+                  return (
+                    <button key={type} type="button" onClick={() => setNewEventType(type)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all active:scale-95"
+                      style={{ background: sel ? '#1A1916' : '#F5F1E8', color: sel ? '#fff' : '#6E6862' }}>
+                      <span className="text-[14px] leading-none">{emoji}</span>
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <input
               value={newEventName}
               onChange={(e) => setNewEventName(e.target.value)}
               placeholder="לדוגמה: החתונה של דוד"
-              className={`${inputClass} mt-4`}
+              className={inputClass}
             />
 
             <button
@@ -1310,13 +1329,31 @@ export const EventManager = ({
                 </p>
 
                 {confirmAction === 'create' ? (
-                  <input
-                    value={newEventName}
-                    onChange={(e) => setNewEventName(e.target.value)}
-                    placeholder="שם לאירוע החדש"
-                    autoFocus
-                    className={`${inputClass} mb-4`}
-                  />
+                  <div className="mb-4 space-y-3">
+                    <div>
+                      <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-2">סוג האירוע</p>
+                      <div className="flex flex-wrap gap-2">
+                        {ALL_EVENT_TYPES.map(({ type, label, emoji }) => {
+                          const sel = newEventType === type;
+                          return (
+                            <button key={type} type="button" onClick={() => setNewEventType(type)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all active:scale-95"
+                              style={{ background: sel ? '#1A1916' : '#F5F1E8', color: sel ? '#fff' : '#6E6862' }}>
+                              <span className="text-[14px] leading-none">{emoji}</span>
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <input
+                      value={newEventName}
+                      onChange={(e) => setNewEventName(e.target.value)}
+                      placeholder="שם לאירוע החדש"
+                      autoFocus
+                      className={inputClass}
+                    />
+                  </div>
                 ) : null}
 
                 <div className="space-y-2.5">

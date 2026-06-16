@@ -20,7 +20,7 @@ type EventContextValue = {
   loading: boolean;
   reload: () => Promise<void>;
   update: (updates: Partial<Event>) => Promise<Event | undefined>;
-  createEvent: (name?: string) => Promise<Event>;
+  createEvent: (name?: string, eventType?: string) => Promise<Event>;
   activateEvent: (eventId: string) => Promise<Event>;
   archiveEvent: (eventId: string) => Promise<Event>;
   deleteEvent: (eventId: string) => Promise<void>;
@@ -120,12 +120,12 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
     return updated;
   }, [event]);
 
-  const createEvent = useCallback(async (name?: string) => {
+  const createEvent = useCallback(async (name?: string, eventType?: string) => {
     if (!auth.user) {
       throw new Error('לא מחובר');
     }
 
-    const created = await eventService.createNew(auth.user.id, name);
+    const created = await eventService.createNew(auth.user.id, name, eventType);
     await reload();
     return created;
   }, [auth.user, reload]);

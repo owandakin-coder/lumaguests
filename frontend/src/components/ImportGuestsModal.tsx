@@ -82,9 +82,17 @@ const CATEGORY_MAP: Record<string, Category> = {
 };
 
 const SIDE_MAP: Record<string, Side> = {
-  'חתן': 'GROOM', groom: 'GROOM',
-  'כלה': 'BRIDE', bride: 'BRIDE',
-  'משותף': 'SHARED', shared: 'SHARED', 'שניהם': 'SHARED',
+  // Wedding
+  'חתן': 'GROOM', 'צד חתן': 'GROOM', groom: 'GROOM',
+  'כלה': 'BRIDE', 'צד כלה': 'BRIDE', bride: 'BRIDE',
+  // Bar/Bat Mitzvah
+  'אבא': 'GROOM', 'אב': 'GROOM', 'אבי': 'GROOM', 'צד אבא': 'GROOM',
+  'אמא': 'BRIDE', 'אם': 'BRIDE', 'אמי': 'BRIDE', 'צד אמא': 'BRIDE',
+  // Generic side 1 / side 2
+  'צד 1': 'GROOM', 'צד א': 'GROOM', 'side 1': 'GROOM', 'side a': 'GROOM',
+  'צד 2': 'BRIDE', 'צד ב': 'BRIDE', 'side 2': 'BRIDE', 'side b': 'BRIDE',
+  // Shared
+  'משותף': 'SHARED', 'שניהם': 'SHARED', 'שתי הצדדים': 'SHARED', shared: 'SHARED',
 };
 
 function parseCategory(raw: string): Category {

@@ -12,6 +12,19 @@ interface OnboardingProps {
 
 const inputCls = 'w-full px-4 py-4 rounded-2xl bg-white text-[15px] text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-charcoal-200 transition';
 
+function getEventNamePlaceholder(eventType: string): string {
+  switch (eventType) {
+    case 'bar_mitzvah':  return 'שם הבר-מצווה (למשל: בר-מצווה של דוד)';
+    case 'bat_mitzvah':  return 'שם הבת-מצווה (למשל: בת-מצווה של שרה)';
+    case 'brit':         return 'שם הברית (למשל: ברית של יוסי)';
+    case 'birthday':     return 'שם האירוע (למשל: יום הולדת 40 לדוד)';
+    case 'engagement':   return 'שם האירוע (למשל: אירוסין שרה ודוד)';
+    case 'conference':   return 'שם הכנס / האירוע';
+    case 'other':        return 'שם האירוע';
+    default:             return 'שם האירוע (למשל: חתונת שרה ודוד)';
+  }
+}
+
 export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -23,12 +36,44 @@ export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
     venue_name: '',
   });
 
-  const steps = [
-    {
-      title: 'ברוך הבא! 🎉',
-      subtitle: 'מה סוג האירוע שלך?',
-      canNext: !!form.event_type,
-      fields: (
+  const stepMeta = [
+    { title: 'ברוך הבא! 🎉', subtitle: 'מה סוג האירוע שלך?', canNext: !!form.event_type },
+    { title: 'פרטי האירוע', subtitle: 'בוא נגדיר את הפרטים — זה לוקח פחות מדקה', canNext: !!form.event_name.trim() },
+    { title: 'הכל מוגדר! ✦', subtitle: 'עכשיו אפשר להוסיף מוזמנים ולשלוח קישורי RSVP', canNext: true },
+  ];
+
+  const current = stepMeta[step];
+
+  const handleNext = async () => {
+    if (step === 0) {
+      setStep(1);
+    } else if (step === 1) {
+      try {
+        setSaving(true);
+        await onUpdateEvent({
+          event_type: form.event_type || 'wedding',
+          event_name: form.event_name.trim() || 'האירוע שלי',
+          event_date: form.event_date || null,
+          venue_name: form.venue_name.trim() || null,
+        });
+      } catch { /* silent */ }
+      finally { setSaving(false); }
+      setStep(2);
+    } else {
+      localStorage.setItem('luma_onboarding_done', '1');
+      onComplete();
+    }
+  };
+
+  // Skip event-type selection only; proceed to naming the event (step 1)
+  const handleSkipType = () => {
+    setForm(p => ({ ...p, event_type: 'wedding' as EventType }));
+    setStep(1);
+  };
+
+  const renderFields = () => {
+    if (step === 0) {
+      return (
         <div className="grid grid-cols-2 gap-3">
           {ALL_EVENT_TYPES.map(({ type, label, emoji }) => {
             const selected = form.event_type === type;
@@ -39,9 +84,9 @@ export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
                 onClick={() => setForm(p => ({ ...p, event_type: type }))}
                 className="flex flex-col items-center gap-2 py-4 px-3 rounded-2xl border-2 transition-all active:scale-95"
                 style={{
-                  background: selected ? '#1A1916' : '#fff',
-                  borderColor: selected ? '#1A1916' : '#E5E3E1',
-                  boxShadow: selected ? '0 4px 16px rgba(26,25,22,0.2)' : '0 1px 6px rgba(0,0,0,0.05)',
+                  background:   selected ? '#1A1916' : '#fff',
+                  borderColor:  selected ? '#1A1916' : '#E5E3E1',
+                  boxShadow:    selected ? '0 4px 16px rgba(26,25,22,0.2)' : '0 1px 6px rgba(0,0,0,0.05)',
                 }}
               >
                 <span className="text-2xl leading-none">{emoji}</span>
@@ -50,26 +95,16 @@ export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
             );
           })}
         </div>
-      ),
-    },
-    {
-      title: 'פרטי האירוע',
-      subtitle: 'בוא נגדיר את הפרטים — זה לוקח פחות מדקה',
-      canNext: !!form.event_name.trim(),
-      fields: (
+      );
+    }
+
+    if (step === 1) {
+      return (
         <div className="space-y-3">
           <input
             value={form.event_name}
             onChange={e => setForm(p => ({ ...p, event_name: e.target.value }))}
-            placeholder={
-              form.event_type === 'bar_mitzvah' ? 'שם הבר-מצווה (למשל: בר-מצווה של דוד)' :
-              form.event_type === 'bat_mitzvah' ? 'שם הבת-מצווה (למשל: בת-מצווה של שרה)' :
-              form.event_type === 'brit'        ? 'שם הברית (למשל: ברית של יוסי)' :
-              form.event_type === 'birthday'    ? 'שם האירוע (למשל: יום הולדת 40 לדוד)' :
-              form.event_type === 'engagement'  ? 'שם האירוע (למשל: אירוסין שרה ודוד)' :
-              form.event_type === 'conference'  ? 'שם הכנס / האירוע' :
-              'שם האירוע (למשל: חתונת שרה ודוד)'
-            }
+            placeholder={getEventNamePlaceholder(form.event_type)}
             className={inputCls}
             style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}
           />
@@ -104,56 +139,25 @@ export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
             />
           </div>
         </div>
-      ),
-    },
-    {
-      title: 'הכל מוגדר! ✦',
-      subtitle: 'עכשיו אפשר להוסיף מוזמנים ולשלוח קישורי RSVP',
-      fields: (
-        <div className="space-y-4">
-          {[
-            { emoji: '👥', text: 'הוסף מוזמנים ידנית או ייבא מ-Excel' },
-            { emoji: '📲', text: 'שלח קישור RSVP אישי לכל אורח בוואטסאפ' },
-            { emoji: '📊', text: 'עקוב אחר אישורים בזמן אמת בדשבורד' },
-          ].map(({ emoji, text }) => (
-            <div key={text} className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5"
-              style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}>
-              <span className="text-2xl flex-shrink-0">{emoji}</span>
-              <p className="text-[14px] font-semibold text-charcoal-800">{text}</p>
-            </div>
-          ))}
-        </div>
-      ),
-      canNext: true,
-    },
-  ] as { title: string; subtitle: string; canNext: boolean; fields: React.ReactNode }[];
-
-  const current = steps[step];
-
-  const handleNext = async () => {
-    if (step === 0) {
-      setStep(1);
-    } else if (step === 1) {
-      try {
-        setSaving(true);
-        await onUpdateEvent({
-          event_type: form.event_type || 'wedding',
-          event_name: form.event_name.trim() || 'האירוע שלי',
-          event_date: form.event_date || null,
-          venue_name: form.venue_name.trim() || null,
-        });
-      } catch { /* silent */ }
-      finally { setSaving(false); }
-      setStep(2);
-    } else {
-      localStorage.setItem('luma_onboarding_done', '1');
-      onComplete();
+      );
     }
-  };
 
-  const handleSkip = () => {
-    localStorage.setItem('luma_onboarding_done', '1');
-    onComplete();
+    // step === 2
+    return (
+      <div className="space-y-4">
+        {[
+          { emoji: '👥', text: 'הוסף מוזמנים ידנית או ייבא מ-Excel' },
+          { emoji: '📲', text: 'שלח קישור RSVP אישי לכל אורח בוואטסאפ' },
+          { emoji: '📊', text: 'עקוב אחר אישורים בזמן אמת בדשבורד' },
+        ].map(({ emoji, text }) => (
+          <div key={text} className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5"
+            style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}>
+            <span className="text-2xl flex-shrink-0">{emoji}</span>
+            <p className="text-[14px] font-semibold text-charcoal-800">{text}</p>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -171,7 +175,7 @@ export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
       <div className="flex-1 flex flex-col px-5 pt-8 pb-8" style={{ borderRadius: '28px 28px 0 0', marginTop: -24, background: '#F5F3EF' }}>
         {/* Progress dots */}
         <div className="flex justify-center gap-2 mb-6">
-          {steps.map((_, i) => (
+          {stepMeta.map((_, i) => (
             <div key={i} className="h-1.5 rounded-full transition-all duration-300"
               style={{ width: i === step ? 24 : 8, background: i === step ? '#1A1916' : '#D1CEC9' }} />
           ))}
@@ -185,7 +189,7 @@ export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
           >
             <h2 className="text-[26px] font-bold font-serif text-charcoal-900 mb-1">{current.title}</h2>
             <p className="text-[13px] text-charcoal-500 mb-6 leading-relaxed">{current.subtitle}</p>
-            {current.fields}
+            {renderFields()}
           </motion.div>
         </AnimatePresence>
 
@@ -196,12 +200,12 @@ export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
             className="w-full py-4 rounded-2xl bg-charcoal-900 text-white text-[15px] font-bold disabled:opacity-40 active:scale-[0.98] transition-transform"
             style={{ boxShadow: '0 4px 16px rgba(26,25,22,0.2)' }}
           >
-            {saving ? 'שומר...' : step < steps.length - 1 ? 'המשך' : 'בוא נתחיל! →'}
+            {saving ? 'שומר...' : step < stepMeta.length - 1 ? 'המשך' : 'בוא נתחיל! →'}
           </button>
           {step === 0 && (
-            <button onClick={handleSkip}
+            <button onClick={handleSkipType}
               className="w-full py-3 text-[13px] text-charcoal-400 font-medium">
-              דלג — אגדיר מאוחר יותר
+              דלג על הבחירה — ברירת מחדל: חתונה
             </button>
           )}
         </div>

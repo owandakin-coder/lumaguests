@@ -331,7 +331,7 @@ export const eventService = {
     return data as EventRecord;
   },
 
-  createNew: async (userId: string, name?: string) => {
+  createNew: async (userId: string, name?: string, eventType?: string) => {
     const eventName = name?.trim() || 'אירוע חדש';
     const { data, error } = await supabase.rpc('create_event_lite', {
       p_user_id: userId,
@@ -339,6 +339,11 @@ export const eventService = {
     });
 
     if (!error && data) {
+      // RPC defaults to 'wedding'; update event_type if a different type was requested
+      if (eventType && eventType !== 'wedding') {
+        await supabase.from('events').update({ event_type: eventType }).eq('id', (data as any).id);
+        return { ...(data as EventRecord), event_type: eventType };
+      }
       return data as EventRecord;
     }
 
@@ -360,6 +365,7 @@ export const eventService = {
       .insert({
         owner_user_id: userId,
         event_name: eventName,
+        event_type: eventType || 'wedding',
         public_slug: slug,
         archived_at: null,
       })
