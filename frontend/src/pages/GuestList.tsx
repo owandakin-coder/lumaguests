@@ -273,12 +273,12 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
             <Users className="w-9 h-9 text-charcoal-300" strokeWidth={1.3}/>
           </div>
           <p className="text-[15px] font-bold text-charcoal-800 mb-1">
-            {search||status!=='ALL'||side!=='ALL'||category!=='ALL' ? 'לא נמצאו תוצאות' : 'אין מוזמנים עדיין'}
+            {search||status!=='ALL'||side!=='ALL'||category!=='ALL'||hasNote ? 'לא נמצאו תוצאות' : 'אין מוזמנים עדיין'}
           </p>
           <p className="text-[13px] text-charcoal-400 mb-6">
-            {search||status!=='ALL'||side!=='ALL'||category!=='ALL' ? 'נסה לשנות את הסינון' : 'הוסף את המוזמן הראשון שלך'}
+            {search||status!=='ALL'||side!=='ALL'||category!=='ALL'||hasNote ? 'נסה לשנות את הסינון' : 'הוסף את המוזמן הראשון שלך'}
           </p>
-          {!search&&status==='ALL'&&side==='ALL'&&category==='ALL'&&(
+          {!search&&status==='ALL'&&side==='ALL'&&category==='ALL'&&!hasNote&&(
             <button onClick={onAddGuest}
               className="px-5 py-2.5 rounded-2xl bg-charcoal-900 text-white text-[13px] font-bold active:scale-95 transition-transform">
               הוסף מוזמן
