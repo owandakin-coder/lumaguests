@@ -126,6 +126,7 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
 
   const subtitleText = useMemo(() => {
     if (countdownDays !== null) {
+      if (countdownDays === 1) return 'עוד יום אחד לאירוע ✦';
       if (countdownDays > 0)  return `עוד ${safeCountdownDays} ימים לאירוע ✦`;
       if (countdownDays === 0) return 'האירוע היום! 🎉';
       return event?.event_name ? `✦ ${event.event_name}` : 'האירוע עבר';

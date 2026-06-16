@@ -278,7 +278,7 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
         {[
           { icon: Phone,    label: 'טלפון',       value: guest.phone,                              dir: 'ltr' as const },
           { icon: Tag,      label: 'קטגוריה',     value: categoryLabel[guest.category],            dir: 'rtl' as const },
-          { icon: Users,    label: 'מלווים',      value: `${guest.companions} (${1+guest.companions} אנשים סך הכל)`, dir: 'rtl' as const },
+          { icon: Users,    label: 'מלווים',      value: guest.companions === 0 ? 'ללא מלווים (אורח יחיד)' : `${guest.companions} (${1+guest.companions} אנשים בסך הכל)`, dir: 'rtl' as const },
           { icon: Calendar, label: 'תאריך הוספה', value: created,                                  dir: 'rtl' as const },
         ].map(({ icon: Icon, label, value, dir }, idx, arr) => (
           <div
