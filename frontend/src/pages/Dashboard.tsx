@@ -244,24 +244,6 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
         </motion.div>
       ) : (
         <>
-      {false && safeCountdownDays > 0 && (
-        <motion.div variants={fade}
-          className="rounded-2xl px-4 py-3 flex items-center gap-3"
-          style={{ background: 'linear-gradient(135deg,#1A1916 0%,#2D2A26 100%)' }}>
-          <div className="w-9 h-9 rounded-xl bg-gold-500/20 flex items-center justify-center flex-shrink-0">
-            <CalendarDays className="w-4.5 h-4.5 text-gold-400" strokeWidth={2}/>
-          </div>
-          <div className="flex-1">
-            <p className="text-[11px] text-white/50 font-medium">{event?.event_name || 'האירוע'}</p>
-            <p className="text-[15px] font-bold text-white">עוד {safeCountdownDays} ימים</p>
-          </div>
-          <div className="text-right">
-            <p className="text-[28px] font-black text-gold-400 leading-none">{safeCountdownDays}</p>
-            <p className="text-[10px] text-white/40">ימים</p>
-          </div>
-        </motion.div>
-      )}
-
       {countdownDays === 0 && (
         <motion.div variants={fade}
           className="rounded-2xl px-4 py-3 flex items-center gap-3 bg-green-50 border border-green-200">
