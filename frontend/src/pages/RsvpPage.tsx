@@ -49,7 +49,25 @@ export const RsvpPage = ({
   const [signedCoverUrl, setSignedCoverUrl] = useState<string | null>(null);
   const [showNotes, setShowNotes] = useState(false);
 
-  const theme = getRsvpTheme(guest?.event_type);
+  const theme = getRsvpTheme(guest?.template_id);
+
+  // Card style helper — adapts opacity, blur, radius to the layout variant
+  const blurVal = theme.layout !== 'minimal' ? 'blur(12px)' : undefined;
+  const cardStyle = (extra?: React.CSSProperties): React.CSSProperties => ({
+    borderRadius: theme.cardRadius,
+    background: theme.cardBg,
+    border: `1px solid ${theme.cardBorder}`,
+    boxShadow: theme.cardShadow,
+    backdropFilter: blurVal,
+    WebkitBackdropFilter: blurVal,
+    ...extra,
+  });
+  const innerStyle = (extra?: React.CSSProperties): React.CSSProperties => ({
+    borderRadius: `calc(${theme.cardRadius} - 10px)`,
+    background: theme.innerCardBg,
+    ...extra,
+  });
+  const subBorderRadius = `calc(${theme.cardRadius} - 12px)`;
 
   useEffect(() => {
     void load();
@@ -211,7 +229,6 @@ export const RsvpPage = ({
   const heroOffsetClass = hasCoverData ? 'pt-[220px] sm:pt-[250px]' : 'pt-3';
   const heroImageSrc = signedCoverUrl || null;
 
-  // Shared divider component
   const Divider = ({ label }: { label: string }) => (
     <div className="flex items-center justify-center gap-3 text-[11px] font-semibold" style={{ color: theme.accentText }}>
       <span
@@ -247,8 +264,7 @@ export const RsvpPage = ({
             <div
               className="absolute inset-0"
               style={{
-                background:
-                  'linear-gradient(180deg, rgba(36,27,17,0.02) 0%, rgba(36,27,17,0.10) 34%, rgba(36,27,17,0.34) 62%, rgba(247,242,232,0.95) 100%)',
+                background: `linear-gradient(180deg, rgba(36,27,17,0.02) 0%, rgba(36,27,17,0.10) 34%, rgba(36,27,17,0.34) 62%, ${theme.pageBg}F2 100%)`,
               }}
             />
             <div className="absolute inset-x-0 bottom-0 h-16" style={{ backgroundImage: `linear-gradient(to bottom, transparent, ${theme.pageBg})` }} />
@@ -260,7 +276,7 @@ export const RsvpPage = ({
             className="absolute inset-0"
             style={{
               background: hasCoverData
-                ? `linear-gradient(180deg, rgba(251,248,241,0.18) 0%, rgba(248,244,236,0.84) 34%, ${theme.pageBg} 64%, ${theme.pageBg} 100%)`
+                ? `linear-gradient(180deg, ${theme.pageBg}2E 0%, ${theme.pageBg}D7 34%, ${theme.pageBg} 64%, ${theme.pageBg} 100%)`
                 : `linear-gradient(180deg, ${theme.pageBg}CC 0%, ${theme.pageBg} 56%, ${theme.pageBg} 100%)`,
             }}
           />
@@ -268,7 +284,10 @@ export const RsvpPage = ({
             className="absolute right-[-12%] top-[210px] h-56 w-56 rounded-full blur-3xl"
             style={{ backgroundColor: theme.glowHex + '4D' }}
           />
-          <div className="absolute left-[-14%] top-[420px] h-64 w-64 rounded-full bg-white/65 blur-3xl" />
+          <div
+            className="absolute left-[-14%] top-[420px] h-64 w-64 rounded-full blur-3xl"
+            style={{ backgroundColor: theme.glowHex + '40' }}
+          />
         </div>
 
         <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[460px] flex-col px-4 pb-8 pt-6">
@@ -281,8 +300,8 @@ export const RsvpPage = ({
                 exit={{ opacity: 0 }}
                 className="flex min-h-screen flex-col items-center justify-center gap-4"
               >
-                <Loader2 className="h-8 w-8 animate-spin text-charcoal-400" />
-                <p className="text-sm text-charcoal-400">טוען...</p>
+                <Loader2 className="h-8 w-8 animate-spin" style={{ color: theme.accentIcon }} />
+                <p className="text-sm" style={{ color: theme.textMuted }}>טוען...</p>
               </motion.div>
             )}
 
@@ -291,16 +310,22 @@ export const RsvpPage = ({
                 key="error"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="my-auto w-full rounded-[34px] border border-white/70 bg-white/84 px-6 py-8 text-center shadow-[0_20px_60px_rgba(102,84,50,0.12)] backdrop-blur-xl"
+                className="my-auto w-full px-6 py-8 text-center"
+                style={cardStyle()}
               >
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-red-100">
                   <XCircle className="h-8 w-8 text-red-400" />
                 </div>
-                <h2 className="mb-2 text-xl font-bold text-charcoal-900">{errorContent[errorState].title}</h2>
-                <p className="text-sm leading-relaxed text-charcoal-400">{errorContent[errorState].description}</p>
+                <h2 className="mb-2 text-xl font-bold" style={{ color: theme.textPrimary }}>
+                  {errorContent[errorState].title}
+                </h2>
+                <p className="text-sm leading-relaxed" style={{ color: theme.textMuted }}>
+                  {errorContent[errorState].description}
+                </p>
                 <button
                   onClick={() => void load()}
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-charcoal-900 py-3 text-sm font-bold text-white"
+                  className="mt-5 flex w-full items-center justify-center gap-2 py-3 text-sm font-bold text-white"
+                  style={{ background: theme.accentHex, borderRadius: theme.buttonRadius }}
                 >
                   <RefreshCw className="h-4 w-4" />
                   נסה שוב
@@ -315,37 +340,46 @@ export const RsvpPage = ({
                 animate={{ opacity: 1, y: 0 }}
                 className="my-auto w-full text-center"
               >
-                <div className="mx-auto mb-5 flex h-[76px] w-[76px] items-center justify-center rounded-[28px] bg-white/86 shadow-[0_14px_40px_rgba(184,145,62,0.18)] backdrop-blur-xl">
+                <div
+                  className="mx-auto mb-5 flex h-[76px] w-[76px] items-center justify-center"
+                  style={{
+                    ...cardStyle(),
+                    borderRadius: '28px',
+                    boxShadow: `0 14px 40px ${theme.accentShadow}`,
+                  }}
+                >
                   <CheckCircle className="h-9 w-9" style={{ color: theme.accentIcon }} />
                 </div>
 
-                <div className="rounded-[34px] border border-white/70 bg-white/86 px-5 pb-6 pt-5 shadow-[0_24px_60px_rgba(102,84,50,0.14)] backdrop-blur-xl">
+                <div className="px-5 pb-6 pt-5" style={cardStyle()}>
                   <div className="mb-4">
                     <Divider label="התגובה שלך נשמרה" />
                   </div>
 
-                  <h2 className="text-[34px] font-black font-serif tracking-tight text-charcoal-900">{guest.full_name}</h2>
-                  <p className="mt-2 text-[15px] text-charcoal-500">
+                  <h2 className="text-[34px] font-black font-serif tracking-tight" style={{ color: theme.textPrimary }}>
+                    {guest.full_name}
+                  </h2>
+                  <p className="mt-2 text-[15px]" style={{ color: theme.textMuted }}>
                     {guest.rsvp_status === 'CONFIRMED'
                       ? 'האישור כבר התקבל ואנחנו מחכים לך'
                       : 'קיבלנו את ההודעה שלא תגיע/י'}
                   </p>
 
-                  <div className="mt-4 rounded-[28px] bg-[#FFFDF8] px-4 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+                  <div className="mt-4 px-4 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]" style={innerStyle()}>
                     <p className="text-[12px] font-semibold" style={{ color: theme.accentText }}>{eventInfo.eventName}</p>
-                    <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[12px] text-charcoal-500">
+                    <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[12px]" style={{ color: theme.textMuted }}>
                       <span className="flex items-center gap-1">
                         <CalendarDays className="h-3 w-3" style={{ color: theme.accentIcon }} />
                         {eventInfo.shortDate}
                       </span>
-                      <span className="text-charcoal-300">·</span>
+                      <span className="opacity-40">·</span>
                       <span className="flex items-center gap-1">
                         <MapPin className="h-3 w-3" style={{ color: theme.accentIcon }} />
                         {eventInfo.venueCompact}
                       </span>
                     </div>
 
-                    <div className="mt-3 rounded-[22px] border bg-white px-4 py-2.5" style={{ borderColor: theme.accentBorder }}>
+                    <div className="mt-3 border bg-white/90 px-4 py-2.5" style={{ borderColor: theme.accentBorder, borderRadius: subBorderRadius }}>
                       <p className="text-[11px] uppercase tracking-[0.24em] text-charcoal-400">הסטטוס שלך</p>
                       <p className="mt-1 text-[20px] font-black text-charcoal-900">
                         {guest.rsvp_status === 'CONFIRMED' ? 'אישרתי הגעה' : 'לא אגיע/ה'}
@@ -375,21 +409,21 @@ export const RsvpPage = ({
                 className={hasCoverData ? 'w-full' : 'my-auto w-full'}
               >
                 <div className={heroOffsetClass}>
-                  <div className="rounded-[30px] border border-white/75 bg-white/82 px-4 py-4 text-center shadow-[0_22px_60px_rgba(89,69,35,0.14)] backdrop-blur-xl">
+                  <div className="px-4 py-4 text-center" style={cardStyle()}>
                     <div className="mb-2">
                       <Divider label={theme.headerLabel} />
                     </div>
 
-                    <p className="text-[24px] font-black leading-tight tracking-tight text-charcoal-900 sm:text-[27px]">
+                    <p className="text-[24px] font-black leading-tight tracking-tight sm:text-[27px]" style={{ color: theme.textPrimary }}>
                       {eventInfo.eventName}
                     </p>
 
-                    <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[12px] text-charcoal-500">
+                    <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[12px]" style={{ color: theme.textMuted }}>
                       <span className="flex items-center gap-1">
                         <CalendarDays className="h-3 w-3" style={{ color: theme.accentIcon }} />
                         {eventInfo.shortDate}
                       </span>
-                      <span className="text-charcoal-300">·</span>
+                      <span className="opacity-40">·</span>
                       <span className="flex items-center gap-1">
                         <MapPin className="h-3 w-3" style={{ color: theme.accentIcon }} />
                         {eventInfo.venueCompact}
@@ -409,43 +443,37 @@ export const RsvpPage = ({
                         style={{ backgroundImage: `linear-gradient(to right, transparent, ${theme.accentVia}, transparent)` }}
                       />
                     </div>
-                    <h1 className="text-[40px] font-black font-serif leading-none tracking-tight text-charcoal-900 sm:text-[44px]">
+                    <h1 className="text-[40px] font-black font-serif leading-none tracking-tight sm:text-[44px]" style={{ color: theme.textPrimary }}>
                       {guest.full_name}
                     </h1>
-                    <p className="mt-2 text-[16px] text-charcoal-600">נשמח לדעת אם תגיע/י</p>
+                    <p className="mt-2 text-[16px]" style={{ color: theme.textSecondary }}>נשמח לדעת אם תגיע/י</p>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="rounded-[28px] border border-white/80 bg-white/88 px-4 py-4 shadow-[0_16px_40px_rgba(89,69,35,0.10)] backdrop-blur-xl">
-                      <p className="text-center text-[15px] font-bold text-charcoal-700">כמה אנשים תגיעו?</p>
+                    <div className="px-4 py-4" style={cardStyle()}>
+                      <p className="text-center text-[15px] font-bold" style={{ color: theme.textSecondary }}>כמה אנשים תגיעו?</p>
                       <div className="mt-4 flex items-center justify-center gap-5" dir="ltr">
                         <button
-                          onClick={() => setCompanions((current) => Math.max(0, current - 1))}
+                          onClick={() => setCompanions((c) => Math.max(0, c - 1))}
                           className="flex h-12 w-12 items-center justify-center rounded-full text-white transition-transform active:scale-90"
-                          style={{
-                            backgroundColor: theme.accentHex,
-                            boxShadow: `0 8px 18px ${theme.accentShadow}`,
-                          }}
+                          style={{ backgroundColor: theme.accentHex, boxShadow: `0 8px 18px ${theme.accentShadow}` }}
                         >
                           <Minus className="h-5 w-5" />
                         </button>
 
                         <div className="min-w-[84px] text-center">
-                          <p className="text-[32px] font-black leading-[0.95] tracking-tight text-charcoal-900">
+                          <p className="text-[32px] font-black leading-[0.95] tracking-tight" style={{ color: theme.textPrimary }}>
                             {companions + 1}
                           </p>
-                          <p className="mt-1 text-[14px] text-charcoal-500">
+                          <p className="mt-1 text-[14px]" style={{ color: theme.textMuted }}>
                             {companions + 1 === 1 ? 'רק אני' : `${companions + 1} אנשים`}
                           </p>
                         </div>
 
                         <button
-                          onClick={() => setCompanions((current) => Math.min(20, current + 1))}
+                          onClick={() => setCompanions((c) => Math.min(20, c + 1))}
                           className="flex h-12 w-12 items-center justify-center rounded-full text-white transition-transform active:scale-90"
-                          style={{
-                            backgroundColor: theme.accentHex,
-                            boxShadow: `0 8px 18px ${theme.accentShadow}`,
-                          }}
+                          style={{ backgroundColor: theme.accentHex, boxShadow: `0 8px 18px ${theme.accentShadow}` }}
                         >
                           <Plus className="h-5 w-5" />
                         </button>
@@ -457,10 +485,11 @@ export const RsvpPage = ({
                         whileTap={{ scale: 0.985 }}
                         onClick={() => !submitting && handleSubmit('CONFIRMED')}
                         disabled={submitting}
-                        className="flex w-full items-center justify-center gap-3 rounded-[24px] px-5 py-4 text-[17px] font-black text-white disabled:opacity-60"
+                        className="flex w-full items-center justify-center gap-3 px-5 py-4 text-[17px] font-black text-white disabled:opacity-60"
                         style={{
                           background: 'linear-gradient(135deg, #148F4A 0%, #26B86B 100%)',
                           boxShadow: '0 14px 28px rgba(20,143,74,0.22)',
+                          borderRadius: theme.buttonRadius,
                         }}
                       >
                         אגיע לאירוע
@@ -475,8 +504,8 @@ export const RsvpPage = ({
                         whileTap={{ scale: 0.985 }}
                         onClick={() => !submitting && handleSubmit('DECLINED')}
                         disabled={submitting}
-                        className="flex w-full items-center justify-center gap-3 rounded-[24px] border bg-white/92 px-5 py-4 text-[17px] font-black text-charcoal-800 shadow-[0_6px_22px_rgba(130,104,48,0.08)] disabled:opacity-60"
-                        style={{ borderColor: theme.accentBorder }}
+                        className="flex w-full items-center justify-center gap-3 border bg-white/92 px-5 py-4 text-[17px] font-black text-charcoal-800 shadow-[0_6px_22px_rgba(130,104,48,0.08)] disabled:opacity-60"
+                        style={{ borderColor: theme.accentBorder, borderRadius: theme.buttonRadius }}
                       >
                         לא אגיע לאירוע
                         {submitting && choice === 'DECLINED' ? (
@@ -490,8 +519,13 @@ export const RsvpPage = ({
                     {!showNotes ? (
                       <button
                         onClick={() => setShowNotes(true)}
-                        className="flex w-full items-center justify-center gap-2 rounded-[24px] border bg-white/60 py-3 text-[14px] text-charcoal-500"
-                        style={{ borderColor: theme.accentBorder + '80' }}
+                        className="flex w-full items-center justify-center gap-2 border py-3 text-[14px]"
+                        style={{
+                          color: theme.textMuted,
+                          borderColor: theme.accentBorder + '80',
+                          background: theme.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.60)',
+                          borderRadius: theme.buttonRadius,
+                        }}
                       >
                         <UtensilsCrossed className="h-4 w-4" style={{ color: theme.accentIcon }} />
                         יש לך רגישויות מזון? הוסף הערה
@@ -505,9 +539,9 @@ export const RsvpPage = ({
                           transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                           style={{ overflow: 'hidden' }}
                         >
-                          <div className="rounded-[28px] border border-white/80 bg-white/88 px-4 py-4 shadow-[0_16px_40px_rgba(89,69,35,0.10)] backdrop-blur-xl">
+                          <div className="px-4 py-4" style={cardStyle()}>
                             <div className="mb-2 flex items-center justify-between gap-3">
-                              <p className="text-[15px] font-bold text-charcoal-700">הערות / רגישויות מזון</p>
+                              <p className="text-[15px] font-bold" style={{ color: theme.textSecondary }}>הערות / רגישויות מזון</p>
                               <UtensilsCrossed className="h-5 w-5" style={{ color: theme.accentIcon }} />
                             </div>
                             <textarea
@@ -516,8 +550,13 @@ export const RsvpPage = ({
                               onChange={(e) => setNote(e.target.value)}
                               placeholder="לדוגמה: צמחוני, ללא גלוטן..."
                               rows={2}
-                              className="w-full resize-none rounded-[20px] bg-[#FBF8F2] px-4 py-3.5 text-[14px] text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 transition"
-                              style={{ '--tw-ring-color': theme.accentBorder } as React.CSSProperties}
+                              className="w-full resize-none px-4 py-3.5 text-[14px] placeholder:opacity-50 focus:outline-none focus:ring-2 transition"
+                              style={{
+                                borderRadius: subBorderRadius,
+                                background: theme.innerCardBg,
+                                color: theme.textPrimary,
+                                '--tw-ring-color': theme.accentBorder,
+                              } as React.CSSProperties}
                             />
                           </div>
                         </motion.div>
@@ -525,7 +564,7 @@ export const RsvpPage = ({
                     )}
 
                     <div className="px-4 pt-1 text-center">
-                      <p className="text-[15px] font-medium text-charcoal-500">{theme.footerText}</p>
+                      <p className="text-[15px] font-medium" style={{ color: theme.textMuted }}>{theme.footerText}</p>
                       <theme.Icon className="mx-auto mt-2 h-5 w-5" style={{ color: theme.accentIcon }} />
                     </div>
                   </div>
@@ -549,11 +588,11 @@ export const RsvpPage = ({
                   <span className="text-5xl">{choice === 'CONFIRMED' ? '🎉' : '💛'}</span>
                 </motion.div>
 
-                <div className="rounded-[34px] border border-white/70 bg-white/86 px-5 pb-6 pt-5 shadow-[0_24px_60px_rgba(102,84,50,0.14)] backdrop-blur-xl">
-                  <h2 className="mb-2 text-2xl font-bold text-charcoal-900">
+                <div className="px-5 pb-6 pt-5" style={cardStyle()}>
+                  <h2 className="mb-2 text-2xl font-bold" style={{ color: theme.textPrimary }}>
                     {choice === 'CONFIRMED' ? 'תודה, מחכים לך!' : 'תודה על ההודעה'}
                   </h2>
-                  <p className="text-sm leading-relaxed text-charcoal-400">
+                  <p className="text-sm leading-relaxed" style={{ color: theme.textMuted }}>
                     {choice === 'CONFIRMED'
                       ? companions > 0
                         ? `אישרת הגעה לאירוע עם ${companions} מלווים. נשמח לראותך!`
@@ -561,18 +600,18 @@ export const RsvpPage = ({
                       : 'חבל שלא תגיע/י. מקווים לראותך בפעם הבאה!'}
                   </p>
 
-                  <div className="mt-4 rounded-[28px] bg-[#FFFDF8] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+                  <div className="mt-4 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]" style={innerStyle()}>
                     <p className="text-[12px] font-semibold" style={{ color: theme.accentText }}>{eventInfo.eventName}</p>
-                    <p className="mt-2 flex items-center justify-center gap-2 text-[14px] text-charcoal-600">
+                    <p className="mt-2 flex items-center justify-center gap-2 text-[14px]" style={{ color: theme.textSecondary }}>
                       <CalendarDays className="h-4 w-4" style={{ color: theme.accentIcon }} />
                       {eventInfo.formattedDate}
                     </p>
-                    <p className="mt-2 flex items-center justify-center gap-2 text-[14px] text-charcoal-600">
+                    <p className="mt-2 flex items-center justify-center gap-2 text-[14px]" style={{ color: theme.textSecondary }}>
                       <MapPin className="h-4 w-4" style={{ color: theme.accentIcon }} />
                       {eventInfo.venueName}
                     </p>
 
-                    <div className="mt-4 rounded-[22px] border bg-white px-4 py-3" style={{ borderColor: theme.accentBorder }}>
+                    <div className="mt-4 border bg-white/90 px-4 py-3" style={{ borderColor: theme.accentBorder, borderRadius: subBorderRadius }}>
                       <p className="text-[11px] uppercase tracking-[0.24em] text-charcoal-400">התגובה שנשלחה</p>
                       <p className="mt-1 text-[18px] font-black text-charcoal-900">{responseLabel}</p>
                     </div>
@@ -586,7 +625,7 @@ export const RsvpPage = ({
                     >
                       שינוי תשובה
                     </button>
-                    <p className="text-xs text-charcoal-400">ניתן לסגור חלון זה</p>
+                    <p className="text-xs" style={{ color: theme.textMuted }}>ניתן לסגור חלון זה</p>
                   </div>
                 </div>
               </motion.div>

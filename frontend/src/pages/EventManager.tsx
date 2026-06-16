@@ -23,6 +23,7 @@ import {
 import { Collaborator, Event } from '../types';
 import { collaboratorService, eventService, openWhatsAppUrl, storageService, supabase } from '../services/supabase';
 import { ALL_EVENT_TYPES, EVENT_TYPE_LABELS, EVENT_TYPE_EMOJI } from '../utils/eventType';
+import { EVENT_TYPE_TEMPLATES, getDefaultTemplate, getRsvpTheme } from '../utils/rsvpTheme';
 import { ImageCropModal } from '../components/ImageCropModal';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
@@ -90,6 +91,7 @@ export const EventManager = ({
     publicEnabled: false,
     rsvpOpen: true,
     rsvpDeadline: '',
+    templateId: 'wedding_classic',
   });
   const dateInputRef = useRef<HTMLInputElement>(null);
   const deadlineInputRef = useRef<HTMLInputElement>(null);
@@ -112,6 +114,7 @@ export const EventManager = ({
       publicEnabled: !!event?.is_public,
       rsvpOpen: event?.public_rsvp_enabled ?? true,
       rsvpDeadline: event?.rsvp_deadline ? event.rsvp_deadline.split('T')[0] : '',
+      templateId: event?.template_id || getDefaultTemplate(event?.event_type),
     });
     setMessage(null);
     setNewEventName('');
@@ -128,6 +131,7 @@ export const EventManager = ({
     event?.is_public,
     event?.public_rsvp_enabled,
     event?.rsvp_deadline,
+    event?.template_id,
   ]);
 
   useEffect(() => {
@@ -227,6 +231,7 @@ export const EventManager = ({
         is_public: form.publicEnabled,
         public_rsvp_enabled: form.rsvpOpen,
         rsvp_deadline: form.rsvpDeadline || null,
+        template_id: form.templateId || null,
       });
       setMessage({ type: 'success', text: 'פרטי האירוע נשמרו.' });
       setIsEditing(false);
@@ -256,6 +261,7 @@ export const EventManager = ({
       publicEnabled: !!event?.is_public,
       rsvpOpen: event?.public_rsvp_enabled ?? true,
       rsvpDeadline: event?.rsvp_deadline ? event.rsvp_deadline.split('T')[0] : '',
+      templateId: event?.template_id || getDefaultTemplate(event?.event_type),
     });
     setMessage(null);
     setIsEditing(false);
@@ -993,6 +999,53 @@ export const EventManager = ({
                   >
                     הסר תאריך סיום
                   </button>
+                )}
+
+                {/* Template picker */}
+                {event && (
+                  <div className="mt-5">
+                    <p className={`${sectionLabel} mb-3`}>עיצוב עמוד ה-RSVP</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(EVENT_TYPE_TEMPLATES[event.event_type] ?? EVENT_TYPE_TEMPLATES.wedding).map((tid) => {
+                        const t = getRsvpTheme(tid);
+                        const isSelected = form.templateId === tid;
+                        return (
+                          <button
+                            key={tid}
+                            disabled={!isOwner}
+                            onClick={() => isOwner && setField('templateId', tid)}
+                            className={`rounded-[18px] p-2.5 flex flex-col gap-2 transition-all border-2 active:scale-[0.97] ${
+                              isSelected
+                                ? 'border-charcoal-900 bg-white shadow-[0_4px_16px_rgba(34,29,21,0.12)]'
+                                : 'border-transparent bg-[#FAF7EF]'
+                            } ${!isOwner ? 'cursor-default opacity-70' : ''}`}
+                          >
+                            <div className="flex gap-1 justify-center">
+                              {t.swatch.map((c, i) => (
+                                <div
+                                  key={i}
+                                  className="w-4 h-4 rounded-full border border-black/10 flex-shrink-0"
+                                  style={{ backgroundColor: c }}
+                                />
+                              ))}
+                            </div>
+                            <div className="flex items-center justify-center">
+                              <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
+                                t.layout === 'bold'
+                                  ? 'bg-charcoal-800 text-white'
+                                  : t.layout === 'minimal'
+                                  ? 'bg-[#EEEAE4] text-charcoal-600'
+                                  : 'bg-[#F5EDD5] text-[#7A5A10]'
+                              }`}>
+                                {t.layout === 'bold' ? 'כהה' : t.layout === 'minimal' ? 'נקי' : 'קלאסי'}
+                              </span>
+                            </div>
+                            <p className="text-[10px] font-bold text-charcoal-900 text-center leading-tight">{t.name}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
 
                 {slugChanged ? (

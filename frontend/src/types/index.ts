@@ -81,6 +81,7 @@ export interface RsvpPublicGuest {
   venue_address?: string | null;
   cover_image_url?: string | null;
   event_type?: string | null;
+  template_id?: string | null;
 }
 
 export interface RsvpResponse {
@@ -96,6 +97,7 @@ export interface Event {
   owner_user_id: string;
   event_name: string;
   event_type: string;
+  template_id?: string | null;
   event_date: string | null;
   venue_name: string | null;
   venue_address: string | null;
