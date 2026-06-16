@@ -26,6 +26,7 @@ import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { useEvent } from '../hooks/useEvent';
 import { authService, guestService, openWhatsAppUrl, storageService, supabase } from '../services/supabase';
 import { Event } from '../types';
+import { getSideLabels } from '../utils/eventType';
 
 interface SettingsProps {
   onLogout: () => void;
@@ -271,7 +272,8 @@ export const Settings = ({
         return;
       }
       const XLSX = await import('xlsx');
-      const sideMap: Record<string, string> = { BRIDE: 'כלה', GROOM: 'חתן', SHARED: 'משותף' };
+      const sl = getSideLabels(event?.event_type);
+      const sideMap: Record<string, string> = { BRIDE: sl.side2Short, GROOM: sl.side1Short, SHARED: sl.shared };
       const categoryMap: Record<string, string> = { FAMILY: 'משפחה', FRIENDS: 'חברים', WORK: 'עבודה', OTHER: 'אחר' };
       const statusMap: Record<string, string> = { CONFIRMED: 'מאושר', DECLINED: 'מסרב', PENDING: 'ממתין' };
       const rows = guests.map((g) => ({

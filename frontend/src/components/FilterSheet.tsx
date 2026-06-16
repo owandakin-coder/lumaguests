@@ -2,6 +2,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { Category, Side } from '../types';
+import { getSideLabels } from '../utils/eventType';
 
 interface FilterSheetProps {
   open: boolean;
@@ -11,14 +12,8 @@ interface FilterSheetProps {
   onSideChange: (v: Side | 'ALL') => void;
   onCategoryChange: (v: Category | 'ALL') => void;
   resultCount: number;
+  eventType?: string | null;
 }
-
-const sides: { value: Side | 'ALL'; label: string; emoji?: string; color: string }[] = [
-  { value: 'ALL',    label: 'הכל',      color: '#1A1916' },
-  { value: 'GROOM',  label: 'צד החתן', emoji: '🤵', color: '#C9A84C' },
-  { value: 'BRIDE',  label: 'צד הכלה', emoji: '👰', color: '#F9A8D4' },
-  { value: 'SHARED', label: 'משותף',   emoji: '💑', color: '#A5B4FC' },
-];
 
 const categories: { value: Category | 'ALL'; label: string; color: string }[] = [
   { value: 'ALL',     label: 'הכל',    color: '#1A1916' },
@@ -29,8 +24,15 @@ const categories: { value: Category | 'ALL'; label: string; color: string }[] = 
 ];
 
 export const FilterSheet = ({
-  open, onClose, side, category, onSideChange, onCategoryChange, resultCount,
+  open, onClose, side, category, onSideChange, onCategoryChange, resultCount, eventType,
 }: FilterSheetProps) => {
+  const sl = getSideLabels(eventType);
+  const sides: { value: Side | 'ALL'; label: string; emoji?: string; color: string }[] = [
+    { value: 'ALL',    label: 'הכל',       color: '#1A1916' },
+    { value: 'GROOM',  label: sl.side1,   emoji: sl.side1Emoji, color: '#C9A84C' },
+    { value: 'BRIDE',  label: sl.side2,   emoji: sl.side2Emoji, color: '#F9A8D4' },
+    { value: 'SHARED', label: sl.shared,  emoji: '💑',          color: '#A5B4FC' },
+  ];
   const hasFilters = side !== 'ALL' || category !== 'ALL';
 
   const clearAll = () => { onSideChange('ALL'); onCategoryChange('ALL'); };

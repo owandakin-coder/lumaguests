@@ -59,6 +59,7 @@ export const AddGuest = ({ onSuccess, onCancel }: AddGuestProps) => {
       onSubmit={handleSubmit}
       onCancel={onCancel}
       title="הוספת מוזמן"
+      eventType={event?.event_type}
     />
   );
 };

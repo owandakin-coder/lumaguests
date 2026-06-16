@@ -94,6 +94,7 @@ export interface Event {
   id: string;
   owner_user_id: string;
   event_name: string;
+  event_type: string;
   event_date: string | null;
   venue_name: string | null;
   venue_address: string | null;

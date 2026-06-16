@@ -9,6 +9,7 @@ import * as XLSX from 'xlsx';
 import { Category, Side } from '../types';
 import { rsvpService, supabase } from '../services/supabase';
 import { normalizePhone } from '../utils/phone';
+import { getSideLabels } from '../utils/eventType';
 
 interface ContactDraft { name: string; phone: string; side: Side | null; category: Category; }
 
@@ -18,6 +19,7 @@ interface ImportGuestsModalProps {
   onImported: () => void;
   userId: string;
   eventId: string;
+  eventType?: string | null;
 }
 
 type ImportStep = 'upload' | 'contacts-review' | 'map' | 'preview' | 'importing' | 'done';
@@ -144,12 +146,10 @@ const catLabel: Record<Category, string> = {
   FAMILY: 'משפחה', FRIENDS: 'חברים', WORK: 'עבודה', OTHER: 'אחר',
 };
 
-const sideLabel: Record<Side, string> = {
-  GROOM: 'צד החתן', BRIDE: 'צד הכלה', SHARED: 'משותף',
-};
-
 // ── Component ─────────────────────────────────────────────────
-export const ImportGuestsModal = ({ open, onClose, onImported, userId, eventId }: ImportGuestsModalProps) => {
+export const ImportGuestsModal = ({ open, onClose, onImported, userId, eventId, eventType }: ImportGuestsModalProps) => {
+  const sl = getSideLabels(eventType);
+  const sideLabel: Record<Side, string> = { GROOM: sl.side1, BRIDE: sl.side2, SHARED: sl.shared };
 
   const [step, setStep]         = useState<ImportStep>('upload');
   const [dragging, setDragging] = useState(false);
@@ -467,9 +467,9 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId, eventId }
                             className="text-[12px] font-semibold bg-charcoal-50 px-2.5 py-1.5 rounded-xl focus:outline-none"
                           >
                             <option value="">ללא צד</option>
-                            <option value="GROOM">🤵 חתן</option>
-                            <option value="BRIDE">👰 כלה</option>
-                            <option value="SHARED">💑 משותף</option>
+                            <option value="GROOM">{sl.side1Emoji} {sl.side1Short}</option>
+                            <option value="BRIDE">{sl.side2Emoji} {sl.side2Short}</option>
+                            <option value="SHARED">💑 {sl.shared}</option>
                           </select>
                           <select
                             value={c.category}

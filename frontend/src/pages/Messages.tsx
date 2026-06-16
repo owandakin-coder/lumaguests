@@ -16,6 +16,7 @@ import { Guest, RsvpStatus } from '../types';
 import { rsvpService, guestService, toWaPhone, openWhatsAppUrl } from '../services/supabase';
 import { useEvent } from '../hooks/useEvent';
 import { buildGuestRsvpMessage, buildGuestRsvpWhatsAppUrl } from '../utils/rsvpShare';
+import { getSideLabels } from '../utils/eventType';
 
 interface MessagesProps {
   guests: Guest[];
@@ -32,13 +33,6 @@ type Template = {
   build: (name: string, link: string | null, side?: string) => string;
 };
 
-const sideLabel: Partial<Record<string, string>> = {
-  GROOM: 'מצד החתן',
-  BRIDE: 'מצד הכלה',
-  FAMILY: 'משפחה',
-  FRIENDS: 'חברים',
-  WORK: 'עבודה',
-};
 
 const TEMPLATES: Template[] = [
   {
@@ -121,6 +115,14 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
   const [showQueue, setShowQueue] = useState(false);
   const [optimisticSentIds, setOptimisticSentIds] = useState<Set<string>>(new Set());
   const { event } = useEvent();
+  const sl = getSideLabels(event?.event_type);
+  const sideLabel: Partial<Record<string, string>> = {
+    GROOM: `מצד ${sl.side1Short}`,
+    BRIDE: `מצד ${sl.side2Short}`,
+    FAMILY: 'משפחה',
+    FRIENDS: 'חברים',
+    WORK: 'עבודה',
+  };
 
   const filtered = useMemo(
     () =>
@@ -239,7 +241,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
   return (
     <div className="space-y-4 pt-1 pb-2">
       <div>
-        <h1 className="text-[28px] font-bold text-charcoal-900">הודעות</h1>
+        <h1 className="text-[28px] font-bold font-serif text-charcoal-900">הודעות</h1>
         <p className="text-[12px] text-charcoal-400 mt-0.5">שליחת הודעות WhatsApp למוזמנים</p>
       </div>
 

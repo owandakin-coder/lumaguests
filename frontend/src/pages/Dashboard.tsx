@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Plus, Users, CheckCircle, Clock, XCircle, ChevronLeft, CalendarDays, Settings, MapPin, PencilLine, MessageCircle } from 'lucide-react';
 import { Guest, RsvpStatus, Category, Side, Event } from '../types';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { getSideLabels } from '../utils/eventType';
 
 interface DashboardProps {
   guests: Guest[];
@@ -30,11 +31,6 @@ const catConfig: { id: Category; label: string; color: string }[] = [
   { id: 'OTHER',   label: 'אחר',   color: '#D1D5DB' },
 ];
 
-const sideConfig: { id: Side; label: string; color: string; emoji: string }[] = [
-  { id: 'GROOM',  label: 'צד החתן', color: '#C9A84C', emoji: '🤵' },
-  { id: 'BRIDE',  label: 'צד הכלה', color: '#F9A8D4', emoji: '👰' },
-  { id: 'SHARED', label: 'משותף',   color: '#A5B4FC', emoji: '💑' },
-];
 
 const avPalette = [
   ['#FDE68A','#92400E'],['#BFDBFE','#1E40AF'],
@@ -71,6 +67,12 @@ const stagger={hidden:{},show:{transition:{staggerChildren:0.055}}};
 
 export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onViewGuestsFiltered,onSetupEvent,onSwitchEvent,event,events}:DashboardProps)=>{
   const auth=useSupabaseAuth();
+  const sl = getSideLabels(event?.event_type);
+  const sideConfig: { id: Side; label: string; color: string; emoji: string }[] = [
+    { id: 'GROOM',  label: sl.side1,  color: '#C9A84C', emoji: sl.side1Emoji },
+    { id: 'BRIDE',  label: sl.side2,  color: '#F9A8D4', emoji: sl.side2Emoji },
+    { id: 'SHARED', label: sl.shared, color: '#A5B4FC', emoji: '💑' },
+  ];
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
 

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { Side, Category, RsvpStatus, Guest, CreateGuestInput } from '../types';
 import { normalizePhone } from '../utils/phone';
+import { getSideLabels } from '../utils/eventType';
 
 interface GuestFormProps {
   initialData?: Guest;
@@ -10,13 +11,8 @@ interface GuestFormProps {
   isLoading?: boolean;
   onCancel: () => void;
   title?: string;
+  eventType?: string | null;
 }
-
-const sides: { value: Side; label: string; color: string; emoji: string }[] = [
-  { value: 'GROOM',  label: 'צד החתן', color: '#C9A84C', emoji: '🤵' },
-  { value: 'BRIDE',  label: 'צד הכלה', color: '#F9A8D4', emoji: '👰' },
-  { value: 'SHARED', label: 'משותף',   color: '#A5B4FC', emoji: '💑' },
-];
 
 const categories: { value: Category; label: string; color: string }[] = [
   { value: 'FAMILY',  label: 'משפחה',  color: '#93C5FD' },
@@ -31,7 +27,13 @@ const rsvpOptions: { value: RsvpStatus; label: string; bg: string; active: strin
   { value: 'DECLINED',  label: 'לא מגיע', bg: '#FFF1F2', active: '#F87171', text: '#9F1239' },
 ];
 
-export const GuestForm = ({ initialData, onSubmit, isLoading=false, onCancel, title }: GuestFormProps) => {
+export const GuestForm = ({ initialData, onSubmit, isLoading=false, onCancel, title, eventType }: GuestFormProps) => {
+  const sl = getSideLabels(eventType);
+  const sides: { value: Side; label: string; color: string; emoji: string }[] = [
+    { value: 'GROOM',  label: sl.side1,  color: '#C9A84C', emoji: sl.side1Emoji },
+    { value: 'BRIDE',  label: sl.side2,  color: '#F9A8D4', emoji: sl.side2Emoji },
+    { value: 'SHARED', label: sl.shared, color: '#A5B4FC', emoji: '💑' },
+  ];
   const [form, setForm] = useState<CreateGuestInput>({
     fullName:   initialData?.fullName  || initialData?.full_name   || '',
     phone:      initialData?.phone     || '',

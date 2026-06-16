@@ -5,6 +5,7 @@ import { GuestCard } from '../components/GuestCard';
 import { ImportGuestsModal } from '../components/ImportGuestsModal';
 import { FilterSheet, FilterButton } from '../components/FilterSheet';
 import { Guest, RsvpStatus, Category, Side, Event } from '../types';
+import { getSideLabels } from '../utils/eventType';
 
 interface GuestListProps {
   guests:Guest[];loading:boolean;onAddGuest:()=>void;
@@ -40,24 +41,19 @@ const catLabelFull: Record<string, string> = {
   FAMILY:'משפחה', FRIENDS:'חברים', WORK:'עבודה', OTHER:'אחר',
 };
 
-const sideLabelFull: Record<string, string> = {
-  GROOM:'צד החתן', BRIDE:'צד הכלה', SHARED:'משותף',
-};
-
-const LARGE_LIST = 100; // threshold to skip entry animations
-const BATCH_SIZE  = 80; // items rendered per scroll-batch
-
-// Grouped mode — group by side
+const LARGE_LIST = 100;
+const BATCH_SIZE  = 80;
 const SIDE_ORDER: (Side | null)[] = ['GROOM', 'BRIDE', 'SHARED', null];
 
-const sideGroupConfig: Record<string, { label: string; color: string; emoji: string }> = {
-  GROOM:  { label: 'צד החתן', color: '#C9A84C', emoji: '🤵' },
-  BRIDE:  { label: 'צד הכלה', color: '#F9A8D4', emoji: '👰' },
-  SHARED: { label: 'משותף',   color: '#A5B4FC', emoji: '💑' },
-  null:   { label: 'ללא שיוך', color: '#D1D5DB', emoji: '✦' },
-};
-
 export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onViewGuest,onGuestsImported,userId,initialStatusFilter,event}:GuestListProps)=>{
+  const sl = getSideLabels(event?.event_type);
+  const sideLabelFull: Record<string, string> = { GROOM: sl.side1, BRIDE: sl.side2, SHARED: sl.shared };
+  const sideGroupConfig: Record<string, { label: string; color: string; emoji: string }> = {
+    GROOM:  { label: sl.side1,  color: '#C9A84C', emoji: sl.side1Emoji },
+    BRIDE:  { label: sl.side2,  color: '#F9A8D4', emoji: sl.side2Emoji },
+    SHARED: { label: sl.shared, color: '#A5B4FC', emoji: '💑' },
+    null:   { label: 'ללא שיוך', color: '#D1D5DB', emoji: '✦' },
+  };
   const [search,      setSearch]      = useState('');
   const [status,      setStatus]      = useState<RsvpStatus|'ALL'>(initialStatusFilter || 'ALL');
   const [side,        setSide]        = useState<Side|'ALL'>('ALL');
@@ -167,7 +163,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
       {/* Header */}
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-[30px] font-bold text-charcoal-900 leading-tight">מוזמנים</h1>
+          <h1 className="text-[30px] font-bold font-serif text-charcoal-900 leading-tight">מוזמנים</h1>
           <p className="text-[12px] text-charcoal-400 mt-0.5">
             {filtered.length} מתוך {guests.length} · {guests.reduce((a,g)=>a+1+(g.companions||0),0)} אנשים
           </p>
@@ -355,6 +351,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
         open={importOpen}
         userId={userId}
         eventId={event?.id || ''}
+        eventType={event?.event_type}
         onClose={() => setImportOpen(false)}
         onImported={() => { setImportOpen(false); onGuestsImported?.(); }}
       />
@@ -367,6 +364,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
         onSideChange={setSide}
         onCategoryChange={setCategory}
         resultCount={filtered.length}
+        eventType={event?.event_type}
       />
 
     </div>

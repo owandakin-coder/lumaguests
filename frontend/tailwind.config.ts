@@ -33,13 +33,13 @@ export default {
           900: '#1A1916',
         },
         gold: {
-          50: '#FFFBF0',
-          100: '#FFF7E1',
-          200: '#FFE6B3',
-          300: '#FFD699',
-          400: '#FFC266',
-          500: '#FFB84D',
-          600: '#E6A133',
+          50: '#FAF6EE',
+          100: '#F2E8D0',
+          200: '#E4D0A8',
+          300: '#D4B878',
+          400: '#C5A24D',
+          500: '#B8922E',
+          600: '#9A7A18',
         },
       },
       fontSize: {
@@ -54,6 +54,7 @@ export default {
       },
       fontFamily: {
         sans: ['Rubik', 'Segoe UI', 'system-ui', 'sans-serif'],
+        serif: ['Frank Ruhl Libre', 'Georgia', 'serif'],
       },
       spacing: {
         '2': '4px',

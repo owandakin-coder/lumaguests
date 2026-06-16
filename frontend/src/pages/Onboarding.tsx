@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarDays, MapPin } from 'lucide-react';
 import { Event } from '../types';
+import { ALL_EVENT_TYPES, type EventType } from '../utils/eventType';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -16,6 +17,7 @@ export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
   const [saving, setSaving] = useState(false);
   const dateRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
+    event_type: '' as EventType | '',
     event_name: '',
     event_date: '',
     venue_name: '',
@@ -24,7 +26,36 @@ export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
   const steps = [
     {
       title: 'ברוך הבא! 🎉',
-      subtitle: 'בוא נגדיר את האירוע שלך — זה לוקח פחות מדקה',
+      subtitle: 'מה סוג האירוע שלך?',
+      canNext: !!form.event_type,
+      fields: (
+        <div className="grid grid-cols-2 gap-3">
+          {ALL_EVENT_TYPES.map(({ type, label, emoji }) => {
+            const selected = form.event_type === type;
+            return (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setForm(p => ({ ...p, event_type: type }))}
+                className="flex flex-col items-center gap-2 py-4 px-3 rounded-2xl border-2 transition-all active:scale-95"
+                style={{
+                  background: selected ? '#1A1916' : '#fff',
+                  borderColor: selected ? '#1A1916' : '#E5E3E1',
+                  boxShadow: selected ? '0 4px 16px rgba(26,25,22,0.2)' : '0 1px 6px rgba(0,0,0,0.05)',
+                }}
+              >
+                <span className="text-2xl leading-none">{emoji}</span>
+                <span className="text-[13px] font-bold leading-tight text-center" style={{ color: selected ? '#fff' : '#1A1916' }}>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      ),
+    },
+    {
+      title: 'פרטי האירוע',
+      subtitle: 'בוא נגדיר את הפרטים — זה לוקח פחות מדקה',
+      canNext: !!form.event_name.trim(),
       fields: (
         <div className="space-y-3">
           <input
@@ -66,7 +97,6 @@ export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
           </div>
         </div>
       ),
-      canNext: !!form.event_name.trim(),
     },
     {
       title: 'הכל מוגדר! ✦',
@@ -88,22 +118,25 @@ export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
       ),
       canNext: true,
     },
-  ];
+  ] as { title: string; subtitle: string; canNext: boolean; fields: React.ReactNode }[];
 
   const current = steps[step];
 
   const handleNext = async () => {
     if (step === 0) {
+      setStep(1);
+    } else if (step === 1) {
       try {
         setSaving(true);
         await onUpdateEvent({
+          event_type: form.event_type || 'wedding',
           event_name: form.event_name.trim() || 'האירוע שלי',
           event_date: form.event_date || null,
           venue_name: form.venue_name.trim() || null,
         });
       } catch { /* silent */ }
       finally { setSaving(false); }
-      setStep(1);
+      setStep(2);
     } else {
       localStorage.setItem('luma_onboarding_done', '1');
       onComplete();

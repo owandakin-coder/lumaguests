@@ -10,6 +10,7 @@ import { guestService, rsvpService } from '../services/supabase';
 import { buildGuestRsvpMessage, buildGuestRsvpWhatsAppUrl } from '../utils/rsvpShare';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { useEvent } from '../hooks/useEvent';
+import { getSideLabels } from '../utils/eventType';
 
 interface GuestDetailsProps {
   guestId: string;
@@ -24,8 +25,8 @@ const rsvpConfig: Record<RsvpStatus, { label: string; dot: string; bg: string; t
   DECLINED:  { label: 'לא מגיע',      dot: '#F87171', bg: '#FFF1F2', text: '#9F1239' },
 };
 
-const categoryLabel: Record<string, string> = {
-  GROOM:'חתן', BRIDE:'כלה', FAMILY:'משפחה', FRIENDS:'חברים', WORK:'עבודה', OTHER:'אחר',
+const categoryLabelBase: Record<string, string> = {
+  FAMILY:'משפחה', FRIENDS:'חברים', WORK:'עבודה', OTHER:'אחר',
 };
 const categoryAccent: Record<string, string> = {
   GROOM:'#C9A84C', BRIDE:'#F9A8D4', FAMILY:'#93C5FD',
@@ -54,6 +55,10 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
   const [shareOpen, setShareOpen] = useState(false);
   const auth = useSupabaseAuth();
   const { event } = useEvent();
+  const sl = getSideLabels(event?.event_type);
+  const categoryLabel: Record<string, string> = {
+    GROOM: sl.side1Short, BRIDE: sl.side2Short, ...categoryLabelBase,
+  };
 
   useEffect(() => { if (auth.user && event?.id) load(); }, [guestId, auth.user, event?.id]);
 

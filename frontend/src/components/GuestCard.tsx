@@ -3,6 +3,7 @@ import { Phone, MessageCircle, Link } from 'lucide-react';
 import { Guest, RsvpStatus, Side, Event } from '../types';
 import { guestService, rsvpService, toWaPhone, openWhatsAppUrl } from '../services/supabase';
 import { buildGuestRsvpMessage, buildGuestRsvpWhatsAppUrl } from '../utils/rsvpShare';
+import { getSideLabels } from '../utils/eventType';
 
 interface GuestCardProps {
   guest: Guest;
@@ -10,7 +11,7 @@ interface GuestCardProps {
   onDelete: (guest: Guest) => void;
   onView: (guest: Guest) => void;
   userId: string;
-  event?: Pick<Event, 'event_name' | 'event_date' | 'venue_name' | 'venue_address' | 'cover_image_url'> | null;
+  event?: Pick<Event, 'event_name' | 'event_date' | 'venue_name' | 'venue_address' | 'cover_image_url' | 'event_type'> | null;
 }
 
 const rsvpCfg: Record<RsvpStatus, { label: string; dot: string; bg: string; text: string }> = {
@@ -47,10 +48,11 @@ const catTextColor: Record<string, string> = {
   OTHER: '#6B7280',
 };
 
-const sideLabel: Record<Side, string> = {
-  GROOM: 'צד חתן',
-  BRIDE: 'צד כלה',
-  SHARED: 'משותף',
+const sideLabel = (side: Side, eventType?: string | null): string => {
+  const sl = getSideLabels(eventType);
+  if (side === 'GROOM') return sl.side1Short;
+  if (side === 'BRIDE') return sl.side2Short;
+  return sl.shared;
 };
 
 const sideAccent: Record<Side, string> = {
@@ -165,7 +167,7 @@ export const GuestCard = ({ guest, onView, userId, event }: GuestCardProps) => {
               {side && (
                 <div className="flex items-center gap-0.5 px-2 py-0.5 rounded-full" style={{ background: sideBg[side] }}>
                   <div className="w-1.5 h-1.5 rounded-full" style={{ background: sideAccent[side] }} />
-                  <span className="text-[10px] font-bold" style={{ color: sideTextColor[side] }}>{sideLabel[side]}</span>
+                  <span className="text-[10px] font-bold" style={{ color: sideTextColor[side] }}>{sideLabel(side, event?.event_type)}</span>
                 </div>
               )}
               {/* Category badge */}

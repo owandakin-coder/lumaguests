@@ -100,6 +100,7 @@ export const EditGuest = ({ guestId, onSuccess, onCancel }: EditGuestProps) => {
       onSubmit={handleSubmit}
       onCancel={onCancel}
       title="עריכת מוזמן"
+      eventType={event?.event_type}
     />
   );
 };
