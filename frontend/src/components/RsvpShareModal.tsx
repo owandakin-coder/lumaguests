@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Copy, Link2, MessageCircle, X } from 'lucide-react';
 import { Event, Guest } from '../types';
-import { rsvpService, storageService } from '../services/supabase';
+import { rsvpService, storageService, openWhatsAppUrl } from '../services/supabase';
 import {
   buildGuestRsvpMessage,
   buildGuestRsvpWhatsAppUrl,
@@ -89,7 +89,7 @@ export const RsvpShareModal = ({
 
   const openWhatsApp = () => {
     if (!guest || !message) return;
-    window.open(buildGuestRsvpWhatsAppUrl(guest.phone, message), '_blank');
+    openWhatsAppUrl(buildGuestRsvpWhatsAppUrl(guest.phone, message));
   };
 
   return createPortal(

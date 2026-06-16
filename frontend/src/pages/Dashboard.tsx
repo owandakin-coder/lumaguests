@@ -80,9 +80,11 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
 
   const countdownDays = useMemo(() => {
     if (!event?.event_date) return null;
-    const now = new Date(); now.setHours(0,0,0,0);
-    const target = new Date(event.event_date);
-    return Math.ceil((target.getTime() - now.getTime()) / 86400000);
+    // Use UTC midnight on both sides: event_date is stored as UTC midnight from the date picker,
+    // and we normalise "today" to UTC midnight so the diff is an exact number of days.
+    const now = new Date(); now.setUTCHours(0,0,0,0);
+    const target = new Date(event.event_date); target.setUTCHours(0,0,0,0);
+    return Math.round((target.getTime() - now.getTime()) / 86400000);
   }, [event?.event_date]);
   const safeCountdownDays = countdownDays ?? 0;
 

@@ -328,7 +328,9 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
               <div className="mx-4 mb-4 mt-1 p-3 rounded-xl bg-charcoal-50">
                 <p className="text-[11px] font-bold text-charcoal-400 uppercase tracking-wide mb-1">תצוגה מקדימה</p>
                 <p className="text-[12px] text-charcoal-700 leading-relaxed whitespace-pre-line">
-                  {activeTemplate.build('שם המוזמן', 'https://...')}
+                  {activeTemplate.id === 'rsvp'
+                    ? buildGuestRsvpMessage('שם המוזמן', event, 'https://rsvp.example/...')
+                    : activeTemplate.build('שם המוזמן', 'https://rsvp.example/...')}
                 </p>
               </div>
             </motion.div>

@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { RsvpShareModal } from '../components/RsvpShareModal';
 import { Guest, RsvpStatus } from '../types';
-import { guestService, rsvpService } from '../services/supabase';
+import { guestService, rsvpService, toWaPhone, openWhatsAppUrl } from '../services/supabase';
 import { buildGuestRsvpMessage, buildGuestRsvpWhatsAppUrl } from '../utils/rsvpShare';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { useEvent } from '../hooks/useEvent';
@@ -146,8 +146,8 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
     const personalLink = token ? rsvpService.buildPersonalRsvpLink({ rsvp_token: token }) : null;
     const url = token && personalLink
       ? buildGuestRsvpWhatsAppUrl(guest.phone, buildGuestRsvpMessage(name, event, personalLink))
-      : `https://wa.me/${guest.phone.replace(/\D/g,'')}?text=${encodeURIComponent(`שלום ${name}! רצינו ליצור איתך קשר לגבי האירוע.`)}`;
-    window.open(url, '_blank');
+      : `https://wa.me/${toWaPhone(guest.phone)}?text=${encodeURIComponent(`שלום ${name}! רצינו ליצור איתך קשר לגבי האירוע.`)}`;
+    openWhatsAppUrl(url);
   };
   const handleCopyLink = async () => {
     const token = await ensureRsvpTokenReady();
