@@ -773,47 +773,58 @@ export const EventManager = ({
                 </div>
 
                 <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
-                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">שם האירוע</p>
+                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1.5">שם האירוע</p>
                   {isEditing ? (
                     <input
                       value={form.eventName}
                       onChange={(e) => setField('eventName', e.target.value)}
                       placeholder="חתונה, בר-מצווה..."
                       autoFocus
-                      className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
+                      className={inputClass}
                     />
                   ) : (
                     <p className="text-[14px] text-charcoal-900">{form.eventName || <span className="text-charcoal-300">לא הוגדר</span>}</p>
                   )}
                 </div>
 
-                <div
-                  className={`px-4 py-2.5 border-t border-[#F2EAD8] relative${isEditing ? ' cursor-pointer' : ''}`}
-                  onClick={isEditing ? () => dateInputRef.current?.showPicker?.() : undefined}
-                >
-                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">תאריך</p>
-                  <p className={`text-[14px] ${form.eventDate ? 'text-charcoal-900' : 'text-charcoal-300'}`}>
-                    {selectedDateLabel}
-                    {isEditing && <span className="text-[11px] text-gold-500 mr-2">← לחץ לשינוי</span>}
-                  </p>
-                  <input
-                    ref={dateInputRef}
-                    type="date"
-                    value={form.eventDate}
-                    onChange={(e) => setField('eventDate', e.target.value)}
-                    className={`absolute inset-0 w-full h-full opacity-0${isEditing ? ' cursor-pointer' : ' pointer-events-none'}`}
-                    tabIndex={-1}
-                  />
+                <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
+                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1.5">תאריך</p>
+                  {isEditing ? (
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => dateInputRef.current?.showPicker?.()}
+                        className={`${inputClass} text-right flex items-center justify-between`}
+                      >
+                        <span className={form.eventDate ? 'text-charcoal-900' : 'text-charcoal-400'}>
+                          {selectedDateLabel}
+                        </span>
+                        <CalendarDays className="w-4 h-4 text-charcoal-400 flex-shrink-0" />
+                      </button>
+                      <input
+                        ref={dateInputRef}
+                        type="date"
+                        value={form.eventDate}
+                        onChange={(e) => setField('eventDate', e.target.value)}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        tabIndex={-1}
+                      />
+                    </div>
+                  ) : (
+                    <p className={`text-[14px] ${form.eventDate ? 'text-charcoal-900' : 'text-charcoal-300'}`}>
+                      {selectedDateLabel}
+                    </p>
+                  )}
                 </div>
 
                 <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
-                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">מקום האירוע</p>
+                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1.5">מקום האירוע</p>
                   {isEditing ? (
                     <input
                       value={form.venueName}
                       onChange={(e) => setField('venueName', e.target.value)}
                       placeholder="שם האולם"
-                      className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
+                      className={inputClass}
                     />
                   ) : (
                     <p className="text-[14px] text-charcoal-900">{form.venueName || <span className="text-charcoal-300">לא הוגדר</span>}</p>
@@ -821,13 +832,13 @@ export const EventManager = ({
                 </div>
 
                 <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
-                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">כתובת</p>
+                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1.5">כתובת</p>
                   {isEditing ? (
                     <input
                       value={form.venueAddress}
                       onChange={(e) => setField('venueAddress', e.target.value)}
                       placeholder="רחוב ועיר"
-                      className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none"
+                      className={inputClass}
                     />
                   ) : (
                     <p className="text-[14px] text-charcoal-900">{form.venueAddress || <span className="text-charcoal-300">לא הוגדר</span>}</p>
@@ -835,14 +846,14 @@ export const EventManager = ({
                 </div>
 
                 <div className="px-4 py-2.5 border-t border-[#F2EAD8]">
-                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1">תיאור</p>
+                  <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-[0.16em] mb-1.5">תיאור</p>
                   {isEditing ? (
                     <textarea
                       value={form.description}
                       onChange={(e) => setField('description', e.target.value)}
                       placeholder="תיאור קצר לאורחים"
-                      rows={2}
-                      className="w-full bg-transparent text-[14px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none resize-none"
+                      rows={3}
+                      className={`${inputClass} resize-none`}
                     />
                   ) : (
                     <p className="text-[14px] text-charcoal-900">{form.description || <span className="text-charcoal-300">לא הוגדר</span>}</p>
