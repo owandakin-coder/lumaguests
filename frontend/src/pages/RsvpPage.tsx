@@ -357,7 +357,7 @@ export const RsvpPage = ({
                 key="form"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full"
+                className={hasCoverData ? 'w-full' : 'my-auto w-full'}
               >
                 <div className={heroOffsetClass}>
                   <div className="rounded-[30px] border border-white/75 bg-white/82 px-4 py-4 text-center shadow-[0_22px_60px_rgba(89,69,35,0.14)] backdrop-blur-xl">
