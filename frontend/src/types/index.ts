@@ -80,6 +80,7 @@ export interface RsvpPublicGuest {
   venue_name?: string | null;
   venue_address?: string | null;
   cover_image_url?: string | null;
+  event_type?: string | null;
 }
 
 export interface RsvpResponse {
