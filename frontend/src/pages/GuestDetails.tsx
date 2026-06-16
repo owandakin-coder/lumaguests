@@ -51,6 +51,7 @@ function avatarBg(name: string) {
 export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetailsProps) => {
   const [guest, setGuest]     = useState<Guest | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [copied, setCopied]   = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [errorMsg, setErrorMsg]   = useState<string | null>(null);
@@ -70,8 +71,15 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
 
   const load = async () => {
     if (!auth.user || !event?.id) return;
-    try { setLoading(true); setGuest(await guestService.getById(guestId, event.owner_user_id || auth.user.id, event.id)); }
-    catch { /* silent */ } finally { setLoading(false); }
+    try {
+      setLoading(true);
+      setLoadError(false);
+      setGuest(await guestService.getById(guestId, event.owner_user_id || auth.user.id, event.id));
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) return (
@@ -79,6 +87,14 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
       <div className="h-9 w-9 bg-charcoal-100 rounded-xl" />
       <div className="h-48 bg-white rounded-3xl" />
       <div className="h-40 bg-white rounded-2xl" />
+    </div>
+  );
+
+  if (loadError) return (
+    <div className="flex flex-col items-center py-20 gap-3">
+      <p className="text-charcoal-500">שגיאה בטעינת המוזמן</p>
+      <button onClick={() => void load()} className="text-gold-600 font-bold text-sm">נסה שוב</button>
+      <button onClick={onBack} className="text-charcoal-400 text-sm">חזרה</button>
     </div>
   );
 
