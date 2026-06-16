@@ -133,7 +133,7 @@ export const GuestList=({guests,loading,onAddGuest,onEditGuest,onDeleteGuest,onV
   }, [filtered.length, visibleCount, loadMore]);
 
   const exportCSV = () => {
-    const eventName = localStorage.getItem('luma_event_name') || 'מוזמנים';
+    const eventName = event?.event_name || 'מוזמנים';
     const headers = ['שם', 'טלפון', 'סטטוס', 'צד', 'קטגוריה', 'מלווים', 'סך אנשים', 'הערות', 'הערת מוזמן'];
     const rows = filtered.map(g => [
       g.fullName||g.full_name,
