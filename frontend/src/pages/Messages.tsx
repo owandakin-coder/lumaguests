@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -114,6 +114,12 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
   const [optimisticSentIds, setOptimisticSentIds] = useState<Set<string>>(new Set());
+  const [sendError, setSendError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!sendError) return;
+    const t = setTimeout(() => setSendError(null), 5000);
+    return () => clearTimeout(t);
+  }, [sendError]);
   const { event } = useEvent();
   const sl = getSideLabels(event?.event_type);
   const sideLabel: Partial<Record<string, string>> = {
@@ -199,13 +205,13 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
         const isReady = await rsvpService.verifyToken(token);
 
         if (!isReady) {
-          window.alert('קישור ה-RSVP האישי לא זמין כרגע. צריך להריץ את RSVP_MIGRATION.sql ב-Supabase.');
+          setSendError('קישור ה-RSVP האישי לא זמין כרגע. נסה שוב.');
           return;
         }
 
         const personalLink = rsvpService.buildPersonalRsvpLink({ rsvp_token: token });
         if (!personalLink) {
-          window.alert('לא הצלחנו ליצור קישור RSVP אישי למוזמן הזה. נסה שוב.');
+          setSendError('לא הצלחנו ליצור קישור RSVP אישי למוזמן הזה. נסה שוב.');
           return;
         }
 
@@ -214,7 +220,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
         setOptimisticSentIds((prev) => new Set(prev).add(guest.id));
         void guestService.update(guest.id, { whatsapp_sent_at: new Date().toISOString() }, userId, guest.event_id).catch(() => {});
       } catch {
-        window.alert('לא הצלחנו ליצור קישור RSVP אישי למוזמן הזה. נסה שוב.');
+        setSendError('לא הצלחנו ליצור קישור RSVP אישי למוזמן הזה. נסה שוב.');
       }
       return;
     }
@@ -244,6 +250,13 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
         <h1 className="text-[28px] font-bold font-serif text-charcoal-900">הודעות</h1>
         <p className="text-[12px] text-charcoal-400 mt-0.5">שליחת הודעות WhatsApp למוזמנים</p>
       </div>
+
+      {sendError && (
+        <div className="flex items-center gap-2.5 rounded-[16px] bg-red-50 border border-red-200 px-4 py-3">
+          <span className="text-[13px] text-red-700 flex-1">{sendError}</span>
+          <button onClick={() => setSendError(null)} className="text-red-400 hover:text-red-600 transition-colors text-lg leading-none">×</button>
+        </div>
+      )}
 
       <div className="flex rounded-2xl p-1" style={{ background: 'rgba(0,0,0,0.06)' }}>
         {filterTabs.map((tab) => (

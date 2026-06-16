@@ -53,6 +53,12 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
   const [loading, setLoading] = useState(true);
   const [copied, setCopied]   = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [errorMsg, setErrorMsg]   = useState<string | null>(null);
+  useEffect(() => {
+    if (!errorMsg) return;
+    const t = setTimeout(() => setErrorMsg(null), 5000);
+    return () => clearTimeout(t);
+  }, [errorMsg]);
   const auth = useSupabaseAuth();
   const { event } = useEvent();
   const sl = getSideLabels(event?.event_type);
@@ -143,7 +149,7 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
   const handleCopyLink = async () => {
     const token = await ensureRsvpTokenReady();
     if (!token) {
-      window.alert('קישור ה-RSVP האישי לא זמין כרגע. צריך להריץ את RSVP_MIGRATION.sql ב-Supabase.');
+      setErrorMsg('קישור ה-RSVP האישי לא זמין כרגע. נסה שוב.');
       return;
     }
     try {
@@ -159,7 +165,7 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
   const handleOpenShare = async () => {
     const token = await ensureRsvpTokenReady();
     if (!token) {
-      window.alert('קישור ה-RSVP האישי לא זמין כרגע. צריך להריץ את RSVP_MIGRATION.sql ב-Supabase.');
+      setErrorMsg('קישור ה-RSVP האישי לא זמין כרגע. נסה שוב.');
       return;
     }
 
@@ -177,6 +183,13 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
       >
         <ChevronRight className="w-5 h-5 text-charcoal-600" />
       </button>
+
+      {errorMsg && (
+        <div className="flex items-center gap-2.5 rounded-[16px] bg-red-50 border border-red-200 px-4 py-3">
+          <span className="text-[13px] text-red-700 flex-1">{errorMsg}</span>
+          <button onClick={() => setErrorMsg(null)} className="text-red-400 hover:text-red-600 transition-colors text-lg leading-none">×</button>
+        </div>
+      )}
 
       {/* Hero card — dark */}
       <div
