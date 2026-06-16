@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Check,
   ChevronLeft,
+  Download,
   Eye,
   EyeOff,
   FileText,
@@ -18,6 +19,7 @@ import {
   Palette,
   Shield,
   Trash2,
+  UserX,
   X,
 } from 'lucide-react';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
@@ -61,6 +63,8 @@ type RowItem = {
   label: string;
   value?: string | null;
   action: () => void;
+  noChevron?: boolean;
+  disabled?: boolean;
 };
 
 const inputCls =
@@ -123,6 +127,9 @@ export const Settings = ({
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteAccountLoading, setDeleteAccountLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [notifPerm, setNotifPerm] = useState<NotificationPermission>('default');
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -247,6 +254,85 @@ export const Settings = ({
     }
   };
 
+  const exportGuests = async () => {
+    if (!event?.id || !auth.user || exportLoading) return;
+    try {
+      setExportLoading(true);
+      setErr('');
+      const { data, error } = await supabase
+        .from('guests')
+        .select('*')
+        .eq('event_id', event.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const guests = data || [];
+      if (guests.length === 0) {
+        setErr('אין מוזמנים לייצוא');
+        return;
+      }
+      const XLSX = await import('xlsx');
+      const sideMap: Record<string, string> = { BRIDE: 'כלה', GROOM: 'חתן', SHARED: 'משותף' };
+      const categoryMap: Record<string, string> = { FAMILY: 'משפחה', FRIENDS: 'חברים', WORK: 'עבודה', OTHER: 'אחר' };
+      const statusMap: Record<string, string> = { CONFIRMED: 'מאושר', DECLINED: 'מסרב', PENDING: 'ממתין' };
+      const rows = guests.map((g) => ({
+        'שם מלא': g.full_name,
+        'טלפון': g.phone,
+        'מלווים': g.companions,
+        'צד': sideMap[g.side] || '',
+        'קטגוריה': categoryMap[g.category] || '',
+        'סטטוס RSVP': statusMap[g.rsvp_status] || '',
+        'אישר דרך קישור': g.rsvp_via_link ? 'כן' : 'לא',
+        'הגיב בתאריך': g.rsvp_responded_at
+          ? new Date(g.rsvp_responded_at).toLocaleDateString('he-IL')
+          : '',
+        'הערות': g.notes || '',
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws['!cols'] = [
+        { wch: 22 }, { wch: 15 }, { wch: 8 }, { wch: 10 },
+        { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 25 },
+      ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'מוזמנים');
+      const safeName = (event.event_name || 'אירוע').replace(/[\\/:*?"<>|]/g, '');
+      const dateStr = new Date().toLocaleDateString('he-IL').replace(/\./g, '-');
+      XLSX.writeFile(wb, `מוזמנים_${safeName}_${dateStr}.xlsx`);
+      setOk(`${guests.length} מוזמנים יוצאו בהצלחה`);
+    } catch (e: any) {
+      setErr(e?.message || 'שגיאה בייצוא המוזמנים');
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!auth.user) return;
+    try {
+      setDeleteAccountLoading(true);
+      const { data: userEvents } = await supabase
+        .from('events')
+        .select('id, cover_image_url')
+        .eq('owner_user_id', auth.user.id);
+      if (userEvents) {
+        await Promise.allSettled(
+          userEvents
+            .filter((e) => e.cover_image_url)
+            .map(async (e) => {
+              const path = storageService.extractCoverPath(e.cover_image_url);
+              if (path) await supabase.storage.from('event-covers').remove([path]);
+            })
+        );
+      }
+      await authService.deleteAccount();
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (e: any) {
+      setDeleteAccountLoading(false);
+      setShowDeleteAccount(false);
+      setErr(e?.message || 'לא הצלחנו למחוק את החשבון');
+      setOk('');
+    }
+  };
+
   const email = userEmail || auth.user?.email || '';
   const initial = email ? email[0].toUpperCase() : 'L';
   const eventName = event?.event_name || 'האירוע שלי';
@@ -267,6 +353,19 @@ export const Settings = ({
         { icon: Mail, label: 'שינוי אימייל', value: email, action: () => open('email') },
         { icon: Lock, label: 'שינוי סיסמה', value: '••••••••', action: () => open('password') },
         { icon: Bell, label: 'התראות', value: notifLabel, action: () => open('notifications') },
+      ],
+    },
+    {
+      title: 'נתונים',
+      rows: [
+        {
+          icon: Download,
+          label: 'ייצוא מוזמנים',
+          value: exportLoading ? 'מייצא...' : event?.id ? 'Excel' : 'אין אירוע',
+          action: () => { if (!exportLoading && event?.id) void exportGuests(); },
+          noChevron: true,
+          disabled: exportLoading || !event?.id,
+        },
       ],
     },
     {
@@ -376,8 +475,9 @@ export const Settings = ({
             {section.rows.map((row, idx) => (
               <button
                 key={row.label}
-                onClick={row.action}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 text-right transition-colors active:bg-charcoal-50/50 ${
+                onClick={row.disabled ? undefined : row.action}
+                disabled={row.disabled}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 text-right transition-colors active:bg-charcoal-50/50 disabled:opacity-50 ${
                   idx < section.rows.length - 1 ? 'border-b border-charcoal-100/60' : ''
                 }`}
               >
@@ -392,7 +492,7 @@ export const Settings = ({
                     {row.value}
                   </span>
                 ) : null}
-                <ChevronLeft className="w-4 h-4 text-charcoal-300 flex-shrink-0" />
+                {!row.noChevron && <ChevronLeft className="w-4 h-4 text-charcoal-300 flex-shrink-0" />}
               </button>
             ))}
           </div>
@@ -408,13 +508,20 @@ export const Settings = ({
         התנתקות
       </button>
 
-      <div>
+      <div className="space-y-2.5">
         <button
           onClick={() => setShowDeleteConfirm(true)}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border border-red-200 bg-red-50 text-red-500 text-[14px] font-bold active:scale-[0.98] transition-transform"
         >
           <Trash2 className="w-4 h-4" />
           מחיקת כל הנתונים
+        </button>
+        <button
+          onClick={() => setShowDeleteAccount(true)}
+          className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-red-600 text-white text-[14px] font-bold active:scale-[0.98] transition-transform"
+        >
+          <UserX className="w-4 h-4" />
+          מחיקת חשבון לצמיתות
         </button>
       </div>
 
@@ -708,6 +815,64 @@ export const Settings = ({
         </AnimatePresence>,
         document.body
       )}
+
+      {createPortal(
+        <AnimatePresence>
+          {showDeleteAccount && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4"
+              style={{ backdropFilter: 'blur(4px)' }}
+              onClick={() => { if (!deleteAccountLoading) setShowDeleteAccount(false); }}
+            >
+              <motion.div
+                initial={{ y: 40, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 40, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white w-full max-w-[430px] rounded-t-3xl p-6"
+                style={{ paddingBottom: 'max(40px, env(safe-area-inset-bottom))' }}
+              >
+                <div className="w-10 h-1 bg-charcoal-200 rounded-full mx-auto mb-5" />
+                <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
+                  <UserX className="w-7 h-7 text-red-600" />
+                </div>
+                <h3 className="text-[20px] font-bold text-charcoal-900 text-center mb-2">
+                  מחיקת חשבון לצמיתות
+                </h3>
+                <p className="text-[14px] text-charcoal-500 text-center leading-relaxed mb-2">
+                  הפעולה תמחק את החשבון, כל האירועים וכל המוזמנים שלך לצמיתות.
+                </p>
+                <p className="text-[13px] font-bold text-red-600 text-center mb-6">
+                  לא ניתן לבטל פעולה זו.
+                </p>
+                <div className="space-y-2.5">
+                  <button
+                    onClick={() => void handleDeleteAccount()}
+                    disabled={deleteAccountLoading}
+                    className="w-full py-4 rounded-2xl bg-red-600 text-white text-[15px] font-bold disabled:opacity-50 active:scale-[0.98] transition-transform"
+                  >
+                    {deleteAccountLoading ? 'מוחק חשבון...' : 'כן, מחק את החשבון שלי'}
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteAccount(false)}
+                    disabled={deleteAccountLoading}
+                    className="w-full py-4 rounded-2xl bg-charcoal-100 text-charcoal-700 text-[15px] font-bold active:scale-[0.98] transition-transform"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      <p className="text-center text-[11px] text-charcoal-300 py-1">Luma Guests · גרסה 1.0.0</p>
     </motion.div>
   );
 };

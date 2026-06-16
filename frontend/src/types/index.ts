@@ -102,6 +102,7 @@ export interface Event {
   public_slug: string | null;
   is_public: boolean;
   public_rsvp_enabled?: boolean | null;
+  rsvp_deadline: string | null;
   archived_at?: string | null;
   theme_color: string;
   created_at: string;

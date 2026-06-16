@@ -56,6 +56,11 @@ export const authService = {
     if (error) throw error;
   },
 
+  deleteAccount: async () => {
+    const { error } = await supabase.rpc('delete_my_account');
+    if (error) throw error;
+  },
+
   resetPassword: async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,

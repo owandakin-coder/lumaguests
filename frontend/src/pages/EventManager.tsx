@@ -86,8 +86,10 @@ export const EventManager = ({
     publicSlug: '',
     publicEnabled: false,
     rsvpOpen: true,
+    rsvpDeadline: '',
   });
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const deadlineInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rawImageUrl, setRawImageUrl] = useState<string | null>(null);
   const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
@@ -105,6 +107,7 @@ export const EventManager = ({
       publicSlug: event?.public_slug || '',
       publicEnabled: !!event?.is_public,
       rsvpOpen: event?.public_rsvp_enabled ?? true,
+      rsvpDeadline: event?.rsvp_deadline ? event.rsvp_deadline.split('T')[0] : '',
     });
     setMessage(null);
     setNewEventName('');
@@ -119,6 +122,7 @@ export const EventManager = ({
     event?.public_slug,
     event?.is_public,
     event?.public_rsvp_enabled,
+    event?.rsvp_deadline,
   ]);
 
   useEffect(() => {
@@ -216,6 +220,7 @@ export const EventManager = ({
         public_slug: normalizedSlug || null,
         is_public: form.publicEnabled,
         public_rsvp_enabled: form.rsvpOpen,
+        rsvp_deadline: form.rsvpDeadline || null,
       });
       setMessage({ type: 'success', text: 'פרטי האירוע נשמרו.' });
       setIsEditing(false);
@@ -243,6 +248,7 @@ export const EventManager = ({
       publicSlug: event?.public_slug || '',
       publicEnabled: !!event?.is_public,
       rsvpOpen: event?.public_rsvp_enabled ?? true,
+      rsvpDeadline: event?.rsvp_deadline ? event.rsvp_deadline.split('T')[0] : '',
     });
     setMessage(null);
     setIsEditing(false);
@@ -891,6 +897,45 @@ export const EventManager = ({
                       </span>
                     </button>
                   </div>
+                )}
+
+                {/* RSVP Deadline */}
+                <div className="flex items-center justify-between mt-3 px-1">
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-bold text-charcoal-900">תאריך סיום RSVP</p>
+                    <p className="text-[11px] text-charcoal-400 mt-0.5">חל על כל הקישורים — אישיים ופומביים</p>
+                  </div>
+                  <div className="relative flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={isOwner ? () => deadlineInputRef.current?.showPicker?.() : undefined}
+                      disabled={!isOwner}
+                      className={`rounded-2xl bg-[#FAF7EF] px-3 py-2 flex items-center gap-1.5 transition-transform${isOwner ? ' active:scale-[0.98]' : ' cursor-default opacity-75'}`}
+                    >
+                      <CalendarDays className="w-3.5 h-3.5 text-charcoal-500" />
+                      <span className={`text-[12px] font-bold ${form.rsvpDeadline ? 'text-charcoal-900' : 'text-charcoal-400'}`}>
+                        {form.rsvpDeadline
+                          ? new Date(form.rsvpDeadline + 'T00:00:00').toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' })
+                          : 'ללא'}
+                      </span>
+                    </button>
+                    <input
+                      ref={deadlineInputRef}
+                      type="date"
+                      value={form.rsvpDeadline}
+                      onChange={(e) => setField('rsvpDeadline', e.target.value)}
+                      className="absolute inset-0 opacity-0 pointer-events-none"
+                      tabIndex={-1}
+                    />
+                  </div>
+                </div>
+                {form.rsvpDeadline && isOwner && (
+                  <button
+                    onClick={() => setField('rsvpDeadline', '')}
+                    className="mt-1 text-[11px] text-red-400 px-1"
+                  >
+                    הסר תאריך סיום
+                  </button>
                 )}
 
                 {slugChanged ? (
