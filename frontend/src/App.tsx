@@ -332,6 +332,7 @@ function AuthenticatedApp() {
           paddingTop: 'calc(env(safe-area-inset-top) + 16px)',
           paddingBottom: 'calc(env(safe-area-inset-bottom) + 120px)',
           WebkitOverflowScrolling: 'touch' as any,
+          scrollbarGutter: 'stable',
         }}
       >
         <AnimatePresence mode="wait">
