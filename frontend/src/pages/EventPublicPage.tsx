@@ -258,7 +258,7 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
                 <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: accent }}>
                   {step === 'success' ? '🎉 אישור הגעה' : '💙 קיבלנו תשובה'}
                 </p>
-                <h1 className="text-2xl font-black text-charcoal-900">{event.event_name}</h1>
+                <h1 className="text-2xl font-black font-serif text-charcoal-900">{event.event_name}</h1>
               </div>
             </div>
 
@@ -323,7 +323,7 @@ export const EventPublicPage = ({ slug }: EventPublicPageProps) => {
                   </span>
                 </div>
 
-                <h1 className="text-[36px] font-black text-charcoal-900 leading-tight mb-4">
+                <h1 className="text-[36px] font-black font-serif text-charcoal-900 leading-tight mb-4">
                   {event.event_name}
                 </h1>
 

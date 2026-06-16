@@ -53,7 +53,7 @@ export const Register = ({ onSuccess, onSwitchToLogin, onRegister }: RegisterPro
         className="flex-1 bg-[#F5F3EF] px-5 pt-8 pb-8 flex flex-col"
         style={{ borderRadius: '28px 28px 0 0', marginTop: -24 }}
       >
-        <h2 className="text-[26px] font-bold text-charcoal-900 mb-6 text-center pt-2">יצירת חשבון</h2>
+        <h2 className="text-[26px] font-bold font-serif text-charcoal-900 mb-6 text-center pt-2">יצירת חשבון</h2>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           {/* Name */}

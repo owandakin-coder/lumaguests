@@ -560,7 +560,7 @@ export const EventManager = ({
       >
         <div>
           <p className="text-[9px] font-bold tracking-[0.24em] text-white/38 uppercase mb-0.5">האירוע הפעיל</p>
-          <h2 className="text-[20px] font-black leading-tight truncate">
+          <h2 className="text-[20px] font-black font-serif leading-tight truncate">
             {form.eventName || 'האירוע שלי'}
           </h2>
           <p className="text-[11px] text-white/50 mt-0.5 truncate">

@@ -304,7 +304,7 @@ export const RsvpPage = ({
                     <span className="h-px max-w-[72px] flex-1 bg-gradient-to-r from-transparent via-[#D9BC77] to-transparent" />
                   </div>
 
-                  <h2 className="text-[34px] font-black tracking-tight text-charcoal-900">{guest.full_name}</h2>
+                  <h2 className="text-[34px] font-black font-serif tracking-tight text-charcoal-900">{guest.full_name}</h2>
                   <p className="mt-2 text-[15px] text-charcoal-500">
                     {guest.rsvp_status === 'CONFIRMED'
                       ? 'האישור כבר התקבל ואנחנו מחכים לך'
@@ -386,7 +386,7 @@ export const RsvpPage = ({
                       <Sparkles className="h-4 w-4" />
                       <span className="h-px w-16 bg-gradient-to-r from-transparent via-[#E1C987] to-transparent" />
                     </div>
-                    <h1 className="text-[40px] font-black leading-none tracking-tight text-charcoal-900 sm:text-[44px]">
+                    <h1 className="text-[40px] font-black font-serif leading-none tracking-tight text-charcoal-900 sm:text-[44px]">
                       {guest.full_name}
                     </h1>
                     <p className="mt-2 text-[16px] text-charcoal-600">נשמח לדעת אם תגיע/י</p>

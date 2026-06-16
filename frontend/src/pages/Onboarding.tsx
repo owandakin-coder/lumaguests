@@ -142,7 +142,7 @@ export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
             exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}
             className="flex-1 flex flex-col"
           >
-            <h2 className="text-[26px] font-bold text-charcoal-900 mb-1">{current.title}</h2>
+            <h2 className="text-[26px] font-bold font-serif text-charcoal-900 mb-1">{current.title}</h2>
             <p className="text-[13px] text-charcoal-500 mb-6 leading-relaxed">{current.subtitle}</p>
             {current.fields}
           </motion.div>

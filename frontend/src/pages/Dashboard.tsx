@@ -168,7 +168,7 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
       {/* Greeting */}
       <motion.div variants={fade} className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-charcoal-900 leading-tight">
+          <h1 className="text-[22px] font-bold font-serif text-charcoal-900 leading-tight">
             {displayName ? `שלום, ${displayName}` : 'שלום 👋'}
           </h1>
           <p className="text-[11px] text-charcoal-400 mt-0.5">{subtitleText}</p>

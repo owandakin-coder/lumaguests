@@ -100,7 +100,7 @@ export const Login = ({ onSuccess, onSwitchToRegister, onLogin }: LoginProps) =>
               className="flex flex-col flex-1"
               style={{ minHeight: 0 }}
             >
-              <h2 className="text-[26px] font-bold text-charcoal-900 mb-6 text-center pt-2">כניסה לחשבון</h2>
+              <h2 className="text-[26px] font-bold font-serif text-charcoal-900 mb-6 text-center pt-2">כניסה לחשבון</h2>
 
               <form onSubmit={handleLogin} className="space-y-3">
                 <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
