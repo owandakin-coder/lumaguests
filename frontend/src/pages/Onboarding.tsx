@@ -61,7 +61,15 @@ export const Onboarding = ({ onComplete, onUpdateEvent }: OnboardingProps) => {
           <input
             value={form.event_name}
             onChange={e => setForm(p => ({ ...p, event_name: e.target.value }))}
-            placeholder="שם האירוע (למשל: חתונת שרה ודוד)"
+            placeholder={
+              form.event_type === 'bar_mitzvah' ? 'שם הבר-מצווה (למשל: בר-מצווה של דוד)' :
+              form.event_type === 'bat_mitzvah' ? 'שם הבת-מצווה (למשל: בת-מצווה של שרה)' :
+              form.event_type === 'brit'        ? 'שם הברית (למשל: ברית של יוסי)' :
+              form.event_type === 'birthday'    ? 'שם האירוע (למשל: יום הולדת 40 לדוד)' :
+              form.event_type === 'engagement'  ? 'שם האירוע (למשל: אירוסין שרה ודוד)' :
+              form.event_type === 'conference'  ? 'שם הכנס / האירוע' :
+              'שם האירוע (למשל: חתונת שרה ודוד)'
+            }
             className={inputCls}
             style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}
           />
