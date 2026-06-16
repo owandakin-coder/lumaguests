@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Users, CheckCircle, Clock, XCircle, ChevronLeft, CalendarDays, Settings, MapPin, PencilLine, MessageCircle } from 'lucide-react';
 import { Guest, RsvpStatus, Category, Side, Event } from '../types';
@@ -17,9 +17,6 @@ interface DashboardProps {
   event?: Event | null;
   events?: Event[];
 }
-
-const EVENT_KEY      = 'luma_event_name';
-const EVENT_DATE_KEY = 'luma_event_date';
 
 const rsvpDot: Record<RsvpStatus, string>   = { CONFIRMED:'#10B981', PENDING:'#F59E0B', DECLINED:'#F87171' };
 const rsvpLabel: Record<RsvpStatus, string> = { CONFIRMED:'אישר', PENDING:'ממתין', DECLINED:'לא מגיע' };
@@ -73,13 +70,6 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
     { id: 'BRIDE',  label: sl.side2,  color: '#F9A8D4', emoji: sl.side2Emoji },
     { id: 'SHARED', label: sl.shared, color: '#A5B4FC', emoji: '💑' },
   ];
-  const [eventName, setEventName] = useState('');
-  const [eventDate, setEventDate] = useState('');
-
-  useEffect(() => {
-    setEventName(localStorage.getItem(EVENT_KEY) || '');
-    setEventDate(localStorage.getItem(EVENT_DATE_KEY) || '');
-  }, []);
 
   const s=useMemo(()=>{
     const confirmedGuests=guests.filter(g=>(g.rsvpStatus||g.rsvp_status)==='CONFIRMED');
@@ -95,11 +85,11 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
   },[guests]);
 
   const countdownDays = useMemo(() => {
-    if (!eventDate) return null;
+    if (!event?.event_date) return null;
     const now = new Date(); now.setHours(0,0,0,0);
-    const target = new Date(eventDate);
+    const target = new Date(event.event_date);
     return Math.ceil((target.getTime() - now.getTime()) / 86400000);
-  }, [eventDate]);
+  }, [event?.event_date]);
   const safeCountdownDays = countdownDays ?? 0;
 
   const categoryBreakdown = useMemo(() => {
@@ -142,25 +132,24 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
     if (countdownDays !== null) {
       if (countdownDays > 0)  return `עוד ${safeCountdownDays} ימים לאירוע ✦`;
       if (countdownDays === 0) return 'האירוע היום! 🎉';
-      return eventName ? `✦ ${eventName}` : 'האירוע עבר';
+      return event?.event_name ? `✦ ${event.event_name}` : 'האירוע עבר';
     }
-    if (eventName) return `✦ ${eventName}`;
+    if (event?.event_name) return `✦ ${event.event_name}`;
     return new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'});
-  }, [countdownDays, eventName]);
+  }, [countdownDays, event?.event_name]);
 
   const displayEventName = event?.event_name && event.event_name !== 'האירוע שלי'
     ? event.event_name
-    : (eventName || 'האירוע שלך');
+    : 'האירוע שלך';
 
   const formattedEventDate = useMemo(() => {
-    const sourceDate = event?.event_date || eventDate;
-    if (!sourceDate) return null;
-    return new Date(sourceDate).toLocaleDateString('he-IL', {
+    if (!event?.event_date) return null;
+    return new Date(event.event_date).toLocaleDateString('he-IL', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
     });
-  }, [event?.event_date, eventDate]);
+  }, [event?.event_date]);
 
   const eventMeta = [formattedEventDate, event?.venue_name].filter(Boolean).join('  •  ');
 
@@ -263,7 +252,7 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
             <CalendarDays className="w-4.5 h-4.5 text-gold-400" strokeWidth={2}/>
           </div>
           <div className="flex-1">
-            <p className="text-[11px] text-white/50 font-medium">{eventName || 'האירוע'}</p>
+            <p className="text-[11px] text-white/50 font-medium">{event?.event_name || 'האירוע'}</p>
             <p className="text-[15px] font-bold text-white">עוד {safeCountdownDays} ימים</p>
           </div>
           <div className="text-right">
