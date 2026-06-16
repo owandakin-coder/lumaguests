@@ -6,6 +6,9 @@ import { RsvpPage }          from './pages/RsvpPage.tsx'
 import { EventPublicPage }   from './pages/EventPublicPage.tsx'
 import { ResetPasswordPage } from './pages/ResetPasswordPage.tsx'
 import { SupabaseAuthProvider } from './hooks/useSupabaseAuth'
+import '@fontsource/frank-ruhl-libre/400.css'
+import '@fontsource/frank-ruhl-libre/700.css'
+import '@fontsource/frank-ruhl-libre/900.css'
 import './index.css'
 
 if (import.meta.env.VITE_SENTRY_DSN) {

@@ -288,6 +288,7 @@ export const Settings = ({
         'הערות': g.notes || '',
       }));
       const ws = XLSX.utils.json_to_sheet(rows);
+      ws['!views'] = [{ rightToLeft: true }];
       ws['!cols'] = [
         { wch: 22 }, { wch: 15 }, { wch: 8 }, { wch: 10 },
         { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 25 },
@@ -427,7 +428,7 @@ export const Settings = ({
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5 pb-4">
-      <h1 className="text-[28px] font-bold text-charcoal-900 pt-1">הגדרות</h1>
+      <h1 className="text-[28px] font-bold font-serif text-charcoal-900 pt-1">הגדרות</h1>
 
       <div
         className="bg-white rounded-3xl p-4 flex items-center gap-4"

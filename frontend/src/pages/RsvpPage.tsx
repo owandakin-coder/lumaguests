@@ -26,7 +26,7 @@ interface RsvpPageProps {
 }
 
 type Step = 'loading' | 'form' | 'already' | 'success' | 'error';
-type ErrorState = 'not_found' | 'guest_unavailable' | 'event_passed' | 'general';
+type ErrorState = 'not_found' | 'guest_unavailable' | 'event_passed' | 'rsvp_closed' | 'general';
 
 const fallbackDate = 'טרם נקבע';
 const fallbackVenue = 'טרם נקבע';
@@ -115,6 +115,8 @@ export const RsvpPage = ({
       if (!response?.success) {
         if (response?.error === 'event_passed') {
           setErrorState('event_passed');
+        } else if (response?.error === 'rsvp_closed') {
+          setErrorState('rsvp_closed');
         } else if (response?.error) {
           setErrorState('guest_unavailable');
         } else {
@@ -185,6 +187,10 @@ export const RsvpPage = ({
     event_passed: {
       title: 'תקופת ההרשמה הסתיימה',
       description: 'תאריך האירוע עבר ולא ניתן עוד לעדכן את התשובה.',
+    },
+    rsvp_closed: {
+      title: 'ההרשמה נסגרה',
+      description: 'תאריך סיום ה-RSVP עבר. לשינוי פנה/י למארגנים ישירות.',
     },
     general: {
       title: 'לא הצלחנו לטעון את אישור ההגעה',
