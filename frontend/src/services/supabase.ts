@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+﻿import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = (import.meta.env as any).VITE_SUPABASE_URL;
 const supabaseAnonKey = (import.meta.env as any).VITE_SUPABASE_ANON_KEY;
@@ -507,71 +507,6 @@ export const rsvpService = {
     });
     if (error) throw error;
     return data as import('../types').RsvpResponse;
-  },
-
-  buildLink: (
-    token: string,
-    ev?: { event_name?: string | null; event_date?: string | null; venue_name?: string | null; venue_address?: string | null } | null
-  ): string => {
-    const base = rsvpService.buildPersonalRsvpLink({ rsvp_token: token });
-    if (!base) return `${window.location.origin}/rsvp/${token}`;
-    if (!ev) return base;
-    const params = new URLSearchParams();
-    if (ev.event_name && ev.event_name !== '׳³ֲ³׳’ג‚¬ֲ׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢׳³ֲ³ײ²ֲ¨׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ²ֲ¢ ׳³ֲ³ײ²ֲ©׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢') params.set('en', ev.event_name);
-    if (ev.event_date) params.set('ed', ev.event_date.split('T')[0]);
-    if (ev.venue_name) params.set('vn', ev.venue_name);
-    if (ev.venue_address) params.set('va', ev.venue_address);
-    const query = params.toString();
-    return query ? `${base}?${query}` : base;
-  },
-
-  buildShareLink: (
-    token: string,
-    ev?: {
-      event_name?: string | null;
-      event_date?: string | null;
-      venue_name?: string | null;
-      venue_address?: string | null;
-      updated_at?: string | null;
-    } | null
-  ): string => {
-    const base = `${window.location.origin}/share/${token}`;
-    if (!ev) return base;
-    const params = new URLSearchParams();
-    if (ev.event_name && ev.event_name !== '׳³ֲ³׳’ג‚¬ֲ׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢׳³ֲ³ײ²ֲ¨׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ²ֲ¢ ׳³ֲ³ײ²ֲ©׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢') params.set('en', ev.event_name);
-    if (ev.event_date) params.set('ed', ev.event_date.split('T')[0]);
-    if (ev.venue_name) params.set('vn', ev.venue_name);
-    if (ev.venue_address) params.set('va', ev.venue_address);
-    if (ev.updated_at) params.set('v', ev.updated_at);
-    const query = params.toString();
-    return query ? `${base}?${query}` : base;
-  },
-
-  buildWhatsAppUrl: (
-    phone: string,
-    guestName: string,
-    token: string,
-    ev?: {
-      event_name?: string | null;
-      event_date?: string | null;
-      venue_name?: string | null;
-      venue_address?: string | null;
-      updated_at?: string | null;
-    } | null
-  ): string => {
-    const link = rsvpService.buildPersonalRsvpLink({ rsvp_token: token }) || `${window.location.origin}/rsvp/${token}`;
-    const eventName = ev?.event_name && ev.event_name !== '׳³ֲ³׳’ג‚¬ֲ׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢׳³ֲ³ײ²ֲ¨׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ²ֲ¢ ׳³ֲ³ײ²ֲ©׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢' ? ev.event_name : '׳³ֲ³׳’ג‚¬ֲ׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢׳³ֲ³ײ²ֲ¨׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ²ֲ¢ ׳³ֲ³ײ²ֲ©׳³ֲ³ײ²ֲ׳³ֲ³ײ²ֲ ׳³ֲ³׳’ג‚¬ֲ¢';
-    const lines: string[] = [`׳³ֲ³׳’ג‚¬ֲ׳³ֲ³׳’ג€ֲ¢׳³ֲ³׳’ג€ֲ¢ ${guestName} ׳³ֲ ײ²ֲ׳’ג‚¬ֻ׳’ג‚¬ֲ¹`, '', `׳³ֲ³ײ²ֲ ׳³ֲ³ײ²ֲ©׳³ֲ³ײ²ֲ׳³ֲ³׳’ג‚¬ג€ ׳³ֲ³ײ²ֲ׳³ֲ³ײ²ֲ¨׳³ֲ³ײ²ֲ׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ³ג€” ׳³ֲ³ײ²ֲ׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ³ג€”׳³ֲ³ײ²ֲ ׳³ֲ³׳’ג‚¬ֻ${eventName}`];
-
-    if (ev?.event_date) {
-      const date = new Date(ev.event_date);
-      lines.push(`׳³ֲ ײ²ֲ׳’ג‚¬ֲ׳’ג‚¬ֲ¦ ${date.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}`);
-    }
-    if (ev?.venue_name) lines.push(`׳³ֲ ײ²ֲ׳’ג‚¬ֲײ²ֲ ${ev.venue_name}`);
-    if (ev?.venue_address) lines.push(`   ${ev.venue_address}`);
-
-    lines.push('', '׳³ֲ³ײ²ֲ׳³ֲ³ײ²ֲ׳³ֲ³׳’ג€ֲ¢׳³ֲ³ײ²ֲ©׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³ײ²ֲ¨ ׳³ֲ³׳’ג‚¬ֲ׳³ֲ³׳’ג‚¬ג„¢׳³ֲ³ײ²ֲ¢׳³ֲ³׳’ג‚¬ֲ:', link, '', '׳³ֲ³ײ³ג€”׳³ֲ³׳’ג‚¬ֲ¢׳³ֲ³׳’ג‚¬ֲ׳³ֲ³׳’ג‚¬ֲ ׳³ג€™ײ²ֲ׳’ג€ֳ—׳³ֲײ²ֲ¸ײ²ֲ');
-    return `https://wa.me/${toWaPhone(phone)}?text=${encodeURIComponent(lines.join('\n'))}`;
   },
 };
 

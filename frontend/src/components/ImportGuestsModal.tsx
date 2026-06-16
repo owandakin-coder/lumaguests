@@ -107,7 +107,7 @@ function parseSide(raw: string): Side | null {
 const COL_PATTERNS: Record<keyof ColumnMap, RegExp> = {
   fullName:   /שם|name/i,
   phone:      /טלפון|נייד|phone|mobile|cell/i,
-  side:       /^צד$|^side$/i,
+  side:       /^(צד|side|אבא|אמא|חתן|כלה)$|^צד\s|^side\s/i,
   category:   /קטגוריה|category/i,
   companions: /מלווים|companion|guest/i,
   notes:      /הערות|note|remark|comment/i,
