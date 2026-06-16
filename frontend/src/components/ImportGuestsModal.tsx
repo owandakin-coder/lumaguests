@@ -179,7 +179,7 @@ export const ImportGuestsModal = ({ open, onClose, onImported, userId, eventId, 
         .filter((c: any) => c.name?.[0] && c.tel?.[0])
         .map((c: any) => ({
           name:     c.name[0].trim(),
-          phone:    c.tel[0].replace(/[\s\-\(\)\.]/g, ''),
+          phone:    normalizePhone(c.tel[0]),
           side:     null,
           category: 'OTHER' as Category,
         }));
