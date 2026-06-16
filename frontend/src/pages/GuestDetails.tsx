@@ -11,6 +11,7 @@ import { buildGuestRsvpMessage, buildGuestRsvpWhatsAppUrl } from '../utils/rsvpS
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { useEvent } from '../hooks/useEvent';
 import { getSideLabels } from '../utils/eventType';
+import { initials, avatarColors } from '../utils/avatar';
 
 interface GuestDetailsProps {
   guestId: string;
@@ -33,20 +34,6 @@ const categoryAccent: Record<string, string> = {
   FRIENDS:'#C4B5FD', WORK:'#94A3B8', OTHER:'#D1D5DB',
 };
 
-const avatarBgs = [
-  ['#FDE68A','#92400E'],['#BFDBFE','#1E40AF'],
-  ['#DDD6FE','#5B21B6'],['#A7F3D0','#065F46'],
-  ['#FBCFE8','#9D174D'],['#FED7AA','#9A3412'],
-];
-function initials(name: string) {
-  const p = name.trim().split(/\s+/).filter(Boolean);
-  if (!p.length) return '?';
-  return p.length===1 ? p[0][0].toUpperCase() : (p[0][0]+p[p.length-1][0]).toUpperCase();
-}
-function avatarBg(name: string) {
-  let h=0; for(const c of name) h=c.charCodeAt(0)+((h<<5)-h);
-  return avatarBgs[Math.abs(h)%avatarBgs.length];
-}
 
 export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetailsProps) => {
   const [guest, setGuest]     = useState<Guest | null>(null);
@@ -109,7 +96,7 @@ export const GuestDetails = ({ guestId, onBack, onEdit, onDelete }: GuestDetails
   const rsvp    = (guest.rsvpStatus || guest.rsvp_status) as RsvpStatus;
   const cfg     = rsvpConfig[rsvp];
   const accent  = categoryAccent[guest.category];
-  const [abg, afg] = avatarBg(name);
+  const [abg, afg] = avatarColors(name);
   const created = new Date(guest.createdAt || guest.created_at || '').toLocaleDateString('he-IL', {
     year: 'numeric', month: 'long', day: 'numeric',
   });

@@ -17,6 +17,7 @@ import { rsvpService, guestService, toWaPhone, openWhatsAppUrl } from '../servic
 import { useEvent } from '../hooks/useEvent';
 import { buildGuestRsvpMessage, buildGuestRsvpWhatsAppUrl } from '../utils/rsvpShare';
 import { getSideLabels } from '../utils/eventType';
+import { initials, avatarColors } from '../utils/avatar';
 
 interface MessagesProps {
   guests: Guest[];
@@ -77,27 +78,6 @@ const rsvpLabel: Record<RsvpStatus, string> = {
   DECLINED: 'לא מגיע',
 };
 
-const avatarColors = [
-  ['#FDE68A', '#92400E'],
-  ['#BFDBFE', '#1E40AF'],
-  ['#DDD6FE', '#5B21B6'],
-  ['#A7F3D0', '#065F46'],
-  ['#FBCFE8', '#9D174D'],
-  ['#FED7AA', '#9A3412'],
-];
-
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return '?';
-  if (parts.length === 1) return parts[0][0].toUpperCase();
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-}
-
-function avatarBg(name: string) {
-  let hash = 0;
-  for (const char of name) hash = char.charCodeAt(0) + ((hash << 5) - hash);
-  return avatarColors[Math.abs(hash) % avatarColors.length];
-}
 
 const filterTabs: { id: FilterType; label: string }[] = [
   { id: 'PENDING', label: 'ממתינים' },
@@ -406,7 +386,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
           {filtered.map((guest, index) => {
             const name = guest.fullName || guest.full_name;
             const status = (guest.rsvpStatus || guest.rsvp_status) as RsvpStatus;
-            const [bg, fg] = avatarBg(name);
+            const [bg, fg] = avatarColors(name);
             const isSelected = selected.has(guest.id);
 
             return (
@@ -563,7 +543,7 @@ export const Messages = ({ guests, userId, initialFilter = 'PENDING' }: Messages
                 >
                   {selectedGuests.map((guest, index) => {
                     const name = guest.fullName || guest.full_name;
-                    const [bg, fg] = avatarBg(name);
+                    const [bg, fg] = avatarColors(name);
                     const sentThisSession = optimisticSentIds.has(guest.id);
                     const wasPreviouslySent = !!guest.whatsapp_sent_at && !sentThisSession;
 

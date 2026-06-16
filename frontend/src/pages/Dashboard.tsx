@@ -4,6 +4,7 @@ import { Plus, Users, CheckCircle, Clock, XCircle, ChevronLeft, CalendarDays, Se
 import { Guest, RsvpStatus, Category, Side, Event } from '../types';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { getSideLabels } from '../utils/eventType';
+import { initials, avatarColors } from '../utils/avatar';
 
 interface DashboardProps {
   guests: Guest[];
@@ -29,13 +30,6 @@ const catConfig: { id: Category; label: string; color: string }[] = [
 ];
 
 
-const avPalette = [
-  ['#FDE68A','#92400E'],['#BFDBFE','#1E40AF'],
-  ['#DDD6FE','#5B21B6'],['#A7F3D0','#065F46'],
-  ['#FBCFE8','#9D174D'],['#FED7AA','#9A3412'],
-];
-function initials(n:string){ const p=n.trim().split(/\s+/).filter(Boolean); return !p.length?'?':p.length===1?p[0][0].toUpperCase():(p[0][0]+p[p.length-1][0]).toUpperCase(); }
-function pal(n:string){ let h=0;for(const c of n)h=c.charCodeAt(0)+((h<<5)-h);return avPalette[Math.abs(h)%avPalette.length]; }
 
 function Ring({pct,total,loading}:{pct:number;total:number;loading:boolean}){
   const r=54,circ=2*Math.PI*r;
@@ -437,7 +431,7 @@ export const Dashboard=({guests,loading,onAddGuest,onViewGuests,onViewGuest,onVi
             {recent.map((g,i)=>{
               const name=g.fullName||g.full_name;
               const rsvp=(g.rsvpStatus||g.rsvp_status) as RsvpStatus;
-              const [bg,fg]=pal(name);
+              const [bg,fg]=avatarColors(name);
               return(
                 <button key={g.id} onClick={()=>onViewGuest(g)}
                   className={`w-full flex items-center gap-3 px-4 py-3 active:bg-charcoal-50/40 transition-colors text-right ${i<recent.length-1?'border-b border-charcoal-100/50':''}`}>

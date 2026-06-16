@@ -4,6 +4,7 @@ import { Guest, RsvpStatus, Side, Event } from '../types';
 import { guestService, rsvpService, toWaPhone, openWhatsAppUrl } from '../services/supabase';
 import { buildGuestRsvpMessage, buildGuestRsvpWhatsAppUrl } from '../utils/rsvpShare';
 import { getSideLabels } from '../utils/eventType';
+import { initials, avatarColors } from '../utils/avatar';
 
 interface GuestCardProps {
   guest: Guest;
@@ -73,26 +74,6 @@ const sideTextColor: Record<Side, string> = {
   SHARED: '#4338CA',
 };
 
-const avBgs = [
-  ['#FDE68A', '#92400E'],
-  ['#BFDBFE', '#1E40AF'],
-  ['#DDD6FE', '#5B21B6'],
-  ['#A7F3D0', '#065F46'],
-  ['#FBCFE8', '#9D174D'],
-  ['#FED7AA', '#9A3412'],
-];
-
-function initials(name: string) {
-  const p = name.trim().split(/\s+/).filter(Boolean);
-  if (!p.length) return '?';
-  return p.length === 1 ? p[0][0].toUpperCase() : (p[0][0] + p[p.length - 1][0]).toUpperCase();
-}
-
-function avBg(name: string) {
-  let h = 0;
-  for (const c of name) h = c.charCodeAt(0) + ((h << 5) - h);
-  return avBgs[Math.abs(h) % avBgs.length];
-}
 
 export const GuestCard = ({ guest, onView, userId, event }: GuestCardProps) => {
   const name = guest.fullName || guest.full_name;
@@ -104,7 +85,7 @@ export const GuestCard = ({ guest, onView, userId, event }: GuestCardProps) => {
   const accent = side ? sideAccent[side] : (catAccent[guest.category] ?? '#D1D5DB');
   const cBg   = catBg[guest.category]   || '#F9FAFB';
   const cText = catTextColor[guest.category] || '#6B7280';
-  const [abg, afg] = avBg(name);
+  const [abg, afg] = avatarColors(name);
   const viaLink = guest.rsvp_via_link;
 
   const handleWA = async (e: React.MouseEvent) => {
