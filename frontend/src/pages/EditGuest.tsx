@@ -14,6 +14,7 @@ interface EditGuestProps {
 export const EditGuest = ({ guestId, onSuccess, onCancel }: EditGuestProps) => {
   const [guest, setGuest] = useState<Guest | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const auth = useSupabaseAuth();
   const { event } = useEvent();
 
@@ -28,9 +29,12 @@ export const EditGuest = ({ guestId, onSuccess, onCancel }: EditGuestProps) => {
 
     try {
       setLoading(true);
+      setLoadError(false);
       const guestOwnerId = event.owner_user_id || auth.user.id;
       const data = await guestService.getById(guestId, guestOwnerId, event.id);
       setGuest(data);
+    } catch {
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -84,6 +88,14 @@ export const EditGuest = ({ guestId, onSuccess, onCancel }: EditGuestProps) => {
       </div>
     );
   }
+
+  if (loadError) return (
+    <div className="flex flex-col items-center py-20 gap-3">
+      <p className="text-charcoal-500">שגיאה בטעינת המוזמן</p>
+      <button onClick={() => void loadGuest()} className="text-gold-600 font-bold text-sm">נסה שוב</button>
+      <button onClick={onCancel} className="text-charcoal-400 text-sm">חזרה</button>
+    </div>
+  );
 
   if (!guest) {
     return (
